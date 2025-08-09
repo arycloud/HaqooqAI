@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="HaqooqAI – Your premium AI-powered legal assistant for Pakistani law. Modern, fast, and beautiful." />
+    <meta name="keywords" content="AI, legal assistant, Pakistani law, chatbot, HaqooqAI, legal advice, Pakistan law" />
+    <meta name="author" content="HaqooqAI Team" />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:title" content="HaqooqAI – Premium AI Legal Assistant" />
+    <meta property="og:description" content="Ask clear, trusted answers about Pakistani law with a modern, delightful chat experience." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/HaqooqAI/logo192.png" />
+    
+    <title>HaqooqAI – Premium AI Legal Assistant</title>
+    <link rel="icon" type="image/png" href="/HaqooqAI/logo192.png" />
+    <link rel="apple-touch-icon" href="/HaqooqAI/logo192.png" />
+    
+    <!-- Modern Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom Styles -->
+    <style>
+      /* Smooth scrolling */
+      html {
+        scroll-behavior: smooth;
+      }
+      
+      /* Custom gradient backgrounds */
+      .gradient-bg {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+      
+      .gradient-text {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      
+      /* Loading animation */
+      .loading-dots {
+        display: inline-block;
+      }
+      
+      .loading-dots span {
+        animation: loading 1.4s ease-in-out infinite both;
+      }
+      
+      .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+      .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+      
+      @keyframes loading {
+        0%, 80%, 100% {
+          transform: scale(0);
+          opacity: 0.5;
+        }
+        40% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      
+      ::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 4px;
+      }
+      
+      ::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 4px;
+      }
+      
+      ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+      }
+      
+      /* Glassmorphism effect */
+      .glass {
+        background: rgba(255, 255, 255, 0.25);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+      }
+      
+      .glass-dark {
+        background: rgba(0, 0, 0, 0.25);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+      }
+      
+      /* Button hover effects */
+      .btn-hover {
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+      }
+      
+      .btn-hover:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+      }
+      
+      /* Subtle animations */
+      .fade-in {
+        animation: fadeIn 0.6s ease-in-out;
+      }
+      
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      /* Focus states */
+      .focus-ring:focus {
+        outline: 2px solid #667eea;
+        outline-offset: 2px;
+      }
+      
+      /* Message bubble styles */
+      .message-bubble {
+        position: relative;
+        max-width: 80%;
+        word-wrap: break-word;
+      }
+      
+      .message-bubble::before {
+        content: '';
+        position: absolute;
+        width: 0;
+        height: 0;
+      }
+      
+      .message-bubble.user::before {
+        right: -8px;
+        top: 50%;
+        transform: translateY(-50%);
+        border: 8px solid transparent;
+        border-left-color: #667eea;
+      }
+      
+      .message-bubble.bot::before {
+        left: -8px;
+        top: 50%;
+        transform: translateY(-50%);
+        border: 8px solid transparent;
+        border-right-color: #ffffff;
+      }
+    </style>
+    <script type="module" crossorigin src="/HaqooqAI/assets/index-CuNqY3ox.js"></script>
+    <link rel="stylesheet" crossorigin href="/HaqooqAI/assets/index-9md2LvJD.css">
+  </head>
+  <body class="antialiased">
+    <!-- Loading Screen (optional) -->
+    <div id="loading-screen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+      <div class="text-center">
+        <div class="w-16 h-16 bg-gradient-to-br from-purple-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg mb-4 mx-auto">
+          <span class="text-white font-bold text-xl">H</span>
+        </div>
+        <div class="loading-dots text-purple-600">
+          <span class="inline-block w-2 h-2 bg-current rounded-full mx-1"></span>
+          <span class="inline-block w-2 h-2 bg-current rounded-full mx-1"></span>
+          <span class="inline-block w-2 h-2 bg-current rounded-full mx-1"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="root" class="min-h-screen"></div>
+
+    <!-- Scripts -->
+    
+    <!-- Hide loading screen when app loads -->
+    <script>
+      window.addEventListener('load', () => {
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+          loadingScreen.style.opacity = '0';
+          loadingScreen.style.transition = 'opacity 0.5s ease';
+          setTimeout(() => {
+            loadingScreen.style.display = 'none';
+          }, 500);
+        }
+      });
+      
+      // Smooth scroll for anchor links
+      document.addEventListener('DOMContentLoaded', function() {
+        const links = document.querySelectorAll('a[href^="#"]');
+        links.forEach(link => {
+          link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href').substring(1);
+            const targetElement = document.getElementById(targetId);
+            if (targetElement) {
+              targetElement.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+              });
+            }
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
