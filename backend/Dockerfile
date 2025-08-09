@@ -10,6 +10,7 @@ COPY . /app
 # RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install -r src/requirements.txt
 
+
 # Create a non-root user
 RUN adduser --disabled-password --gecos "" appuser
 # Create the data directory and change its ownership to the new user
