@@ -127,7 +127,7 @@ const HaqooqAI = () => {
       </header>
 
       {/* Hero Section with Proper Spacing */}
-      <div className="relative z-10 pt-20 pb-32">
+      <div className="relative z-10 pt-10 pb-8">
         <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="space-y-8">
             <div className="animate-fade-in">
