@@ -1,4 +1,4 @@
-# .github/workflows/deploy_frontend.yml
+# .github/workflows/deploy-frontend.yml
 
 name: Deploy HaqooqAI Frontend to GitHub Pages
 
@@ -6,7 +6,8 @@ on:
   push:
     branches:
       - main
-      - feature/api-development
+    paths:
+      - 'frontend/**'
 
 permissions:
   contents: write
