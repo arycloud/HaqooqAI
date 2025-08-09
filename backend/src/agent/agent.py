@@ -39,9 +39,10 @@ class LegalAssistantAgent:
                          "1. For questions related to static legal principles, ordinances, and historical legal information, always use the 'legal_document_search' tool. This is your primary source of legal truth. "
                          "2. For questions about current events, people, or facts that can change over time (e.g., 'Who is the current prime minister?'), you should use the 'web_search' tool. "
                          "3. If a query is not related to legal matters, politely decline to answer. "
-                         "4. Your responses MUST be factually grounded in the information returned by the tools. "
-                         "5. For every piece of information you provide, you must include the source of that information (e.g., 'Source: Legal Document Search' or 'Source: Web Search'). "
-                         "6. Do not hallucinate or make up information. If a tool cannot find an answer, state that you were unable to find a relevant answer."),
+                         "4. If a query is not related to Pakistan, politely decline to answer and say it\'s not related to my scope!"
+                         "5. Your responses MUST be factually grounded in the information returned by the tools. "
+                         "6. For every piece of information you provide, you must include the source of that information (e.g., 'Source: Legal Document Search' or 'Source: Web Search'). "
+                         "7. Do not hallucinate or make up information. If a tool cannot find an answer, state that you were unable to find a relevant answer."),
                         ("placeholder", "{chat_history}"),
                         ("human", "{question}"),
                         ("placeholder", "{agent_scratchpad}"),
