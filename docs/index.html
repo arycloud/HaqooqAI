@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Documentation: LLM-Powered Legal Assistant Agent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .tab-active {
+            border-bottom-color: #0d9488; /* teal-600 */
+            color: #0f766e; /* teal-700 */
+            font-weight: 600;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .step-item.active .step-content {
+            max-height: 1000px;
+            opacity: 1;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+        .step-content {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: all 0.5s ease-in-out;
+        }
+        .arch-component.active {
+            background-color: #ccfbf1; /* teal-100 */
+            border-left-color: #0d9488; /* teal-600 */
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-gray-800">
+    <!-- Chosen Palette: Calm Harmony (Stone, Gray, Teal) -->
+    <!-- Application Structure Plan: A tab-based navigation system to break down the dense technical documentation into thematic, manageable sections: Overview, Architecture, Data Pipeline, Agent Implementation, and Features & Future. This non-linear structure enhances usability by allowing users to jump to topics of interest without extensive scrolling. Interactive elements like clickable diagrams and process steps are used to progressively reveal details, reducing cognitive load. -->
+    <!-- Visualization & Content Choices: Since the report is qualitative, visualizations focus on structure and process. The system architecture diagram is recreated using responsive HTML/CSS (Flexbox/Grid) for a cleaner look. The complex data pipeline is presented as an interactive vertical stepper, where each step can be expanded to view details. This transforms a long textual description into an engaging, step-by-step exploration. Key lists are enhanced with icons for better visual distinction. All interactions are handled with vanilla JavaScript, and no SVG/Mermaid is used, adhering to the requirements. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-teal-800">LLM-Powered Legal Assistant Agent</h1>
+            <p class="mt-2 text-lg text-gray-600">Interactive Project Documentation</p>
+        </header>
+
+        <nav class="flex justify-center border-b border-gray-300 mb-8 flex-wrap">
+            <button data-tab="overview" class="nav-tab tab-active text-sm sm:text-base py-3 px-4 sm:px-6 border-b-2 border-transparent hover:bg-teal-50 transition-colors">Overview</button>
+            <button data-tab="architecture" class="nav-tab text-sm sm:text-base py-3 px-4 sm:px-6 border-b-2 border-transparent hover:bg-teal-50 transition-colors">Architecture</button>
+            <button data-tab="pipeline" class="nav-tab text-sm sm:text-base py-3 px-4 sm:px-6 border-b-2 border-transparent hover:bg-teal-50 transition-colors">Data Pipeline</button>
+            <button data-tab="implementation" class="nav-tab text-sm sm:text-base py-3 px-4 sm:px-6 border-b-2 border-transparent hover:bg-teal-50 transition-colors">Agent Implementation</button>
+            <button data-tab="features" class="nav-tab text-sm sm:text-base py-3 px-4 sm:px-6 border-b-2 border-transparent hover:bg-teal-50 transition-colors">Features & Future</button>
+        </nav>
+
+        <main>
+            <!-- Overview Section -->
+            <section id="overview" class="content-section active">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-bold text-teal-700 mb-4">1. Introduction and Project Overview</h2>
+                    <p class="text-gray-700 leading-relaxed">This document provides comprehensive documentation for the development of an LLM-powered agent designed to function as a specialized legal assistant for Pakistani law. The primary objective of this project is to create an intelligent and reliable system capable of understanding natural language queries, retrieving pertinent information from a curated local legal knowledge base, and, when necessary, performing targeted web searches to provide accurate and sourced answers. This initiative aims to streamline legal information retrieval, reduce manual research overhead, and enhance the trustworthiness of legal insights.</p>
+                    <hr class="my-6">
+                    <h2 class="text-2xl font-bold text-teal-700 mb-4">2. Project Goals</h2>
+                    <ul class="space-y-3">
+                        <li class="flex items-start"><span class="text-teal-600 mr-3 mt-1">✓</span><span><strong>Develop a Specialized Legal Assistant:</strong> Create an AI agent focused on providing information related to Pakistani laws, ordinances, and legal affairs.</span></li>
+                        <li class="flex items-start"><span class="text-teal-600 mr-3 mt-1">✓</span><span><strong>Implement Retrieval-Augmented Generation (RAG):</strong> Integrate a RAG pipeline to ground LLM responses in factual, external data, thereby reducing hallucination.</span></li>
+                        <li class="flex items-start"><span class="text-teal-600 mr-3 mt-1">✓</span><span><strong>Enable Intelligent Tool Use:</strong> Empower the LLM to intelligently select and utilize appropriate tools (local document search, web search) based on query intent and information availability.</span></li>
+                        <li class="flex items-start"><span class="text-teal-600 mr-3 mt-1">✓</span><span><strong>Ensure Answer Accuracy and Attribution:</strong> Provide precise answers supported by verifiable sources, clearly citing the origin of the information.</span></li>
+                        <li class="flex items-start"><span class="text-teal-600 mr-3 mt-1">✓</span><span><strong>Manage Scope:</strong> Define clear boundaries for the agent's capabilities, allowing it to politely decline queries outside its specialization.</span></li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Architecture Section -->
+            <section id="architecture" class="content-section">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-bold text-teal-700 mb-4">3. System Architecture</h2>
+                    <p class="text-gray-600 mb-6">The system employs a modular architecture, leveraging LangChain's framework for orchestrating LLM interactions and tool utilization. The diagram below illustrates the flow from user query to final answer, highlighting the key components and their interactions.</p>
+
+                    <div class="border border-gray-200 rounded-lg p-4 bg-stone-50">
+                        <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4 text-center">
+                            <div class="p-3 bg-white border rounded-lg shadow-sm"><strong>User Query</strong></div>
+                            <div class="text-2xl text-teal-500 font-sans">→</div>
+                            <div class="p-3 bg-teal-100 border border-teal-200 rounded-lg shadow-sm"><strong>LLM Agent</strong><br><span class="text-xs text-teal-700">(Ollama: Qwen3)</span></div>
+                            <div class="text-2xl text-teal-500 font-sans">→</div>
+                            <div class="p-3 bg-white border rounded-lg shadow-sm"><strong>Generative LLM</strong><br><span class="text-xs text-gray-500">(Qwen3:1.7b)</span></div>
+                        </div>
+                        <div class="flex justify-center my-2">
+                            <div class="w-px bg-teal-300 h-8"></div>
+                        </div>
+                        <div class="flex justify-center">
+                             <div class="text-sm text-teal-600">Tool Calls</div>
+                        </div>
+                         <div class="flex justify-center mt-2">
+                            <div class="w-px bg-teal-300 h-8"></div>
+                        </div>
+                        <div class="p-3 bg-teal-100 border border-teal-200 rounded-lg shadow-sm text-center"><strong>Tool Router</strong><br><span class="text-xs text-teal-700">(Agent Executor)</span></div>
+                         <div class="flex justify-center my-2">
+                            <div class="w-1/2 border-t border-teal-300"></div>
+                        </div>
+                        <div class="flex flex-col md:flex-row justify-around items-start">
+                            <div class="flex flex-col items-center w-full md:w-1/2 p-2">
+                                <div class="text-2xl text-teal-500 font-sans">↓</div>
+                                <div class="p-3 bg-white border rounded-lg shadow-sm w-full text-center"><strong>Legal Document Search</strong><br><span class="text-xs text-gray-500">(ChromaDB Retriever)</span></div>
+                                <div class="text-2xl text-teal-500 font-sans">↑</div>
+                                <div class="p-3 bg-stone-200 border rounded-lg shadow-sm w-full text-center"><strong>Vector Database</strong><br><span class="text-xs text-gray-500">(ChromaDB)</span></div>
+                            </div>
+                            <div class="flex flex-col items-center w-full md:w-1/2 p-2">
+                                <div class="text-2xl text-teal-500 font-sans">↓</div>
+                                <div class="p-3 bg-white border rounded-lg shadow-sm w-full text-center"><strong>Web Search</strong><br><span class="text-xs text-gray-500">(DuckDuckGo)</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-8">
+                    <h3 class="text-xl font-bold text-teal-700 mb-4">Component Breakdown</h3>
+                    <p class="text-gray-600 mb-6">Click on a component to learn more about its role and implementation within the system.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div id="comp-llm" class="arch-component p-4 border-l-4 border-gray-200 hover:bg-teal-50 cursor-pointer rounded-r-md transition-colors">
+                                <h4 class="font-semibold text-lg text-teal-800">Generative LLM</h4>
+                                <p class="text-sm text-gray-600">The core intelligence (Qwen3:1.7b) that performs reasoning and generates natural language responses.</p>
+                            </div>
+                            <div id="comp-executor" class="arch-component p-4 border-l-4 border-gray-200 hover:bg-teal-50 cursor-pointer rounded-r-md transition-colors">
+                                <h4 class="font-semibold text-lg text-teal-800">Agent Executor</h4>
+                                <p class="text-sm text-gray-600">Orchestrates the entire process, managing the LLM's thoughts, tool calls, and response formulation.</p>
+                            </div>
+                             <div id="comp-tools" class="arch-component p-4 border-l-4 border-gray-200 hover:bg-teal-50 cursor-pointer rounded-r-md transition-colors">
+                                <h4 class="font-semibold text-lg text-teal-800">Tools</h4>
+                                <p class="text-sm text-gray-600">Specialized functions for local document search and web search, accessible to the agent.</p>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+
+                            <div id="comp-db" class="arch-component p-4 border-l-4 border-gray-200 hover:bg-teal-50 cursor-pointer rounded-r-md transition-colors">
+                                <h4 class="font-semibold text-lg text-teal-800">Vector Database</h4>
+                                <p class="text-sm text-gray-600">ChromaDB stores document embeddings, enabling efficient semantic similarity searches.</p>
+                            </div>
+                            <div id="comp-embedding" class="arch-component p-4 border-l-4 border-gray-200 hover:bg-teal-50 cursor-pointer rounded-r-md transition-colors">
+                                <h4 class="font-semibold text-lg text-teal-800">Embedding Model</h4>
+                                <p class="text-sm text-gray-600">BAAI/bge-large-en-v1.5 converts text into numerical vectors for accurate retrieval.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Data Pipeline Section -->
+            <section id="pipeline" class="content-section">
+                 <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-bold text-teal-700 mb-4">4. Data Pipeline</h2>
+                    <p class="text-gray-600 mb-6">A robust data pipeline ensures that raw legal documents are transformed into a format suitable for efficient retrieval and LLM processing. Click on each step to see the details.</p>
+                    <div class="relative pl-8">
+                        <!-- Vertical line -->
+                        <div class="absolute left-4 top-0 h-full w-px bg-teal-200"></div>
+
+                        <div class="step-item relative mb-4">
+                            <div class="absolute -left-8 top-1.5 h-8 w-8 rounded-full bg-teal-500 text-white flex items-center justify-center font-bold">1</div>
+                            <h3 class="text-xl font-semibold text-teal-800 mb-2 cursor-pointer">Data Acquisition</h3>
+                            <div class="step-content pl-4 border-l-2 border-teal-100">
+                                <p><strong>Source:</strong> The "Pakistan Laws Dataset" was acquired from Hugging Face, specifically the <code>pdf_data.json</code> file.</p>
+                                <p><strong>Initial Loading:</strong> The raw JSON data was loaded into a Pandas DataFrame, initially containing <code>file_name</code> and <code>text</code> columns.</p>
+                            </div>
+                        </div>
+
+                        <div class="step-item relative mb-4">
+                            <div class="absolute -left-8 top-1.5 h-8 w-8 rounded-full bg-teal-500 text-white flex items-center justify-center font-bold">2</div>
+                            <h3 class="text-xl font-semibold text-teal-800 mb-2 cursor-pointer">Preprocessing</h3>
+                            <div class="step-content pl-4 border-l-2 border-teal-100">
+                                <ul class="list-disc list-inside space-y-2">
+                                    <li><strong>Column Renaming:</strong> Standardized columns to <code>File Name</code> and <code>Content</code>.</li>
+                                    <li><strong>Text Cleaning:</strong> Applied a function to normalize whitespace and remove page headers, footers, and tables of contents.</li>
+                                    <li><strong>Semantic Sectioning:</strong> Developed a custom function to break documents into meaningful legal sections (e.g., PART I, CHAPTER II, Section 1), creating a new DataFrame of these semantic units.</li>
+                                    <li><strong>Final Chunking:</strong> Used <code>RecursiveCharacterTextSplitter</code> to divide long sections into smaller chunks (1500 characters with 150 overlap) while preserving metadata.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="step-item relative mb-4">
+                            <div class="absolute -left-8 top-1.5 h-8 w-8 rounded-full bg-teal-500 text-white flex items-center justify-center font-bold">3</div>
+                            <h3 class="text-xl font-semibold text-teal-800 mb-2 cursor-pointer">Embedding Generation</h3>
+                            <div class="step-content pl-4 border-l-2 border-teal-100">
+                                <p><strong>Model:</strong> The <code>BAAI/bge-large-en-v1.5</code> Sentence Transformer model was used.</p>
+                                <p><strong>Process:</strong> The content of each chunk was converted into a high-dimensional numerical vector.</p>
+                                <p><strong>Execution:</strong> This computationally intensive step was performed on Google Colab using GPU acceleration to ensure efficiency. The resulting DataFrame with embeddings was downloaded for local use.</p>
+                            </div>
+                        </div>
+
+                        <div class="step-item relative">
+                            <div class="absolute -left-8 top-1.5 h-8 w-8 rounded-full bg-teal-500 text-white flex items-center justify-center font-bold">4</div>
+                            <h3 class="text-xl font-semibold text-teal-800 mb-2 cursor-pointer">Vector Database Indexing</h3>
+                            <div class="step-content pl-4 border-l-2 border-teal-100">
+                                <p><strong>Database:</strong> ChromaDB was selected for local vector storage.</p>
+                                <p><strong>Process:</strong> The generated embeddings, along with their corresponding text content and metadata, were indexed into a ChromaDB collection named <code>pakistan_laws_chunks_collection</code>.</p>
+                                <p><strong>Persistence:</strong> The database was configured for persistence, saving the index to disk to avoid re-indexing in future sessions.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Agent Implementation Section -->
+            <section id="implementation" class="content-section">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-bold text-teal-700 mb-4">5. RAG Agent Implementation</h2>
+                    <p class="text-gray-600 mb-6">This section details the core logic that enables the LLM agent to interact with tools and formulate responses, with a heavy emphasis on prompt engineering to guide its behavior.</p>
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-xl font-semibold text-teal-800 mb-2">Tool Definitions</h3>
+                            <p>The agent has access to two tools: <code>legal_document_search</code> for querying the local ChromaDB and <code>web_search</code> for accessing the internet via DuckDuckGo. Each tool is given a clear description to help the LLM decide when to use it.</p>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold text-teal-800 mb-2">LLM Integration</h3>
+                            <p>The agent uses the <code>qwen3:1.7b</code> model via <code>langchain_ollama.ChatOllama</code>. The temperature is set to 0 to encourage deterministic and consistent behavior, which is crucial for reliable tool use and reasoning.</p>
+                        </div>
+                         <div>
+                            <h3 class="text-xl font-semibold text-teal-800 mb-2">Agent Prompt Engineering</h3>
+                            <p class="mb-4">The system prompt is meticulously designed to guide the agent. It includes a dedicated "CRITICAL EXECUTION GUIDELINES" section with strong directives:</p>
+                            <div class="bg-stone-100 p-4 rounded-lg border border-stone-200 text-sm text-gray-700 space-y-2">
+                                <p><strong>Role Definition:</strong> "You are a helpful legal assistant specializing in Pakistani law."</p>
+                                <p><strong>Tool Usage Hierarchy:</strong> The agent is instructed to prioritize local search for legal questions and only use web search for legal affairs if the local search is insufficient.</p>
+                                <p><strong>No Internal Knowledge Reliance:</strong> Explicitly forbids the agent from using its own knowledge for dynamic facts like current officeholders, mandating tool use instead.</p>
+                                <p><strong>Mandatory Tool Invocation:</strong> The agent MUST call a tool and review its output before answering.</p>
+                                <p><strong>Scope Limitation:</strong> For non-legal questions, the agent is instructed to politely decline without using any tools.</p>
+                                <p><strong>Citation Requirement:</strong> All answers must cite the source tool used.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Features & Future Section -->
+            <section id="features" class="content-section">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h2 class="text-2xl font-bold text-teal-700 mb-4">6. Key Features & Capabilities</h2>
+                        <ul class="space-y-3">
+                            <li class="flex items-start"><span class="text-green-500 mr-3 mt-1">✓</span><span><strong>Contextual Legal Information Retrieval:</strong> Efficiently retrieves relevant legal text chunks from a specialized local knowledge base.</span></li>
+                            <li class="flex items-start"><span class="text-green-500 mr-3 mt-1">✓</span><span><strong>Intelligent Tool Routing:</strong> Dynamically decides whether to use local search or web search based on query intent.</span></li>
+                            <li class="flex items-start"><span class="text-green-500 mr-3 mt-1">✓</span><span><strong>Domain Specialization:</strong> Politely refuses to answer questions outside its defined scope of Pakistani law.</span></li>
+                            <li class="flex items-start"><span class="text-green-500 mr-3 mt-1">✓</span><span><strong>Enhanced Factual Grounding:</strong> Designed to minimize hallucination by strictly enforcing reliance on actual tool outputs.</span></li>
+                            <li class="flex items-start"><span class="text-green-500 mr-3 mt-1">✓</span><span><strong>Accurate Source Attribution:</strong> Provides clear citations for the information it provides.</span></li>
+                            <li class="flex items-start"><span class="text-green-500 mr-3 mt-1">✓</span><span><strong>Adaptability:</strong> Modular design allows for easy swapping of LLMs, embedding models, and search tools.</span></li>
+                        </ul>
+                    </div>
+                     <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h2 class="text-2xl font-bold text-teal-700 mb-4">7. Future Enhancements</h2>
+                        <ul class="space-y-3">
+                            <li class="flex items-start"><span class="text-blue-500 mr-3 mt-1">🚀</span><span><strong>Improved Error Handling:</strong> More sophisticated error recovery mechanisms for the agent.</span></li>
+                            <li class="flex items-start"><span class="text-blue-500 mr-3 mt-1">🚀</span><span><strong>User Interface:</strong> Develop a user-friendly web application to interact with the agent.</span></li>
+                            <li class="flex items-start"><span class="text-blue-500 mr-3 mt-1">🚀</span><span><strong>Streaming Responses:</strong> Implement streaming for a more interactive user experience.</span></li>
+                            <li class="flex items-start"><span class="text-blue-500 mr-3 mt-1">🚀</span><span><strong>Advanced Tooling:</strong> Add more specialized tools (e.g., for specific legal databases, case law summarization).</span></li>
+                            <li class="flex items-start"><span class="text-blue-500 mr-3 mt-1">🚀</span><span><strong>Fine-tuning LLM:</strong> Fine-tune a larger, more capable LLM on legal datasets for better domain understanding.</span></li>
+                            <li class="flex items-start"><span class="text-blue-500 mr-3 mt-1">🚀</span><span><strong>Evaluation Metrics:</strong> Establish quantitative metrics for retrieval accuracy, answer relevance, and factual correctness.</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabs = document.querySelectorAll('.nav-tab');
+            const sections = document.querySelectorAll('.content-section');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Deactivate all tabs and sections
+                    tabs.forEach(t => t.classList.remove('tab-active'));
+                    sections.forEach(s => s.classList.remove('active'));
+
+                    // Activate the clicked tab and corresponding section
+                    tab.classList.add('tab-active');
+                    const targetSection = document.getElementById(tab.dataset.tab);
+                    if (targetSection) {
+                        targetSection.classList.add('active');
+                    }
+                });
+            });
+
+            // Interactive steps for Data Pipeline
+            const stepItems = document.querySelectorAll('.step-item');
+            stepItems.forEach(item => {
+                const header = item.querySelector('h3');
+                header.addEventListener('click', () => {
+                    // Toggle active class on the step item
+                    item.classList.toggle('active');
+                });
+            });
+
+            // Interactive components for Architecture
+            const archComponents = document.querySelectorAll('.arch-component');
+            archComponents.forEach(comp => {
+                comp.addEventListener('click', () => {
+                    archComponents.forEach(c => c.classList.remove('active'));
+                    comp.classList.add('active');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
