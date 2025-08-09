@@ -1,0 +1,41 @@
+name: Deploy Backend to Hugging Face Space
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Push backend code to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USERNAME: ary91
+          HF_SPACE_NAME: haqooqai-backend
+        run: |
+          SPACE_REPO="${HF_USERNAME}/${HF_SPACE_NAME}"
+          echo "Deploying backend/ to ${SPACE_REPO}"
+
+          # Clone with authentication
+          git clone https://user:${HF_TOKEN}@huggingface.co/spaces/${SPACE_REPO} space_repo
+
+          # Remove everything except .git
+          find space_repo -mindepth 1 -maxdepth 1 ! -name ".git" -exec rm -rf {} +
+
+          # Copy backend folder contents to Space root
+          cp -r backend/* space_repo/
+
+          cd space_repo
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add .
+          git commit -m "Deploy backend from main via GitHub Actions" || echo "No changes to commit"
+          git push
