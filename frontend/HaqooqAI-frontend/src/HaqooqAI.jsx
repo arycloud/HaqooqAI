@@ -129,7 +129,7 @@ const HaqooqAI = () => {
       {/* Hero Section with Proper Spacing */}
       <div className="relative z-10 pt-10 pb-8">
         <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="space-y-8">
+          <div className="space-y-6">
             <div className="animate-fade-in">
               <h1 className="text-5xl md:text-7xl font-black mb-8 leading-tight">
                 <span className="block bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-400 bg-clip-text text-transparent animate-pulse">
