@@ -1,0 +1,57 @@
+name: Create PR to Develop
+
+on:
+  workflow_run:
+    workflows: ["Deploy HaqooqAI Frontend to GitHub Pages", "Deploy Backend to Hugging Face Space"]
+    types:
+      - completed
+
+jobs:
+  create-pr:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && (github.event.workflow_run.head_branch == 'frontend' || github.event.workflow_run.head_branch == 'backend') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+          fetch-depth: 0
+
+      - name: Setup Git
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+
+      - name: Create PR to develop
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const sourceBranch = '${{ github.event.workflow_run.head_branch }}';
+            const targetBranch = 'develop';
+            const title = `Merge ${sourceBranch} → ${targetBranch} after successful deployment`;
+            const body = `This PR was automatically created after successful deployment from ${sourceBranch} branch.\n\n**Deployment Details:**\n- Workflow: ${{ github.event.workflow_run.name }}\n- Commit: ${{ github.event.workflow_run.head_sha }}\n- Status: ✅ Success`;
+            
+            // Check if PR already exists
+            const existingPRs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: `${context.repo.owner}:${sourceBranch}`,
+              base: targetBranch
+            });
+            
+            if (existingPRs.data.length === 0) {
+              await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                head: sourceBranch,
+                base: targetBranch,
+                draft: false
+              });
+              console.log(`Created PR from ${sourceBranch} to ${targetBranch}`);
+            } else {
+              console.log(`PR from ${sourceBranch} to ${targetBranch} already exists`);
+            }
