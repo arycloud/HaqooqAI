@@ -102,7 +102,7 @@ export function Login() {
                 Welcome Back
               </CardTitle>
               <CardDescription className="text-xl lg:text-2xl xl:text-3xl text-gray-600 dark:text-gray-400">
-                Sign in to access your AI legal assistant
+                Sign in to access your AI legal assistant (HaqooqAI)
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-10 lg:space-y-12">
