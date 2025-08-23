@@ -29,4 +29,4 @@ jobs:
           git config user.email "${HF_USERNAME}@users.noreply.huggingface.co"
           git add .
           git commit -m "Deploy backend from backend branch via GitHub Actions" || echo "No changes to commit"
-          git push $SPACE_REPO main
+          git push $SPACE_REPO master
