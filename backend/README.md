@@ -1,3 +1,12 @@
+---
+title: HaqooqAI Backend
+emoji: ⚖️
+colorFrom: indigo
+colorTo: blue
+sdk: docker
+pinned: false
+---
+
 # HaqooqAI Backend
 
 A simplified AI service for Pakistani legal information, built with FastAPI and powered by RAG (Retrieval-Augmented Generation) technology.
