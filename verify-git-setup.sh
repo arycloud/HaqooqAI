@@ -48,7 +48,7 @@ done
 
 # Check GitHub Actions workflows
 echo "⚙️  Checking GitHub Actions workflows..."
-WORKFLOWS=("deploy-frontend.yml" "deploy-backend.yml" "create-pr-to-develop.yml")
+WORKFLOWS=("deploy-frontend.yml" "deploy-backend.yml")
 MISSING_WORKFLOWS=()
 
 for workflow in "${WORKFLOWS[@]}"; do
