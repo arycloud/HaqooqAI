@@ -23,9 +23,13 @@ jobs:
         with:
           node-version: 20
 
+      - name: Clear npm cache
+        working-directory: ./frontend/HaqooqAI-frontend
+        run: npm cache clean --force
+
       - name: Install Frontend Dependencies
         working-directory: ./frontend/HaqooqAI-frontend
-        run: npm install
+        run: npm ci --no-audit --prefer-offline
 
       - name: Build Frontend
         working-directory: ./frontend/HaqooqAI-frontend
