@@ -1,1 +1,0 @@
-# HaqooqAI Backend - Main Package
