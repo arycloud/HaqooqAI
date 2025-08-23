@@ -58,7 +58,7 @@ export function Login() {
             </h2>
 
             <p className="text-2xl lg:text-3xl xl:text-4xl text-gray-600 dark:text-gray-300 mb-12 lg:mb-16 leading-relaxed">
-              Get instant answers to your Pakistani legal questions with AI-powered research and comprehensive source citations.
+              Get instant answers to your legal questions regarding Pakistan with AI-powered research and comprehensive source citations.
             </p>
           </div>
 
