@@ -1,0 +1,38 @@
+export interface User {
+  id: string;
+  github_id: number;
+  username: string;
+  email?: string;
+  avatar_url?: string;
+  groq_api_key?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GitHubUser {
+  id: number;
+  login: string;
+  email?: string;
+  avatar_url?: string;
+  name?: string;
+}
+
+export interface AuthState {
+  user: User | null;
+  loading: boolean;
+  error: string | null;
+}
+
+export interface LoginResponse {
+  status: string;
+  user: User;
+  quota: QuotaInfo;
+}
+
+export interface QuotaInfo {
+  remaining: number;
+  limit: number;
+  reset_at: string;
+  has_api_key: boolean;
+  unlimited?: boolean;
+}
