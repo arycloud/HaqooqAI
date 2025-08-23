@@ -8,7 +8,7 @@ COPY . /app
 
 # Install dependencies from requirements.txt
 # RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install -r src/requirements.txt
+RUN pip install -r requirements.txt
 
 
 # Create a non-root user
