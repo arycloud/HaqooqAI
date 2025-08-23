@@ -18,7 +18,7 @@ CHROMA_DB_DIR.mkdir(exist_ok=True)
 # GitHub OAuth Configuration
 GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID", "")
 GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET", "")
-GITHUB_REDIRECT_URI = os.getenv("GITHUB_REDIRECT_URI", "http://localhost:8000/HaqooqAI/callback")
+GITHUB_REDIRECT_URI = os.getenv("GITHUB_REDIRECT_URI")
 
 # Supabase Configuration
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
