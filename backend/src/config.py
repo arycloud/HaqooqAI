@@ -56,7 +56,7 @@ ALLOWED_ORIGINS: List[str] = [
 
 # API Configuration
 API_TITLE = "HaqooqAI AI Service"
-API_VERSION = "2.0"
+API_VERSION = "2.0.0"
 API_DESCRIPTION = "Simplified AI service for Pakistani legal information"
 
 # Health Check URLs
