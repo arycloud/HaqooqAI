@@ -68,7 +68,7 @@ export class AIService {
       console.log('AI service response:', response)
 
       if (response.data.status !== 'success') {
-        throw new Error(response.data.message || 'AI request failed')
+        throw new Error(response.data.response || 'AI request failed')
       }
 
       return response.data
@@ -136,7 +136,7 @@ export class AIService {
    * Save user's Groq API key
    */
   async saveApiKey(userId: string, apiKey: string): Promise<void> {
-    return authService.saveApiKey(userId, apiKey)
+    return authService.saveApiKey(parseInt(userId), apiKey)
   }
 
   /**
