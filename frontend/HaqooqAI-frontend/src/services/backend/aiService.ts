@@ -30,17 +30,23 @@ export class AIService {
         user_id: parsedUserId,
       }
 
-      // Only add Groq API key if it's provided and valid
-      if (groqApiKey && groqApiKey.trim()) {
+      // Only add Groq API key if it's provided and has the correct format
+      if (groqApiKey && groqApiKey !== '******' && groqApiKey.trim() !== '') {
+        // Check if it's a valid Groq API key format
         if (!groqApiKey.startsWith('gsk_')) {
           throw new Error('Invalid Groq API key format')
         }
         requestData.groq_api_key = groqApiKey.trim()
       }
       
-      // Validate query length
-      if (!requestData.query || requestData.query.length > 1000) {
-        throw new Error('Query must be between 1 and 1000 characters')
+      // Validate query length (ensure minimum length of 1 character)
+      if (!requestData.query || requestData.query.length === 0) {
+        throw new Error('Query must contain at least 1 character')
+      }
+      
+      // Limit to 1000 characters as per backend requirements
+      if (requestData.query.length > 1000) {
+        throw new Error('Query must not exceed 1000 characters')
       }
 
       // Debug logging

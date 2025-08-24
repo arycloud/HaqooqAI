@@ -43,7 +43,7 @@ export const useMessages = (conversationId?: string) => {
     }
   }
 
-  const sendMessage = async (conversationId: string, content: string): Promise<void> => {
+  const sendMessage = async (conversationId: string, content: string): Promise<void> {
     // Check for valid user and github_id
     if (!user || !user.github_id) {
       console.error('Authentication error:', { user })
@@ -76,10 +76,10 @@ export const useMessages = (conversationId?: string) => {
         content
       )
 
-      // Add user message to state immediately for better UX
+      // Replace temporary message with actual message from backend
       setMessages(prev => ({
         ...prev,
-        [conversationId]: [...(prev[conversationId] || []), userMessage]
+        [conversationId]: [...(prev[conversationId] || []).filter(msg => msg.id !== tempUserMessage.id), userMessage]
       }))
 
       // Update conversation title if this is the first message
@@ -88,7 +88,7 @@ export const useMessages = (conversationId?: string) => {
         await updateConversationTitle(conversationId, content)
       }
 
-            // Get AI response
+      // Get AI response
       if (!user.github_id) {
         throw new Error('GitHub user ID is required. Please ensure you are properly logged in.')
       }
@@ -100,11 +100,16 @@ export const useMessages = (conversationId?: string) => {
         has_groq_key: !!user.groq_api_key
       })
       
+      // Only pass the API key if it's a valid format (not the placeholder)
+      const groqApiKey = user.groq_api_key && user.groq_api_key !== '******' 
+        ? user.groq_api_key 
+        : undefined
+      
       // Use github_id which is guaranteed to be a number
       const aiResponse = await aiService.askQuestion(
         content,
         String(user.github_id),
-        user.groq_api_key || undefined // Pass undefined if no key
+        groqApiKey
       )
 
       // Create assistant message via backend
@@ -122,46 +127,21 @@ export const useMessages = (conversationId?: string) => {
       }))
 
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send message'
       console.error('Message sending error:', err)
+      setError(errorMessage)
       
-      let errorMessage = err instanceof Error ? err.message : 'Failed to send message'
-      
-      // Handle specific error cases
+      // Show a more user-friendly error message
       if (errorMessage.includes('Invalid Groq API key')) {
-        // Clear the invalid API key
-        if (user) {
-          user.groq_api_key = undefined
-          // You might want to also persist this to storage
-        }
-        errorMessage = 'Invalid API key removed. Your message will be processed with the free tier.'
-        // Retry without the API key
-        try {
-          const aiResponse = await aiService.askQuestion(
-            content,
-            String(user.github_id),
-            undefined
-          )
-          // If retry succeeds, continue with message processing
-          const assistantMessage = await conversationService.createMessage(
-            conversationId,
-            'assistant',
-            aiResponse.response,
-            aiResponse.sources
-          )
-          // Add assistant message to state
-          setMessages(prev => ({
-            ...prev,
-            [conversationId]: [...(prev[conversationId] || []), assistantMessage]
-          }))
-          return
-        } catch (retryErr) {
-          errorMessage = 'Failed to process message even without API key'
-        }
+        toast.error('Issue with API key. Please check your settings or try without an API key.')
+      } else if (errorMessage.includes('authenticated')) {
+        toast.error('Session expired. Please log in again.')
+        // Could add auto-redirect to login here if needed
+      } else {
+        toast.error(errorMessage)
       }
       
-      setError(errorMessage)
-      toast.error(errorMessage)
-      throw new Error(errorMessage)
+      throw err
     } finally {
       setSendingMessage(false)
     }
