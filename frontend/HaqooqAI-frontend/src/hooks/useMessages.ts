@@ -44,13 +44,30 @@ export const useMessages = (conversationId?: string) => {
   }
 
   const sendMessage = async (conversationId: string, content: string): Promise<void> => {
-    if (!user) {
-      throw new Error('User not authenticated')
+    // Check for valid user and github_id
+    if (!user || !user.github_id) {
+      console.error('Authentication error:', { user })
+      throw new Error('Please ensure you are properly logged in')
     }
 
     try {
       setSendingMessage(true)
       setError(null)
+
+      // Create temporary user message for immediate display
+      const tempUserMessage = {
+        id: `temp-${Date.now()}`,
+        conversation_id: conversationId,
+        role: 'user' as const,
+        content: content,
+        created_at: new Date().toISOString(),
+      }
+
+      // Add temporary message to state immediately
+      setMessages(prev => ({
+        ...prev,
+        [conversationId]: [...(prev[conversationId] || []), tempUserMessage]
+      }))
 
       // Create user message via backend
       const userMessage = await conversationService.createMessage(
@@ -72,15 +89,17 @@ export const useMessages = (conversationId?: string) => {
       }
 
       // Get AI response
-      if (!user.id || !user.github_id) {
-        throw new Error('User not properly authenticated. Please try logging in again.')
-      }
-      
-      // Use github_id which is guaranteed to be a number
+      // We already checked for user.github_id at the start of the function
+      console.log('Sending AI request with:', {
+        content,
+        github_id: user.github_id,
+        has_groq_key: !!user.groq_api_key
+      })
+
       const aiResponse = await aiService.askQuestion(
         content,
-        String(user.github_id), // Use github_id instead of id as it's guaranteed to be a number
-        user.groq_api_key?.trim() || undefined // Only pass non-empty Groq API keys
+        String(user.github_id),
+        user.groq_api_key && user.groq_api_key.trim() !== '' ? user.groq_api_key.trim() : undefined
       )
 
       // Create assistant message via backend
@@ -99,8 +118,19 @@ export const useMessages = (conversationId?: string) => {
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to send message'
+      console.error('Message sending error:', err)
       setError(errorMessage)
-      toast.error(errorMessage)
+      
+      // Show a more user-friendly error message
+      if (errorMessage.includes('Invalid Groq API key')) {
+        toast.error('Issue with API key. Please check your settings or try without an API key.')
+      } else if (errorMessage.includes('authenticated')) {
+        toast.error('Session expired. Please log in again.')
+        // Could add auto-redirect to login here if needed
+      } else {
+        toast.error(errorMessage)
+      }
+      
       throw err
     } finally {
       setSendingMessage(false)
