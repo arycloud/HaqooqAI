@@ -17,6 +17,7 @@ load_dotenv()
 from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.encoders import jsonable_encoder
 import uvicorn
 
 from .config import (
@@ -87,11 +88,11 @@ async def http_exception_handler(request, exc):
     """Custom HTTP exception handler"""
     return JSONResponse(
         status_code=exc.status_code,
-        content=ErrorResponse(
+        content=jsonable_encoder(
             error="HTTP_ERROR",
             message=exc.detail,
             details={"status_code": exc.status_code}
-        ).dict()
+        )
     )
 
 
@@ -101,10 +102,10 @@ async def general_exception_handler(request, exc):
     logger.error(f"Unhandled exception: {exc}")
     return JSONResponse(
         status_code=500,
-        content=ErrorResponse(
+        content=jsonable_encoder(
             error="INTERNAL_ERROR",
             message="An internal server error occurred",
-            details={"type": type(exc).__name__}
+            details= str(exc)
         ).dict()
     )
 
