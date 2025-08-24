@@ -38,7 +38,7 @@ export class AuthService {
         username: response.data.user.username,
         email: response.data.user.email || undefined,
         avatar_url: undefined, // Will be populated by backend if needed
-        groq_api_key: response.data.quota.has_api_key ? response.data.quota.has_api_key.toString() : undefined, // Set a flag if user has API key
+        groq_api_key: response.data.quota.has_api_key ? '******' : undefined, // Set a placeholder if user has API key
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }
