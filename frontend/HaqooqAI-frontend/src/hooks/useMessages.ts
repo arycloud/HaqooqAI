@@ -72,9 +72,13 @@ export const useMessages = (conversationId?: string) => {
       }
 
       // Get AI response
+      // Ensure user.id is converted to a number and exists
+      if (!user.id) {
+        throw new Error('User ID is required')
+      }
       const aiResponse = await aiService.askQuestion(
         content,
-        user.id,
+        String(user.id), // Convert to string, it will be parsed to number in aiService
         user.groq_api_key
       )
 

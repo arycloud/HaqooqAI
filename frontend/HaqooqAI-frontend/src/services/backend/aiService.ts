@@ -54,6 +54,9 @@ export class AIService {
         if (error.response?.status === 401) {
           throw new Error('Authentication failed. Please login again.')
         }
+        if (error.response?.status === 422) {
+          throw new Error('Invalid request data. Please ensure you are logged in correctly.')
+        }
         if (error.code === 'ECONNABORTED') {
           throw new Error('Request timeout. The AI service is taking too long to respond.')
         }
