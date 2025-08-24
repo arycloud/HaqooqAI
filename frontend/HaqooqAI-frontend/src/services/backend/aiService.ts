@@ -24,17 +24,18 @@ export class AIService {
         throw new Error('Invalid GitHub user ID')
       }
 
-      // Only validate Groq API key format if a non-empty key is provided
-      if (groqApiKey && groqApiKey.trim() && !groqApiKey.startsWith('gsk_')) {
-        throw new Error('Invalid Groq API key format')
-      }
-
-      // Prepare the request data exactly as expected by the backend
+      // Prepare the request data
       const requestData: QueryRequest = {
         query: query.trim(),
         user_id: parsedUserId,
-        // Only include groq_api_key if it's a non-empty string
-        ...(groqApiKey?.trim() ? { groq_api_key: groqApiKey } : {})
+      }
+
+      // Only add Groq API key if it's provided and valid
+      if (groqApiKey && groqApiKey.trim()) {
+        if (!groqApiKey.startsWith('gsk_')) {
+          throw new Error('Invalid Groq API key format')
+        }
+        requestData.groq_api_key = groqApiKey.trim()
       }
       
       // Validate query length
