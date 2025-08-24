@@ -9,6 +9,8 @@ from typing import Optional
 from dotenv import load_dotenv
 import httpx
 from fastapi import Header
+
+from .backend.src.database import supabase_client
 # import os
 
 # Load environment variables
@@ -24,7 +26,7 @@ from .config import (
     API_TITLE, API_VERSION, API_DESCRIPTION, ALLOWED_ORIGINS,
     LOG_LEVEL, LOG_FORMAT, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_REDIRECT_URI
 )
-from .models.requests import AuthRequest, QueryRequest, ApiKeyRequest, ConversationCreateRequest, MessageCreateRequest
+from .models.requests import AuthRequest, DeleteApiKeyRequest, QueryRequest, ApiKeyRequest, ConversationCreateRequest, MessageCreateRequest
 from .models.responses import (
     AuthResponse, AIResponse, ApiKeyResponse, QuotaResponse,
     HealthResponse, ErrorResponse, UserProfile, QuotaInfo,
@@ -294,6 +296,46 @@ async def save_groq_key(
             status_code=500,
             detail="Failed to save API key"
         )
+
+@app.delete("/user/groq-key", response_model=ApiKeyResponse)
+async def delete_groq_key(
+    request: DeleteApiKeyRequest,
+    authorization: str = Header(...),
+    auth_svc: GitHubAuthService = Depends(get_auth_service),
+    tracker: UsageTracker = Depends(get_usage_tracker)
+):
+    """Delete user's Groq API key"""
+    try:
+        # Validate GitHub token
+        if not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Invalid authorization header")
+        github_token = authorization.split(" ", 1)[1]
+
+        user = await auth_svc.validate_token(github_token)
+
+        # Verify user ID matches
+        if user.github_id != request.user_id:
+            raise HTTPException(status_code=403, detail="User ID mismatch")
+
+        # Delete API key
+        success = supabase_client.delete_user_api_key(request.user_id)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to delete API key")
+
+        logger.info(f"API key deleted for user {user.username} (ID: {user.github_id})")
+
+        return ApiKeyResponse(
+            status="success",
+            message="API key deleted successfully",
+            has_unlimited=False
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"API key deletion error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete API key")
+
 
 
 @app.get("/user/quota/{user_id}", response_model=QuotaResponse)

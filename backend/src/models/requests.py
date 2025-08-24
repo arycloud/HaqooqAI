@@ -47,6 +47,10 @@ class ApiKeyRequest(BaseModel):
         if not v.startswith('gsk_'):
             raise ValueError('Invalid Groq API key format')
         return v
+    
+class DeleteApiKeyRequest(BaseModel):
+    user_id: int
+    github_token: str
 
     # @validator('github_token')
     # def validate_github_token(cls, v):
