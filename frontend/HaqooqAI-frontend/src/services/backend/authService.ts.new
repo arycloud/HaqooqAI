@@ -42,30 +42,6 @@ class AuthService {
   }
 
   /**
-   * Handle GitHub OAuth callback
-   */
-  async handleGitHubCallback(code: string): Promise<{ user: User; quota: any }> {
-    try {
-      // Exchange code for access token
-      const response = await fetch(`${BACKEND_URL}${API_ENDPOINTS.GITHUB_CALLBACK}?code=${code}`);
-      const data = await response.json();
-
-      if (!data.access_token) {
-        throw new Error('No access token received');
-      }
-
-      // Store token
-      this.storeToken(data.access_token);
-
-      // Validate token and create user
-      return await this.validateToken(data.access_token);
-    } catch (error) {
-      console.error('GitHub callback failed:', error);
-      throw new Error('Failed to complete GitHub authentication');
-    }
-  }
-
-  /**
    * Validate GitHub token with backend
    */
   async validateToken(token: string): Promise<{ user: User; quota: any }> {
@@ -118,22 +94,21 @@ class AuthService {
   }
 
   /**
-   * Check existing session on app load
+   * Check existing user session
    */
   async checkExistingSession(): Promise<{ user: User; quota: any } | null> {
-    const token = this.getStoredToken();
-    const user = this.getStoredUser();
-
-    if (!token || !user) {
-      return null;
-    }
-
     try {
-      // Validate token is still valid
+      const token = this.getStoredToken();
+      const user = this.getStoredUser();
+
+      if (!token || !user) {
+        return null;
+      }
+
+      // Revalidate the token with the backend
       return await this.validateToken(token);
     } catch (error) {
-      // Token is invalid, clear storage
-      await this.logout();
+      console.error('Session check failed:', error);
       return null;
     }
   }
@@ -189,10 +164,9 @@ class AuthService {
   /**
    * Logout user
    */
-  async logout(): Promise<void> {
+  logout(): void {
     localStorage.removeItem(STORAGE_KEYS.GITHUB_TOKEN);
     localStorage.removeItem(STORAGE_KEYS.USER_DATA);
-    localStorage.removeItem(STORAGE_KEYS.CURRENT_CONVERSATION);
   }
 }
 

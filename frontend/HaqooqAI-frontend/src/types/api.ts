@@ -25,6 +25,7 @@ export interface AuthResponse {
     github_id: number;
     username: string;
     email?: string;
+    avatar_url?: string;
   };
   quota: QuotaInfo;
 }
