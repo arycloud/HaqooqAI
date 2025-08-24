@@ -25,6 +25,8 @@ export const useMessages = (conversationId?: string) => {
   }, [conversationId])
 
   const loadMessages = async (convId: string) => {
+    if (!convId) return
+    
     try {
       setLoading(true)
       setError(null)
@@ -51,11 +53,17 @@ export const useMessages = (conversationId?: string) => {
       setError(null)
 
       // Create user message via backend
-      await conversationService.createMessage(
+      const userMessage = await conversationService.createMessage(
         conversationId,
         'user',
         content
       )
+
+      // Add user message to state immediately for better UX
+      setMessages(prev => ({
+        ...prev,
+        [conversationId]: [...(prev[conversationId] || []), userMessage]
+      }))
 
       // Update conversation title if this is the first message
       const currentMessages = messages[conversationId] || []
@@ -71,15 +79,18 @@ export const useMessages = (conversationId?: string) => {
       )
 
       // Create assistant message via backend
-      await conversationService.createMessage(
+      const assistantMessage = await conversationService.createMessage(
         conversationId,
         'assistant',
         aiResponse.response,
         aiResponse.sources
       )
 
-      // Refresh messages to show the new ones
-      await loadMessages(conversationId)
+      // Add assistant message to state
+      setMessages(prev => ({
+        ...prev,
+        [conversationId]: [...(prev[conversationId] || []), assistantMessage]
+      }))
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to send message'
