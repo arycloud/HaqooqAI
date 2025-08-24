@@ -13,6 +13,7 @@ from ..database.supabase_client import supabase_client
 logger = logging.getLogger(__name__)
 
 
+
 class UsageTracker:
     """Supabase-based usage tracking system"""
 
@@ -32,6 +33,18 @@ class UsageTracker:
             return False
         return True
 
+    def _parse_reset_at(value):
+        """Safely parse reset_at timestamp from Supabase"""
+        if isinstance(value, datetime):
+            return value
+        if isinstance(value, str):
+            try:
+                return datetime.fromisoformat(value.replace("Z", "+00:00"))
+            except Exception:
+                logger.warning(f"Unparsable reset_at format: {value}, using now()+24h fallback")
+        # fallback
+        return datetime.now() + timedelta(hours=24)
+    
     def check_quota(self, user_id: int) -> QuotaInfo:
         """
         Check user's current quota status
@@ -68,7 +81,8 @@ class UsageTracker:
                 limit = self.default_limit
                 remaining = max(limit - usage_data["query_count"], 0)
 
-            reset_at = datetime.fromisoformat(usage_data["reset_at"].replace("Z", "+00:00"))
+            # reset_at = datetime.fromisoformat(usage_data["reset_at"].replace("Z", "+00:00"))
+            reset_at = self._parse_reset_at(usage_data.get("reset_at"))
 
             return QuotaInfo(
                 remaining=remaining,
