@@ -63,7 +63,7 @@ export class AIService {
           const storedUser = JSON.parse(storedUserRaw)
           console.log('Stored user flags:', {
             has_api_key: storedUser?.has_api_key,
-            groq_api_key_present: !!storedUser?.groq_api_key && storedUser.groq_api_key !== 'true',
+            groq_api_key_present: storedUser?.groq_api_key_present || storedUser?.has_api_key,
           })
         }
       } catch (e) {
