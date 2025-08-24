@@ -65,8 +65,21 @@ export class AIService {
         }
       )
 
+      // Log the full response for debugging
+      console.log('AI service response:', response);
+
+      // Check if we received a proper response with data
+      if (!response || !response.data) {
+        throw new Error('Empty response from AI service');
+      }
+
+      // Check the response status
       if (response.data.status !== 'success') {
-        throw new Error('AI request failed')
+        // Handle specific error messages from backend
+        if (response.data.message) {
+          throw new Error(response.data.message);
+        }
+        throw new Error('AI request failed');
       }
 
       return response.data
@@ -84,6 +97,10 @@ export class AIService {
         if (error.code === 'ECONNABORTED') {
           throw new Error('Request timeout. The AI service is taking too long to respond.')
         }
+        // Handle service unavailable error specifically
+        if (error.response?.status === 503) {
+          throw new Error('Service temporarily unavailable. The AI service is currently experiencing issues. Please try again later or provide your own Groq API key for a more reliable connection.')
+        }
         // Log more detailed error information for debugging
         console.error('AI service error details:', {
           status: error.response?.status,
@@ -98,7 +115,12 @@ export class AIService {
       }
       
       console.error('AI service error:', error)
-      throw new Error('Failed to get AI response. Please try again.')
+      // Provide a more informative default error message
+      if (error instanceof Error && error.message) {
+        throw error;
+      } else {
+        throw new Error('Failed to get AI response. Please try again.')
+      }
     }
   }
 

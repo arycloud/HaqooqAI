@@ -100,10 +100,9 @@ export const useMessages = (conversationId?: string) => {
         has_groq_key: !!user.groq_api_key
       })
       
-      // Don't pass any API key value - let backend use the stored one
-      // When user has an API key saved, we don't need to send anything
-      // The backend will automatically use the stored API key
-      const groqApiKey = undefined
+      // Pass the API key if the user has one (backend will validate it)
+      // Even if it's the placeholder, we should pass undefined to let backend use the stored key
+      const groqApiKey = user.groq_api_key ? user.groq_api_key : undefined
       
       // Use github_id which is guaranteed to be a number
       const aiResponse = await aiService.askQuestion(
@@ -137,6 +136,10 @@ export const useMessages = (conversationId?: string) => {
       } else if (errorMessage.includes('authenticated')) {
         toast.error('Session expired. Please log in again.')
         // Could add auto-redirect to login here if needed
+      } else if (errorMessage.includes('Service temporarily unavailable')) {
+        toast.error('The AI service is temporarily unavailable. You can either wait and try again or add your own Groq API key for a more reliable connection.')
+      } else if (errorMessage.includes('quota exceeded')) {
+        toast.error('Daily quota exceeded. Please add your own Groq API key for unlimited queries.')
       } else {
         toast.error(errorMessage)
       }
