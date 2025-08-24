@@ -372,7 +372,7 @@ async def github_callback(code: str = None, error: str = None):
                 )
 
             # Redirect to frontend with the access token
-            frontend_url = "http://localhost:5173"
+            frontend_url = os.getenv("FRONTEND_PRUDCTION_URL")
             return RedirectResponse(
                 url=f"{frontend_url}?access_token={access_token}",
                 status_code=302

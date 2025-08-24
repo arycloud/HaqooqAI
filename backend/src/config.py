@@ -82,3 +82,4 @@ API_KEYS_TABLE = "api_keys"
 
 # Database Schema Validation
 REQUIRED_SUPABASE_TABLES = [USERS_TABLE, USAGE_TABLE, API_KEYS_TABLE]
+FRONTEND_PRUDCTION_URL = os.getenv("FRONTEND_PRODUCTION_URL", "https://arycloud.github.io/HaqooqAI")
