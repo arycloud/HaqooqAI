@@ -75,10 +75,6 @@ export class AIService {
 
       // Check the response status
       if (response.data.status !== 'success') {
-        // Handle specific error messages from backend
-        if (response.data.message) {
-          throw new Error(response.data.message);
-        }
         throw new Error('AI request failed');
       }
 
