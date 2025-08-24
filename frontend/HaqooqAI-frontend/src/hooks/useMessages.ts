@@ -80,7 +80,7 @@ export const useMessages = (conversationId?: string) => {
       const aiResponse = await aiService.askQuestion(
         content,
         String(user.github_id), // Use github_id instead of id as it's guaranteed to be a number
-        user.groq_api_key
+        user.groq_api_key?.trim() || undefined // Only pass non-empty Groq API keys
       )
 
       // Create assistant message via backend
