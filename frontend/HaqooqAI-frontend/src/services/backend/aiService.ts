@@ -24,50 +24,33 @@ export class AIService {
         throw new Error('Invalid GitHub user ID')
       }
 
+      // Prefer function arg groqApiKey, otherwise fallback to localStorage
+      const effectiveGroqKey = groqApiKey?.trim() || localStorage.getItem('groq_api_key')?.trim()
+
       // Prepare the request data
       const requestData: QueryRequest = {
         query: query.trim(),
         user_id: parsedUserId,
       }
 
-      // Only add API key if it's provided and not empty
-      if (groqApiKey?.trim()) {
-        requestData.groq_api_key = groqApiKey.trim()
-      }
-
-      // Log request for debugging (matches backend's logging)
-      console.log('Sending AI request with:', {
-        content: requestData.query,
-        github_id: requestData.user_id,
-        // has_groq_key: Boolean(requestData.groq_api_key)
-      })
-      
-      // Validate query length (ensure minimum length of 1 character)
-      if (!requestData.query || requestData.query.length === 0) {
-        throw new Error('Query must contain at least 1 character')
-      }
-      
-      // Limit to 1000 characters as per backend requirements
-      if (requestData.query.length > 1000) {
-        throw new Error('Query must not exceed 1000 characters')
+      if (effectiveGroqKey) {
+        requestData.groq_api_key = effectiveGroqKey
       }
 
       // Debug logging
-      console.log('Sending AI request with data:', requestData)
-      console.log('Using GitHub token:', githubToken ? 'Token present' : 'No token')
+      console.log('Sending AI request with:', {
+        query: requestData.query,
+        user_id: requestData.user_id,
+        has_groq_key: Boolean(requestData.groq_api_key),
+      })
 
-      // Also log any client-side stored flags for debugging
-      try {
-        const storedUserRaw = localStorage.getItem('user_data')
-        if (storedUserRaw) {
-          const storedUser = JSON.parse(storedUserRaw)
-          console.log('Stored user flags:', {
-            has_api_key: storedUser?.has_api_key,
-            groq_api_key_present: storedUser?.groq_api_key_present || storedUser?.has_api_key,
-          })
-        }
-      } catch (e) {
-        // ignore parse errors
+      // Validation checks
+      if (!requestData.query || requestData.query.length === 0) {
+        throw new Error('Query must contain at least 1 character')
+      }
+
+      if (requestData.query.length > 1000) {
+        throw new Error('Query must not exceed 1000 characters')
       }
 
       const response = await axios.post<AIResponse>(
@@ -78,71 +61,48 @@ export class AIService {
             'Authorization': `Bearer ${githubToken}`,
             'Content-Type': 'application/json',
           },
-          timeout: 30000, // 30 second timeout for AI responses
+          timeout: 30000, // 30 second timeout
         }
       )
 
-      // Log the full response for debugging
       console.log('AI service response:', response)
 
       if (response.data.status !== 'success') {
-        throw new Error('AI request failed')
+        throw new Error(response.data.message || 'AI request failed')
       }
 
       return response.data
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        // Handle error cases exactly as they come from the backend
-        if (error.response?.status === 429) {
-          const detail = error.response?.data?.detail || 'Query quota exceeded'
-          throw new Error(detail)
-        }
-        if (error.response?.status === 401) {
-          throw new Error('Authentication failed. Please login again.')
-        }
-        if (error.response?.status === 422) {
-          const detail = error.response?.data?.detail || 'Invalid request data'
-          throw new Error(detail)
-        }
-        if (error.response?.status === 400) {
-          const detail = error.response?.data?.detail || 'Invalid request'
-          throw new Error(detail)
-        }
-        if (error.response?.status === 503) {
-          const detail = error.response?.data?.detail || 'AI service error'
-          throw new Error(detail)
-        }
-        if (error.response?.status === 500) {
-          const detail = error.response?.data?.detail || 'AI service error'
-          throw new Error(detail)
-        }
+        const status = error.response?.status
+        const detail = error.response?.data?.detail
+
+        if (status === 429) throw new Error(detail || 'Query quota exceeded')
+        if (status === 401) throw new Error('Authentication failed. Please login again.')
+        if (status === 422) throw new Error(detail || 'Invalid request data')
+        if (status === 400) throw new Error(detail || 'Invalid request')
+        if (status === 503) throw new Error(detail || 'Service temporarily unavailable. Try again later.')
+        if (status === 500) throw new Error(detail || 'AI service error')
         if (error.code === 'ECONNABORTED') {
           throw new Error('Request timeout. The AI service is taking too long to respond.')
         }
-        // Handle service unavailable error specifically
-        if (error.response?.status === 503) {
-          throw new Error('Service temporarily unavailable. The AI service is currently experiencing issues. Please try again later or provide your own Groq API key for a more reliable connection.')
-        }
-        // Log more detailed error information for debugging
+
         console.error('AI service error details:', {
-          status: error.response?.status,
+          status,
           statusText: error.response?.statusText,
           data: error.response?.data,
-          config: {
+          request: {
             url: error.config?.url,
             method: error.config?.method,
             data: error.config?.data,
-          }
+          },
         })
       }
-      
+
       console.error('AI service error:', error)
-      // Provide a more informative default error message
-      if (error instanceof Error && error.message) {
-        throw error;
-      } else {
-        throw new Error('Failed to get AI response. Please try again.')
-      }
+      throw error instanceof Error
+        ? error
+        : new Error('Failed to get AI response. Please try again.')
     }
   }
 
