@@ -33,7 +33,7 @@ class UsageTracker:
             return False
         return True
 
-    def _parse_reset_at(value):
+    def _parse_reset_at(self, value):
         """Safely parse reset_at timestamp from Supabase"""
         if isinstance(value, datetime):
             return value
