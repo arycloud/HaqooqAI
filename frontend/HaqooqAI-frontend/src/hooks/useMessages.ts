@@ -93,27 +93,29 @@ export const useMessages = (conversationId?: string) => {
       if (currentMessages.length === 0) {
         await updateConversationTitle(conversationId, content)
       }
+      // At this point ensure we have a non-null user reference
+      const activeUser = currentUser!
 
       // Get AI response
-      if (!user.github_id) {
+      if (!activeUser.github_id) {
         throw new Error('GitHub user ID is required. Please ensure you are properly logged in.')
       }
 
       // Log user info for debugging
       console.log('Sending AI request with:', {
         content,
-        github_id: user.github_id,
-        has_groq_key: !!user.groq_api_key
+        github_id: activeUser.github_id,
+        has_groq_key: !!activeUser.groq_api_key,
       })
-      
+
       // Pass the API key if the user has one (backend will validate it)
       // Even if it's the placeholder, we should pass undefined to let backend use the stored key
-      const groqApiKey = user.groq_api_key ? user.groq_api_key : undefined
-      
+      const groqApiKey = activeUser.groq_api_key ? activeUser.groq_api_key : undefined
+
       // Use github_id which is guaranteed to be a number
       const aiResponse = await aiService.askQuestion(
         content,
-        String(user.github_id),
+        String(activeUser.github_id),
         groqApiKey
       )
 
