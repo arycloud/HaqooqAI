@@ -72,13 +72,14 @@ export const useMessages = (conversationId?: string) => {
       }
 
       // Get AI response
-      // Ensure user.id is converted to a number and exists
-      if (!user.id) {
-        throw new Error('User ID is required')
+      if (!user.id || !user.github_id) {
+        throw new Error('User not properly authenticated. Please try logging in again.')
       }
+      
+      // Use github_id which is guaranteed to be a number
       const aiResponse = await aiService.askQuestion(
         content,
-        String(user.id), // Convert to string, it will be parsed to number in aiService
+        String(user.github_id), // Use github_id instead of id as it's guaranteed to be a number
         user.groq_api_key
       )
 

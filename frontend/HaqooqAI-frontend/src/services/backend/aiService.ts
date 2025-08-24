@@ -18,12 +18,27 @@ export class AIService {
     }
 
     try {
+      // Parse the GitHub user ID and validate it
+      const parsedUserId = parseInt(userId, 10)
+      if (isNaN(parsedUserId) || parsedUserId <= 0) {
+        throw new Error('Invalid GitHub user ID')
+      }
+
+      // Validate Groq API key format if provided
+      if (groqApiKey && !groqApiKey.startsWith('gsk_')) {
+        throw new Error('Invalid Groq API key format')
+      }
+
       // Prepare the request data exactly as expected by the backend
       const requestData: QueryRequest = {
-        query: query,
-        user_id: parseInt(userId, 10),
+        query: query.trim(),
+        user_id: parsedUserId,
         groq_api_key: groqApiKey || undefined,
       }
+      
+      // Validate query length
+      if (!requestData.query || requestData.query.length > 1000) {
+        throw new Error('Query must be between 1 and 1000 characters')
 
       // Debug logging
       console.log('Sending AI request with data:', requestData)
