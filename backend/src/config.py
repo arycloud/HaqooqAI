@@ -23,7 +23,7 @@ GITHUB_REDIRECT_URI = os.getenv("GITHUB_REDIRECT_URI")
 # Supabase Configuration
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
 # Usage Limits
 USAGE_LIMIT_DEFAULT = int(os.getenv("USAGE_LIMIT_DEFAULT", "5"))

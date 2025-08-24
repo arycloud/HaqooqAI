@@ -6,7 +6,7 @@ import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from supabase import create_client, Client
-
+from dateutil import parser
 from ..config import SUPABASE_URL, SUPABASE_KEY, SUPABASE_SERVICE_KEY
 from ..config import USERS_TABLE, USAGE_TABLE, API_KEYS_TABLE
 
@@ -136,13 +136,15 @@ class SupabaseClient:
                 reset_at_str = usage_data["reset_at"]
 
                 # Handle different datetime formats from Supabase
-                if reset_at_str.endswith('Z'):
-                    reset_at = datetime.fromisoformat(reset_at_str.replace("Z", "+00:00"))
-                elif '+' in reset_at_str or reset_at_str.endswith('00:00'):
-                    reset_at = datetime.fromisoformat(reset_at_str)
-                else:
-                    # Assume UTC if no timezone info
-                    reset_at = datetime.fromisoformat(reset_at_str + "+00:00")
+                # if reset_at_str.endswith('Z'):
+                #     reset_at = datetime.fromisoformat(reset_at_str.replace("Z", "+00:00"))
+                # elif '+' in reset_at_str or reset_at_str.endswith('00:00'):
+                #     reset_at = datetime.fromisoformat(reset_at_str)
+                # else:
+                #     # Assume UTC if no timezone info
+                #     reset_at = datetime.fromisoformat(reset_at_str + "+00:00")
+
+                reset_at = parser.isoparse(reset_at_str)
 
                 # Make now timezone-aware for comparison
                 if now.tzinfo is None:
