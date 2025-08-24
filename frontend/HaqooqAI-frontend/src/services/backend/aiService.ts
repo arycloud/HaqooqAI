@@ -18,7 +18,7 @@ export class AIService {
     }
 
     try {
-      // Parse the GitHub user ID and validate it
+      // Convert GitHub user ID to number (backend expects a number)
       const parsedUserId = parseInt(userId, 10)
       if (isNaN(parsedUserId) || parsedUserId <= 0) {
         throw new Error('Invalid GitHub user ID')
@@ -30,14 +30,17 @@ export class AIService {
         user_id: parsedUserId,
       }
 
-      // Only add Groq API key if it's provided and not the placeholder
-      if (groqApiKey && groqApiKey !== '******' && groqApiKey.trim() !== '') {
-        // Check if it's a valid Groq API key format
-        if (!groqApiKey.startsWith('gsk_')) {
-          throw new Error('Invalid Groq API key format')
-        }
+      // Only add API key if it's provided and not empty
+      if (groqApiKey?.trim()) {
         requestData.groq_api_key = groqApiKey.trim()
       }
+
+      // Log request for debugging (matches backend's logging)
+      console.log('Sending AI request with:', {
+        content: requestData.query,
+        github_id: requestData.user_id,
+        has_groq_key: Boolean(requestData.groq_api_key)
+      })
       
       // Validate query length (ensure minimum length of 1 character)
       if (!requestData.query || requestData.query.length === 0) {
@@ -66,29 +69,38 @@ export class AIService {
       )
 
       // Log the full response for debugging
-      console.log('AI service response:', response);
+      console.log('AI service response:', response)
 
-      // Check if we received a proper response with data
-      if (!response || !response.data) {
-        throw new Error('Empty response from AI service');
-      }
-
-      // Check the response status
       if (response.data.status !== 'success') {
-        throw new Error('AI request failed');
+        throw new Error('AI request failed')
       }
 
       return response.data
     } catch (error) {
       if (axios.isAxiosError(error)) {
+        // Handle error cases exactly as they come from the backend
         if (error.response?.status === 429) {
-          throw new Error('Daily quota exceeded. Please add your own Groq API key for unlimited queries.')
+          const detail = error.response?.data?.detail || 'Query quota exceeded'
+          throw new Error(detail)
         }
         if (error.response?.status === 401) {
           throw new Error('Authentication failed. Please login again.')
         }
         if (error.response?.status === 422) {
-          throw new Error('Invalid request data. Please ensure you are logged in correctly.')
+          const detail = error.response?.data?.detail || 'Invalid request data'
+          throw new Error(detail)
+        }
+        if (error.response?.status === 400) {
+          const detail = error.response?.data?.detail || 'Invalid request'
+          throw new Error(detail)
+        }
+        if (error.response?.status === 503) {
+          const detail = error.response?.data?.detail || 'AI service error'
+          throw new Error(detail)
+        }
+        if (error.response?.status === 500) {
+          const detail = error.response?.data?.detail || 'AI service error'
+          throw new Error(detail)
         }
         if (error.code === 'ECONNABORTED') {
           throw new Error('Request timeout. The AI service is taking too long to respond.')
