@@ -30,12 +30,8 @@ export class AIService {
         user_id: parsedUserId,
       }
 
-      // Only add Groq API key if it's provided and has the correct format
-      if (groqApiKey && groqApiKey !== '******' && groqApiKey.trim() !== '') {
-        // Check if it's a valid Groq API key format
-        if (!groqApiKey.startsWith('gsk_')) {
-          throw new Error('Invalid Groq API key format')
-        }
+      // Only add Groq API key if it's provided (let backend validate it)
+      if (groqApiKey && groqApiKey.trim() !== '') {
         requestData.groq_api_key = groqApiKey.trim()
       }
       

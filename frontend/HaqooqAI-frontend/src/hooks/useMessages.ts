@@ -100,10 +100,9 @@ export const useMessages = (conversationId?: string) => {
         has_groq_key: !!user.groq_api_key
       })
       
-      // Only pass the API key if it's a valid format (not the placeholder)
-      const groqApiKey = user.groq_api_key && user.groq_api_key !== '******' 
-        ? user.groq_api_key 
-        : undefined
+      // Pass the API key if the user has one (backend will validate it)
+      // Even if it's the placeholder, we should pass undefined to let backend use the stored key
+      const groqApiKey = user.groq_api_key ? user.groq_api_key : undefined
       
       // Use github_id which is guaranteed to be a number
       const aiResponse = await aiService.askQuestion(
