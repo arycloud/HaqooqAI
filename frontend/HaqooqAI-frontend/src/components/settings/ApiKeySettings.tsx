@@ -27,9 +27,10 @@ export function ApiKeySettings() {
 
       updateUser({
         ...user,
-        has_api_key: true,
         groq_api_key: apiKey.trim(),
-      })
+        has_api_key: true,
+        groq_api_key_present: true,
+      });
 
       toast.success('API key saved successfully!')
       setApiKey('')
@@ -50,9 +51,10 @@ export function ApiKeySettings() {
 
       updateUser({
         ...user,
-        has_api_key: false,
         groq_api_key: undefined,
-      })
+        has_api_key: false,
+        groq_api_key_present: false,
+      });
 
       toast.success('API key removed successfully!')
     } catch (error) {

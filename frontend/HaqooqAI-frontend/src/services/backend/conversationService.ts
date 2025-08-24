@@ -136,6 +136,7 @@ export class ConversationService {
         sources,
         user_id: user.github_id,
         github_token: githubToken,
+        has_groq_key: user.has_api_key // <-- use only this flag
       })
 
       return {

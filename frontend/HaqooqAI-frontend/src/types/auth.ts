@@ -6,6 +6,7 @@ export interface User {
   avatar_url?: string;
   groq_api_key?: string;
   has_api_key?: boolean;
+  groq_api_key_present: boolean;
   created_at: string;
   updated_at: string;
 }

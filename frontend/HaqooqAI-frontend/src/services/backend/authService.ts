@@ -84,16 +84,17 @@ class AuthService {
       }
 
       const user: User = {
-        id: response.data.user.github_id.toString(),
-        github_id: response.data.user.github_id,
-        username: response.data.user.username,
-        email: response.data.user.email,
-        avatar_url: response.data.user.avatar_url,
-        groq_api_key: undefined, // never store raw key in localStorage
-        has_api_key: response.data.quota?.has_api_key || false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+      id: response.data.user.github_id.toString(),
+      github_id: response.data.user.github_id,
+      username: response.data.user.username,
+      email: response.data.user.email,
+      avatar_url: response.data.user.avatar_url,
+      groq_api_key: undefined, // never store raw key in localStorage
+      has_api_key: response.data.quota?.has_api_key || false,
+      groq_api_key_present: response.data.quota?.has_api_key || false, // <-- add this line
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
       this.storeUser(user);
 
