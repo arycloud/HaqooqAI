@@ -18,11 +18,16 @@ export class AIService {
     }
 
     try {
+      // Prepare the request data exactly as expected by the backend
       const requestData: QueryRequest = {
-        query,
-        user_id: parseInt(userId), // Backend expects number
-        groq_api_key: groqApiKey,
+        query: query,
+        user_id: parseInt(userId, 10),
+        groq_api_key: groqApiKey || undefined,
       }
+
+      // Debug logging
+      console.log('Sending AI request with data:', requestData)
+      console.log('Using GitHub token:', githubToken ? 'Token present' : 'No token')
 
       const response = await axios.post<AIResponse>(
         `${BACKEND_URL}${API_ENDPOINTS.ASK_QUESTION}`,
@@ -52,6 +57,17 @@ export class AIService {
         if (error.code === 'ECONNABORTED') {
           throw new Error('Request timeout. The AI service is taking too long to respond.')
         }
+        // Log more detailed error information for debugging
+        console.error('AI service error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            data: error.config?.data,
+          }
+        })
       }
       
       console.error('AI service error:', error)

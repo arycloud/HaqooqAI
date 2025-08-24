@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { User } from '@/types/auth'
 import { authService } from '@/services/backend/authService'
+import { STORAGE_KEYS } from '@/utils/constants'
 import toast from 'react-hot-toast'
 
 export const useAuth = () => {
@@ -53,8 +54,8 @@ export const useAuth = () => {
 
   const handleGitHubToken = async (accessToken: string) => {
     try {
-      // Store the token
-      localStorage.setItem('github_token', accessToken)
+      // Store the token using the consistent storage key
+      localStorage.setItem(STORAGE_KEYS.GITHUB_TOKEN, accessToken)
 
       // Validate token and get user data
       const { user: authenticatedUser } = await authService.validateToken(accessToken)
@@ -76,8 +77,6 @@ export const useAuth = () => {
       throw err
     }
   }
-
-
 
   const login = () => {
     try {
