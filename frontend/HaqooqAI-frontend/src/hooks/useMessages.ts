@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from './useAuth'
 import { useConversations } from './useConversations'
 import { Message } from '@/types/message'
@@ -15,13 +15,16 @@ export const useMessages = (conversationId?: string) => {
   const [sendingMessage, setSendingMessage] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // To prevent race conditions when conversation changes
+  const activeConversationRef = useRef<string | null>(conversationId || null)
+
   useEffect(() => {
     if (conversationId) {
+      activeConversationRef.current = conversationId
       loadMessages(conversationId)
     }
-
     return () => {
-      // Cleanup if needed
+      activeConversationRef.current = null
     }
   }, [conversationId])
 
@@ -32,9 +35,13 @@ export const useMessages = (conversationId?: string) => {
       setLoading(true)
       setError(null)
       
-      // Use backend service to get conversation with messages
-      const { messages: conversationMessages } = await conversationService.getConversationWithMessages(convId)
-      setMessages(prev => ({ ...prev, [convId]: conversationMessages }))
+      const { messages: conversationMessages } =
+        await conversationService.getConversationWithMessages(convId)
+
+      // Only update if still on the same conversation
+      if (activeConversationRef.current === convId) {
+        setMessages(prev => ({ ...prev, [convId]: conversationMessages }))
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load messages'
       setError(errorMessage)
@@ -44,116 +51,99 @@ export const useMessages = (conversationId?: string) => {
     }
   }
 
-  const sendMessage = async (conversationId: string, content: string): Promise<void> => {
+  const sendMessage = async (convId: string, content: string): Promise<void> => {
     try {
+      if (!convId) throw new Error('No conversation selected')
+
       setSendingMessage(true)
       setError(null)
 
       // Ensure user is authenticated
       let currentUser = user
-      if (!currentUser || !currentUser.github_id) {
+      if (!currentUser?.github_id) {
         const session = await authService.checkExistingSession()
-        if (!session || !session.user) {
+        if (!session?.user) {
           console.error('Authentication error:', { user })
           throw new Error('Please ensure you are properly logged in')
         }
         currentUser = session.user
       }
 
-      // Create temporary user message for immediate display
-      const tempUserMessage = {
+      const activeUser = currentUser!
+      const githubId = String(activeUser.github_id)
+
+      // Temporary user message
+      const tempUserMessage: Message = {
         id: `temp-${Date.now()}`,
-        conversation_id: conversationId,
-        role: 'user' as const,
-        content: content,
+        conversation_id: convId,
+        role: 'user',
+        content,
         created_at: new Date().toISOString(),
       }
 
-      // Add temporary message to state immediately
       setMessages(prev => ({
         ...prev,
-        [conversationId]: [...(prev[conversationId] || []), tempUserMessage]
+        [convId]: [...(prev[convId] || []), tempUserMessage],
       }))
 
-      // Create user message via backend
+      // Create user message in backend
       const userMessage = await conversationService.createMessage(
-        conversationId,
+        convId,
         'user',
         content
       )
 
-      // Replace temporary message with actual message from backend
       setMessages(prev => ({
         ...prev,
-        [conversationId]: [...(prev[conversationId] || []).filter(msg => msg.id !== tempUserMessage.id), userMessage]
+        [convId]: [
+          ...(prev[convId] || []).filter(m => m.id !== tempUserMessage.id),
+          userMessage,
+        ],
       }))
 
-      // Update conversation title if this is the first message
-      const currentMessages = messages[conversationId] || []
-      if (currentMessages.length === 0) {
-        await updateConversationTitle(conversationId, content)
-      }
-      // At this point ensure we have a non-null user reference
-      const activeUser = currentUser!
-
-      // Get AI response
-      if (!activeUser.github_id) {
-        throw new Error('GitHub user ID is required. Please ensure you are properly logged in.')
-      }
-
-      // Log user info for debugging
-      console.log('Sending AI request with:', {
-        content,
-        github_id: activeUser.github_id,
-        // has_groq_key: !!activeUser.groq_api_key || !!activeUser.has_api_key,
+      // Update title if this is the very first message
+      setMessages(prev => {
+        const current = prev[convId] || []
+        if (current.length === 1) {
+          updateConversationTitle(convId, content)
+        }
+        return prev
       })
 
-      // Pass the API key if the user has one (backend will validate it)
-      // Even if it's the placeholder, we should pass undefined to let backend use the stored key
-  // Prefer an explicit groq_api_key stored on the client if present, otherwise undefined
-      // const groqApiKey = undefined 
+      console.log('Sending AI request with:', { content, github_id: githubId })
 
-      // Use github_id which is guaranteed to be a number
-      const aiResponse = await aiService.askQuestion(
-        content,
-        String(activeUser.github_id),
-        // groqApiKey
-        // undefined
-      )
+      // Ask AI
+      const aiResponse = await aiService.askQuestion(content, githubId)
 
       // Create assistant message via backend
       const assistantMessage = await conversationService.createMessage(
-        conversationId,
+        convId,
         'assistant',
         aiResponse.response,
         aiResponse.sources
       )
 
-      // Add assistant message to state
       setMessages(prev => ({
         ...prev,
-        [conversationId]: [...(prev[conversationId] || []), assistantMessage]
+        [convId]: [...(prev[convId] || []), assistantMessage],
       }))
-
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to send message'
       console.error('Message sending error:', err)
       setError(errorMessage)
-      
-      // Show a more user-friendly error message
+
       if (errorMessage.includes('Invalid Groq API key')) {
         toast.error('Issue with API key. Please check your settings or try without an API key.')
       } else if (errorMessage.includes('authenticated')) {
         toast.error('Session expired. Please log in again.')
-        // Could add auto-redirect to login here if needed
       } else if (errorMessage.includes('Service temporarily unavailable')) {
-        toast.error('The AI service is temporarily unavailable. You can either wait and try again or add your own Groq API key for a more reliable connection.')
+        toast.error('The AI service is temporarily unavailable. Try again later or use your own Groq API key.')
       } else if (errorMessage.includes('quota exceeded')) {
         toast.error('Daily quota exceeded. Please add your own Groq API key for unlimited queries.')
       } else {
         toast.error(errorMessage)
       }
-      
+
       throw err
     } finally {
       setSendingMessage(false)
@@ -163,7 +153,6 @@ export const useMessages = (conversationId?: string) => {
   const deleteMessage = async (_messageId: string): Promise<void> => {
     try {
       // TODO: Implement delete message in backend API
-      // await conversationService.deleteMessage(_messageId)
       toast.success('Message deleted')
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete message'
@@ -172,11 +161,10 @@ export const useMessages = (conversationId?: string) => {
     }
   }
 
-  const clearConversationMessages = async (conversationId: string): Promise<void> => {
+  const clearConversationMessages = async (convId: string): Promise<void> => {
     try {
       // TODO: Implement clear conversation messages in backend API
-      // await conversationService.deleteConversationMessages(conversationId)
-      setMessages(prev => ({ ...prev, [conversationId]: [] }))
+      setMessages(prev => ({ ...prev, [convId]: [] }))
       toast.success('Conversation cleared')
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to clear conversation'
