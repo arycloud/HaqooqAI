@@ -27,9 +27,13 @@ export function ApiKeySettings() {
       await aiService.saveApiKey(user.id, apiKey.trim())
       
       // Update user in local state with a flag to indicate API key is set
+      // Persist the actual API key locally so subsequent requests can include it.
+      // Note: this stores the key client-side for convenience. For stronger security,
+      // consider encrypting it or changing the backend to use an encrypted server-side key.
       updateUser({
         ...user,
         has_api_key: true,
+        groq_api_key: apiKey.trim(),
       })
 
       toast.success('API key saved successfully!')
