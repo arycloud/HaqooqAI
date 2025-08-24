@@ -105,20 +105,20 @@ export const useMessages = (conversationId?: string) => {
       console.log('Sending AI request with:', {
         content,
         github_id: activeUser.github_id,
-        has_groq_key: !!activeUser.groq_api_key || !!activeUser.has_api_key,
+        // has_groq_key: !!activeUser.groq_api_key || !!activeUser.has_api_key,
       })
 
       // Pass the API key if the user has one (backend will validate it)
       // Even if it's the placeholder, we should pass undefined to let backend use the stored key
   // Prefer an explicit groq_api_key stored on the client if present, otherwise undefined
-  const groqApiKey = undefined 
+      // const groqApiKey = undefined 
 
       // Use github_id which is guaranteed to be a number
       const aiResponse = await aiService.askQuestion(
         content,
         String(activeUser.github_id),
         // groqApiKey
-        undefined
+        // undefined
       )
 
       // Create assistant message via backend

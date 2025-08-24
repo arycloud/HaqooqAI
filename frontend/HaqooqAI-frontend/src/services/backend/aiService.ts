@@ -39,7 +39,7 @@ export class AIService {
       console.log('Sending AI request with:', {
         content: requestData.query,
         github_id: requestData.user_id,
-        has_groq_key: Boolean(requestData.groq_api_key)
+        // has_groq_key: Boolean(requestData.groq_api_key)
       })
       
       // Validate query length (ensure minimum length of 1 character)
