@@ -91,8 +91,7 @@ export class AuthService {
         `${BACKEND_URL}${API_ENDPOINTS.SAVE_API_KEY}`,
         {
           user_id: parseInt(userId), // Backend expects number
-          groq_api_key: apiKey,
-          github_token: githubToken,
+          groq_api_key: apiKey
         } as ApiKeyRequest,
         {
           headers: {

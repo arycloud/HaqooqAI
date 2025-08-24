@@ -30,6 +30,14 @@ function App() {
         }
       />
       <Route
+        path="/settings"
+        element={
+          <AuthGuard>
+            <Settings />
+          </AuthGuard>
+        }
+      />
+      <Route
         path="/chat/:conversationId?"
         element={
           <AuthGuard>
