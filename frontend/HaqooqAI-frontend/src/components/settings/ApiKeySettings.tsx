@@ -23,7 +23,8 @@ export function ApiKeySettings() {
 
     try {
       setSaving(true)
-      await authService.saveApiKey(user.id, apiKey.trim())
+      // await authService.saveApiKey(user.id, apiKey.trim())
+      await authService.saveApiKey(user.github_id, apiKey.trim());
 
       updateUser({
         ...user,
@@ -47,7 +48,7 @@ export function ApiKeySettings() {
 
     try {
       setSaving(true)
-      await authService.saveApiKey(user.id, '') // ✅ fixed here
+      await authService.deleteApiKey(user.github_id); // ✅ fixed here
 
       updateUser({
         ...user,

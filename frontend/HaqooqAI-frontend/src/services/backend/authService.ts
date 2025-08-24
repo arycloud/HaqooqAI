@@ -131,7 +131,7 @@ class AuthService {
   /**
    * Save user's Groq API key securely
    */
-  async saveApiKey(userId: string, apiKey: string): Promise<void> {
+  async saveApiKey(userGithubId: number, apiKey: string): Promise<void> {
     const githubToken = this.getStoredToken();
     if (!githubToken) {
       throw new Error('No GitHub token found');
@@ -141,7 +141,7 @@ class AuthService {
       const response = await axios.post<ApiKeyResponse>(
         `${BACKEND_URL}${API_ENDPOINTS.SAVE_API_KEY}`,
         {
-          user_id: parseInt(userId),
+          user_id: userGithubId,
           groq_api_key: apiKey,
           github_token: githubToken,
         } as ApiKeyRequest,
@@ -170,6 +170,29 @@ class AuthService {
       throw new Error('Failed to save API key');
     }
   }
+
+  async deleteApiKey(userGithubId: number): Promise<void> {
+    const githubToken = this.getStoredToken();
+    if (!githubToken) throw new Error('No GitHub token found');
+
+    await axios.delete(
+      `${BACKEND_URL}${API_ENDPOINTS.SAVE_API_KEY}`,
+      {
+        headers: { Authorization: `Bearer ${githubToken}` },
+        data: { user_id: userGithubId, github_token: githubToken }
+      }
+    );
+
+    // Update stored user state
+    const storedUser = this.getStoredUser();
+    if (storedUser) {
+      storedUser.has_api_key = false;
+      storedUser.groq_api_key = undefined;
+      storedUser.groq_api_key_present = false;
+      this.storeUser(storedUser);
+    }
+  }
+
 
   /**
    * Check if user is authenticated
