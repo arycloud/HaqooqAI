@@ -43,7 +43,7 @@ export const useMessages = (conversationId?: string) => {
     }
   }
 
-  const sendMessage = async (conversationId: string, content: string): Promise<void> {
+  const sendMessage = async (conversationId: string, content: string): Promise<void> => {
     // Check for valid user and github_id
     if (!user || !user.github_id) {
       console.error('Authentication error:', { user })
