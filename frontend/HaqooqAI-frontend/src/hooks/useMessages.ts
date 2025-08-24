@@ -4,6 +4,7 @@ import { useConversations } from './useConversations'
 import { Message } from '@/types/message'
 import { conversationService } from '@/services/backend/conversationService'
 import { aiService } from '@/services/backend/aiService'
+import { authService } from '@/services/backend/authService'
 import toast from 'react-hot-toast'
 
 export const useMessages = (conversationId?: string) => {
@@ -44,15 +45,20 @@ export const useMessages = (conversationId?: string) => {
   }
 
   const sendMessage = async (conversationId: string, content: string): Promise<void> => {
-    // Check for valid user and github_id
-    if (!user || !user.github_id) {
-      console.error('Authentication error:', { user })
-      throw new Error('Please ensure you are properly logged in')
-    }
-
     try {
       setSendingMessage(true)
       setError(null)
+
+      // Ensure user is authenticated
+      let currentUser = user
+      if (!currentUser || !currentUser.github_id) {
+        const session = await authService.checkExistingSession()
+        if (!session || !session.user) {
+          console.error('Authentication error:', { user })
+          throw new Error('Please ensure you are properly logged in')
+        }
+        currentUser = session.user
+      }
 
       // Create temporary user message for immediate display
       const tempUserMessage = {

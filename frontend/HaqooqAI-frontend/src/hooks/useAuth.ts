@@ -32,15 +32,28 @@ export const useAuth = () => {
 
       if (accessToken) {
         // Handle GitHub callback with access token
-        await handleGitHubToken(accessToken)
+        const auth = await authService.validateToken(accessToken)
+        if (auth && auth.user) {
+          setUser(auth.user)
+          // Clear the access_token from URL
+          window.history.replaceState({}, document.title, location.pathname)
+        }
         return
       }
 
       // Check existing session
-      const session = await authService.checkExistingSession()
-      if (session) {
-        setUser(session.user)
-        authService.storeUser(session.user)
+      const token = authService.getStoredToken()
+      if (token) {
+        try {
+          const auth = await authService.validateToken(token)
+          if (auth && auth.user) {
+            setUser(auth.user)
+          }
+        } catch (tokenError) {
+          console.error('Token validation failed:', tokenError)
+          // Clean up invalid session
+          authService.logout()
+        }
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Authentication failed'

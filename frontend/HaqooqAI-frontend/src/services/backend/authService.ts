@@ -3,7 +3,36 @@ import { BACKEND_URL, API_ENDPOINTS, STORAGE_KEYS } from '@/utils/constants'
 import { AuthRequest, AuthResponse, ApiKeyRequest, ApiKeyResponse } from '@/types/api'
 import { User } from '@/types/auth'
 
-export class AuthService {
+class AuthService {
+  /**
+   * Store GitHub token
+   */
+  storeToken(token: string): void {
+    localStorage.setItem(STORAGE_KEYS.GITHUB_TOKEN, token)
+  }
+
+  /**
+   * Get stored GitHub token
+   */
+  getStoredToken(): string | null {
+    return localStorage.getItem(STORAGE_KEYS.GITHUB_TOKEN)
+  }
+
+  /**
+   * Store user data
+   */
+  storeUser(user: User): void {
+    localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user))
+  }
+
+  /**
+   * Get stored user data
+   */
+  getStoredUser(): User | null {
+    const userData = localStorage.getItem(STORAGE_KEYS.USER_DATA)
+    return userData ? JSON.parse(userData) : null
+  }
+
   /**
    * Redirect to GitHub OAuth
    */
@@ -17,11 +46,15 @@ export class AuthService {
    */
   async validateToken(token: string): Promise<{ user: User; quota: any }> {
     try {
+      // Store token first
+      this.storeToken(token)
+
       const response = await axios.post<AuthResponse>(
         `${BACKEND_URL}${API_ENDPOINTS.AUTH_VALIDATE}`,
         { github_token: token } as AuthRequest,
         {
           headers: {
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         }
@@ -33,25 +66,19 @@ export class AuthService {
 
       // Convert backend user format to frontend user format
       const user: User = {
-        id: response.data.user.github_id.toString(), // Convert to string for frontend
+        id: response.data.user.github_id.toString(),
         github_id: response.data.user.github_id,
         username: response.data.user.username,
-        email: response.data.user.email || undefined,
-        avatar_url: undefined, // Will be populated by backend if needed
-        groq_api_key: response.data.quota.has_api_key ? response.data.quota.has_api_key.toString() : undefined, // Set a flag if user has API key
+        email: response.data.user.email,
+        avatar_url: response.data.user.avatar_url,
+        groq_api_key: undefined, // Don't store the actual key in user object
+        has_api_key: response.data.quota.has_api_key || false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }
 
-      return {
-        user,
-        quota: response.data.quota,
-      }
-    } catch (error) {
-      console.error('Token validation failed:', error)
-      throw new Error('Failed to validate GitHub token')
-    }
-  }
+      // Store user data
+      this.storeUser(user)
 
   /**
    * Handle GitHub OAuth callback
