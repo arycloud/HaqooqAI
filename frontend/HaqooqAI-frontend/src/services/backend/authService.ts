@@ -167,11 +167,17 @@ class AuthService {
         throw new Error('Failed to save API key');
       }
 
+      // Log backend response for debugging
+      console.log('saveApiKey response:', response.data)
+
       // Update stored user data to reflect API key status
-      const user = this.getStoredUser();
-      if (user) {
-        user.has_api_key = true;
-        this.storeUser(user);
+      // If backend returns updated user/quota info, prefer that; otherwise set flag locally.
+      const storedUser = this.getStoredUser();
+      if (storedUser) {
+        storedUser.has_api_key = true;
+        // don't store the actual key locally
+        storedUser.groq_api_key = undefined
+        this.storeUser(storedUser);
       }
     } catch (error) {
       console.error('Failed to save API key:', error);

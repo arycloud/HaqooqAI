@@ -56,6 +56,20 @@ export class AIService {
       console.log('Sending AI request with data:', requestData)
       console.log('Using GitHub token:', githubToken ? 'Token present' : 'No token')
 
+      // Also log any client-side stored flags for debugging
+      try {
+        const storedUserRaw = localStorage.getItem('user_data')
+        if (storedUserRaw) {
+          const storedUser = JSON.parse(storedUserRaw)
+          console.log('Stored user flags:', {
+            has_api_key: storedUser?.has_api_key,
+            groq_api_key_present: !!storedUser?.groq_api_key && storedUser.groq_api_key !== 'true',
+          })
+        }
+      } catch (e) {
+        // ignore parse errors
+      }
+
       const response = await axios.post<AIResponse>(
         `${BACKEND_URL}${API_ENDPOINTS.ASK_QUESTION}`,
         requestData,

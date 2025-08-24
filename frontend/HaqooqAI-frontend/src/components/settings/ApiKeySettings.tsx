@@ -14,7 +14,7 @@ export function ApiKeySettings() {
   const [saving, setSaving] = useState(false)
 
   // Check if user has an API key based on the presence of the flag
-  const hasApiKey = !!user?.groq_api_key
+  const hasApiKey = !!user?.has_api_key
 
   const handleSaveApiKey = async () => {
     if (!user || !apiKey.trim()) {
@@ -29,7 +29,7 @@ export function ApiKeySettings() {
       // Update user in local state with a flag to indicate API key is set
       updateUser({
         ...user,
-        groq_api_key: 'true',
+        has_api_key: true,
       })
 
       toast.success('API key saved successfully!')
@@ -52,6 +52,7 @@ export function ApiKeySettings() {
       // Update user in local state
       updateUser({
         ...user,
+        has_api_key: false,
         groq_api_key: undefined,
       })
 
