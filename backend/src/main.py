@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 import httpx
 from fastapi import Header
 
-from .backend.src.database import supabase_client
+from .database.supabase_client import supabase_client
 # import os
 
 # Load environment variables
