@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Optional
 from dotenv import load_dotenv
 import httpx
-import os
+# import os
 
 # Load environment variables
 load_dotenv()
