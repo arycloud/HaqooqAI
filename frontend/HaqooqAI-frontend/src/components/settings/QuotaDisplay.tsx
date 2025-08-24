@@ -81,7 +81,7 @@ export function QuotaDisplay() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => window.location.href = '/settings'}
+          onClick={() => window.location.href = '/HaqooqAI/settings'}
           className="text-xs px-3 py-1.5 rounded-lg border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors duration-200"
         >
           Add API Key
