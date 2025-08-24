@@ -39,6 +39,7 @@ export class AIService {
       // Validate query length
       if (!requestData.query || requestData.query.length > 1000) {
         throw new Error('Query must be between 1 and 1000 characters')
+      }
 
       // Debug logging
       console.log('Sending AI request with data:', requestData)
