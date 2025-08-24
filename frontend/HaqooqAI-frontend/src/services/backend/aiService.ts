@@ -18,13 +18,15 @@ export class AIService {
     }
 
     try {
+      const requestData: QueryRequest = {
+        query,
+        user_id: parseInt(userId), // Backend expects number
+        groq_api_key: groqApiKey,
+      }
+
       const response = await axios.post<AIResponse>(
         `${BACKEND_URL}${API_ENDPOINTS.ASK_QUESTION}`,
-        {
-          query,
-          user_id: parseInt(userId), // Backend expects number
-          groq_api_key: groqApiKey,
-        } as QueryRequest,
+        requestData,
         {
           headers: {
             'Authorization': `Bearer ${githubToken}`,
@@ -100,26 +102,8 @@ export class AIService {
       })
       return response.status === 200
     } catch (error) {
-      console.error('Backend health check failed:', error)
+      console.error('Health check failed:', error)
       return false
-    }
-  }
-
-  /**
-   * Get backend status
-   */
-  async getBackendStatus(): Promise<{
-    status: string
-    services?: Record<string, boolean>
-  }> {
-    try {
-      const response = await axios.get(`${BACKEND_URL}/health`, {
-        timeout: 5000,
-      })
-      return response.data
-    } catch (error) {
-      console.error('Failed to get backend status:', error)
-      return { status: 'error' }
     }
   }
 }
