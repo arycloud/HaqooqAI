@@ -40,7 +40,7 @@ class ApiKeyRequest(BaseModel):
     """Request model for saving user's Groq API key"""
     user_id: int = Field(..., description="GitHub user ID")
     groq_api_key: str = Field(..., description="User's Groq API key")
-    github_token: str = Field(..., description="GitHub token for verification")
+    # github_token: str = Field(..., description="GitHub token for verification")
 
     @validator('groq_api_key')
     def validate_groq_key(cls, v):
@@ -48,12 +48,12 @@ class ApiKeyRequest(BaseModel):
             raise ValueError('Invalid Groq API key format')
         return v
 
-    @validator('github_token')
-    def validate_github_token(cls, v):
-        # Accept both Personal Access Tokens (ghp_, github_pat_) and OAuth tokens (gho_)
-        if not v or not v.startswith(('ghp_', 'github_pat_', 'gho_')):
-            raise ValueError('Invalid GitHub token format')
-        return v
+    # @validator('github_token')
+    # def validate_github_token(cls, v):
+    #     # Accept both Personal Access Tokens (ghp_, github_pat_) and OAuth tokens (gho_)
+    #     if not v or not v.startswith(('ghp_', 'github_pat_', 'gho_')):
+    #         raise ValueError('Invalid GitHub token format')
+    #     return v
 
 
 class ConversationCreateRequest(BaseModel):

@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Optional
 from dotenv import load_dotenv
 import httpx
+from fastapi import Header
 # import os
 
 # Load environment variables
@@ -246,13 +247,19 @@ async def process_query(
 @app.post("/user/groq-key", response_model=ApiKeyResponse)
 async def save_groq_key(
     request: ApiKeyRequest,
+    authorization: str = Header(...),
     auth_svc: GitHubAuthService = Depends(get_auth_service),
     tracker: UsageTracker = Depends(get_usage_tracker)
 ):
     """Save user's Groq API key for unlimited access"""
     try:
         # Validate GitHub token first
-        user = await auth_svc.validate_token(request.github_token)
+        if not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Invalid authorization header")
+
+        github_token = authorization.split(" ", 1)[1]
+        user = await auth_svc.validate_token(github_token)
+        
 
         # Verify user ID matches
         if user.github_id != request.user_id:
