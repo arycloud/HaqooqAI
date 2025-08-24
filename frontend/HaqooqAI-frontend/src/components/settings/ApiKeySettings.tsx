@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { Eye, EyeOff, Key, ExternalLink } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { aiService } from '@/services/backend/aiService'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import toast from 'react-hot-toast'
+import { authService } from '@/services/backend/authService'
 
 export function ApiKeySettings() {
   const { user, updateUser } = useAuth()
@@ -13,7 +13,6 @@ export function ApiKeySettings() {
   const [showApiKey, setShowApiKey] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  // Check if user has an API key based on the presence of the flag
   const hasApiKey = !!user?.has_api_key
 
   const handleSaveApiKey = async () => {
@@ -24,12 +23,8 @@ export function ApiKeySettings() {
 
     try {
       setSaving(true)
-      await aiService.saveApiKey(user.id, apiKey.trim())
-      
-      // Update user in local state with a flag to indicate API key is set
-      // Persist the actual API key locally so subsequent requests can include it.
-      // Note: this stores the key client-side for convenience. For stronger security,
-      // consider encrypting it or changing the backend to use an encrypted server-side key.
+      await authService.saveApiKey(user.id, apiKey.trim())
+
       updateUser({
         ...user,
         has_api_key: true,
@@ -51,9 +46,8 @@ export function ApiKeySettings() {
 
     try {
       setSaving(true)
-      await aiService.saveApiKey(user.id, '')
-      
-      // Update user in local state
+      await authService.saveApiKey(user.id, '') // ✅ fixed here
+
       updateUser({
         ...user,
         has_api_key: false,
@@ -128,11 +122,7 @@ export function ApiKeySettings() {
                 className="absolute right-0 top-0 h-full px-3"
                 onClick={() => setShowApiKey(!showApiKey)}
               >
-                {showApiKey ? (
-                  <EyeOff className="w-4 h-4" />
-                ) : (
-                  <Eye className="w-4 h-4" />
-                )}
+                {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </Button>
             </div>
 

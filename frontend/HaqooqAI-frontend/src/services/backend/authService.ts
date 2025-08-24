@@ -46,7 +46,6 @@ class AuthService {
    */
   async handleGitHubCallback(code: string): Promise<{ user: User; quota: any }> {
     try {
-      // Exchange code for access token
       const response = await fetch(`${BACKEND_URL}${API_ENDPOINTS.GITHUB_CALLBACK}?code=${code}`);
       const data = await response.json();
 
@@ -54,10 +53,7 @@ class AuthService {
         throw new Error('No access token received');
       }
 
-      // Store token
       this.storeToken(data.access_token);
-
-      // Validate token and create user
       return await this.validateToken(data.access_token);
     } catch (error) {
       console.error('GitHub callback failed:', error);
@@ -70,7 +66,6 @@ class AuthService {
    */
   async validateToken(token: string): Promise<{ user: User; quota: any }> {
     try {
-      // Store token first
       this.storeToken(token);
 
       const response = await axios.post<AuthResponse>(
@@ -88,20 +83,18 @@ class AuthService {
         throw new Error('Authentication failed');
       }
 
-      // Convert backend user format to frontend user format
       const user: User = {
         id: response.data.user.github_id.toString(),
         github_id: response.data.user.github_id,
         username: response.data.user.username,
         email: response.data.user.email,
         avatar_url: response.data.user.avatar_url,
-        groq_api_key: undefined, // Don't store the actual key in user object
-        has_api_key: response.data.quota.has_api_key || false,
+        groq_api_key: undefined, // never store raw key in localStorage
+        has_api_key: response.data.quota?.has_api_key || false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
 
-      // Store user data
       this.storeUser(user);
 
       return {
@@ -110,9 +103,7 @@ class AuthService {
       };
     } catch (error) {
       console.error('Token validation failed:', error);
-      // Remove stored token and user if validation fails
-      localStorage.removeItem(STORAGE_KEYS.GITHUB_TOKEN);
-      localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+      await this.logout();
       throw new Error('Authentication failed');
     }
   }
@@ -129,17 +120,15 @@ class AuthService {
     }
 
     try {
-      // Validate token is still valid
       return await this.validateToken(token);
-    } catch (error) {
-      // Token is invalid, clear storage
+    } catch {
       await this.logout();
       return null;
     }
   }
 
   /**
-   * Save user's Groq API key
+   * Save user's Groq API key securely
    */
   async saveApiKey(userId: string, apiKey: string): Promise<void> {
     const githubToken = this.getStoredToken();
@@ -151,9 +140,9 @@ class AuthService {
       const response = await axios.post<ApiKeyResponse>(
         `${BACKEND_URL}${API_ENDPOINTS.SAVE_API_KEY}`,
         {
-          user_id: parseInt(userId), // Backend expects number
+          user_id: parseInt(userId),
           groq_api_key: apiKey,
-          github_token: githubToken
+          github_token: githubToken,
         } as ApiKeyRequest,
         {
           headers: {
@@ -167,16 +156,12 @@ class AuthService {
         throw new Error('Failed to save API key');
       }
 
-      // Log backend response for debugging
-      console.log('saveApiKey response:', response.data)
+      console.log('saveApiKey response:', response.data);
 
-      // Update stored user data to reflect API key status
-      // If backend returns updated user/quota info, prefer that; otherwise set flag locally.
       const storedUser = this.getStoredUser();
       if (storedUser) {
         storedUser.has_api_key = true;
-        // don't store the actual key locally
-        storedUser.groq_api_key = undefined
+        storedUser.groq_api_key = undefined; // never store actual key
         this.storeUser(storedUser);
       }
     } catch (error) {
