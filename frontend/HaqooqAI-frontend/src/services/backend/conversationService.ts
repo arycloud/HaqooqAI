@@ -163,6 +163,31 @@ export class ConversationService {
       throw new Error('Failed to update conversation')
     }
   }
+
+    /**
+   * Delete a conversation
+   */
+  async deleteConversation(conversationId: string): Promise<void> {
+    const githubToken = authService.getStoredToken()
+    const user = authService.getStoredUser()
+
+    if (!githubToken || !user) {
+      throw new Error('No authentication found')
+    }
+
+    try {
+      await axios.delete(`${BACKEND_URL}/conversations/${conversationId}`, {
+        params: { user_id: user.github_id },
+        headers: {
+          'Authorization': `Bearer ${githubToken}`,
+        },
+      })
+    } catch (error) {
+      console.error('Failed to delete conversation:', error)
+      throw new Error('Failed to delete conversation')
+    }
+  }
+
 }
 
 export const conversationService = new ConversationService()

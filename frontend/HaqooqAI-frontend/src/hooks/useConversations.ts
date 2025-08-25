@@ -5,9 +5,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { conversationService } from '@/services/backend/conversationService'
 import { generateConversationTitle } from '@/utils/formatters'
 import toast from 'react-hot-toast'
+import { useConversationStore } from '@/store/conversationStore'
+import { useNavigate } from 'react-router-dom';
+
 
 const QUERY_KEY = (githubId?: number | string) => ['conversations', githubId ?? 'anon']
-
+const navigate = useNavigate();
 export const useConversations = () => {
   const { user } = useAuth()
   const queryClient = useQueryClient()
@@ -116,13 +119,51 @@ export const useConversations = () => {
     }
   }
 
-  const deleteConversation = async (_conversationId: string): Promise<void> => {
-    // TODO: implement backend delete; when ready, also remove from cache:
-    // queryClient.setQueryData<Conversation[]>(QUERY_KEY(user?.github_id ?? user?.id), (old = []) =>
-    //   old.filter(c => c.id !== _conversationId)
-    // )
-    console.log('Delete conversation not implemented yet:', _conversationId)
-  }
+  const deleteMutation = useMutation({
+    mutationFn: (conversationId: string) => conversationService.deleteConversation(conversationId),
+    onMutate: async (conversationId) => {
+      // Use userQueryKey for consistency
+      await queryClient.cancelQueries({ queryKey: userQueryKey });
+
+      const previous = queryClient.getQueryData<Conversation[]>(userQueryKey);
+      // Optimistic update: remove the conversation from the list
+      queryClient.setQueryData<Conversation[]>(userQueryKey, (old = []) =>
+        old.filter((c) => c.id !== conversationId)
+      );
+
+      return { previous };
+    },
+    onError: (err, conversationId, context) => {
+      // Rollback optimistic update on error using userQueryKey
+      if (context?.previous) {
+        queryClient.setQueryData(userQueryKey, context.previous);
+      }
+      toast.error('Failed to delete conversation');
+    },
+    onSuccess: () => {
+      toast.success('Conversation deleted successfully');
+    },
+    onSettled: () => {
+      // Optional: Refetch conversations to ensure consistency using userQueryKey
+      queryClient.invalidateQueries({ queryKey: userQueryKey });
+    },
+  });
+
+  const deleteConversation = async (conversationId: string): Promise<void> => {
+    try {
+      await deleteMutation.mutateAsync(conversationId);
+
+      // Remove conversation from Zustand store
+      useConversationStore.getState().removeConversation(conversationId);
+
+      // If we're currently viewing this conversation, navigate to home
+      if (location.pathname === `/chat/${conversationId}`) {
+        navigate('/');
+      }
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+    }
+  };
 
   const getConversation = async (conversationId: string): Promise<Conversation | null> => {
     try {
