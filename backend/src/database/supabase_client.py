@@ -313,7 +313,7 @@ class SupabaseClient:
             logger.error(f"Error getting user internal ID: {e}")
             return None
 
-    def get_user_conversations(self, user_id: int) -> List[Dict[str, Any]]:
+    def get_user_conversations(self, user_id: int, limit: int = 20, offset: int = 0) -> List[Dict[str, Any]]:
         """Get all conversations for a user"""
         if not self.service_client:
             raise Exception("Supabase service client not initialized")
@@ -324,7 +324,13 @@ class SupabaseClient:
             if not user_internal_id:
                 return []
 
-            result = self.service_client.table("conversations").select("*").eq("user_id", user_internal_id).order("updated_at", desc=True).execute()
+            # result = self.service_client.table("conversations").select("*").eq("user_id", user_internal_id).order("updated_at", desc=True).execute()
+            result = self.service_client.table("conversations") \
+                .select("*") \
+                .eq("user_id", user_internal_id) \
+                .order("updated_at", desc=True) \
+                .range(offset, offset + limit - 1) \
+                .execute()
             return result.data if result.data else []
         except Exception as e:
             logger.error(f"Error fetching conversations: {e}")
@@ -349,21 +355,34 @@ class SupabaseClient:
             logger.error(f"Error creating conversation: {e}")
             raise e
 
-    def get_conversation_with_messages(self, conversation_id: str, user_internal_id: int) -> Optional[Dict[str, Any]]:
+    def get_conversation_with_messages(self, conversation_id: str,
+                                       user_internal_id: int,
+                                       limit: int = 50,
+                                       offset: int = 0) -> Optional[Dict[str, Any]]:
         """Get a conversation with all its messages"""
         if not self.service_client:
             raise Exception("Supabase service client not initialized")
 
         try:
             # Get conversation
-            conv_result = self.service_client.table("conversations").select("*").eq("id", conversation_id).eq("user_id", user_internal_id).single().execute()
-
+            # conv_result = self.service_client.table("conversations").select("*").eq("id", conversation_id).eq("user_id", user_internal_id).single().execute()
+            conv_result = self.service_client.table("conversations") \
+                .select("*") \
+                .eq("id", conversation_id) \
+                .eq("user_id", user_internal_id) \
+                .single() \
+                .execute()
             if not conv_result.data:
                 return None
 
             # Get messages
-            msg_result = self.service_client.table("messages").select("*").eq("conversation_id", conversation_id).order("created_at", desc=False).execute()
-
+            # msg_result = self.service_client.table("messages").select("*").eq("conversation_id", conversation_id).order("created_at", desc=False).execute()
+            msg_result = self.service_client.table("messages") \
+                .select("*") \
+                .eq("conversation_id", conversation_id) \
+                .order("created_at", desc=False) \
+                .range(offset, offset + limit - 1) \
+                .execute()
             conversation = conv_result.data
             conversation["messages"] = msg_result.data if msg_result.data else []
 
