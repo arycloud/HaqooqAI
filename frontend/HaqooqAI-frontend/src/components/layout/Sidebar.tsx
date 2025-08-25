@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Conversation } from '@/types/conversation'
 
 interface SidebarProps {
   isOpen: boolean
@@ -19,7 +20,17 @@ interface SidebarProps {
 export function Sidebar({ isOpen }: SidebarProps) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { conversations, createConversation, deleteConversation, loading } = useConversations()
+  const {
+    conversations,
+    createConversation,
+    deleteConversation,
+    loading
+  }: {
+    conversations: Conversation[]
+    createConversation: (title?: string) => Promise<Conversation>
+    deleteConversation: (id: string) => Promise<void>
+    loading: boolean
+  } = useConversations()
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const handleNewChat = async () => {

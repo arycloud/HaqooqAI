@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { LegalPromptCards } from '@/components/legal/LegalPromptCards'
+import { Conversation } from '@/types/conversation'
 
 export function Dashboard() {
   const navigate = useNavigate()
@@ -147,7 +148,7 @@ export function Dashboard() {
                 </p>
               </div>
               <div className="grid gap-8 lg:gap-10">
-                {conversations.slice(0, 3).map((conversation, index) => (
+                {(conversations as Conversation[]).slice(0, 3).map((conversation: Conversation, index: number) => (
                   <Card
                     key={conversation.id}
                     className="group cursor-pointer hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-0 bg-gradient-to-r from-white to-gray-50/50 dark:from-slate-800 dark:to-slate-700/50"

@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { BACKEND_URL, STORAGE_KEYS } from '@/utils/constants'
+import { BACKEND_URL } from '@/utils/constants'
 import { Conversation, Message } from '@/types/conversation'
 import { authService } from './authService'
 
@@ -10,22 +10,17 @@ export class ConversationService {
   async getConversations(): Promise<Conversation[]> {
     const githubToken = authService.getStoredToken()
     const user = authService.getStoredUser()
-    
-    if (!githubToken || !user) {
-      throw new Error('No authentication found')
-    }
-    
+    if (!githubToken || !user) throw new Error('No authentication found')
+
     try {
       const response = await axios.get(`${BACKEND_URL}/conversations`, {
         params: { user_id: user.github_id },
-        headers: {
-          'Authorization': `Bearer ${githubToken}`,
-        },
+        headers: { Authorization: `Bearer ${githubToken}` },
       })
 
-      return response.data.conversations.map((conv: any) => ({
+      return (response.data.conversations || []).map((conv: any) => ({
         id: conv.id,
-        user_id: conv.user_id.toString(),
+        user_id: conv.user_id?.toString?.() ?? String(conv.user_id),
         title: conv.title,
         created_at: conv.created_at,
         updated_at: conv.updated_at,
@@ -42,11 +37,8 @@ export class ConversationService {
   async createConversation(title: string): Promise<Conversation> {
     const githubToken = authService.getStoredToken()
     const user = authService.getStoredUser()
-    
-    if (!githubToken || !user) {
-      throw new Error('No authentication found')
-    }
-    
+    if (!githubToken || !user) throw new Error('No authentication found')
+
     try {
       const response = await axios.post(`${BACKEND_URL}/conversations`, {
         title,
@@ -56,7 +48,7 @@ export class ConversationService {
 
       return {
         id: response.data.id,
-        user_id: response.data.user_id.toString(),
+        user_id: response.data.user_id?.toString?.() ?? String(response.data.user_id),
         title: response.data.title,
         created_at: response.data.created_at,
         updated_at: response.data.updated_at,
@@ -70,41 +62,37 @@ export class ConversationService {
   /**
    * Get a conversation with all its messages
    */
-  async getConversationWithMessages(conversationId: string): Promise<{
-    conversation: Conversation
-    messages: Message[]
-  }> {
+  async getConversationWithMessages(
+    conversationId: string,
+    limit = 50,
+    offset = 0
+  ): Promise<{ conversation: Conversation; messages: Message[] }> {
     const githubToken = authService.getStoredToken()
     const user = authService.getStoredUser()
-    
-    if (!githubToken || !user) {
-      throw new Error('No authentication found')
-    }
-    
+    if (!githubToken || !user) throw new Error('No authentication found')
+
     try {
       const response = await axios.get(`${BACKEND_URL}/conversations/${conversationId}`, {
-        params: { user_id: user.github_id },
-        headers: {
-          'Authorization': `Bearer ${githubToken}`,
-        },
+        params: { user_id: user.github_id, limit, offset },
+        headers: { Authorization: `Bearer ${githubToken}` },
       })
 
       return {
         conversation: {
           id: response.data.conversation.id,
-          user_id: response.data.conversation.user_id.toString(),
+          user_id: response.data.conversation.user_id?.toString?.() ?? String(response.data.conversation.user_id),
           title: response.data.conversation.title,
           created_at: response.data.conversation.created_at,
           updated_at: response.data.conversation.updated_at,
         },
-        messages: response.data.messages.map((msg: any) => ({
+        messages: (response.data.messages || []).map((msg: any) => ({
           id: msg.id,
           conversation_id: msg.conversation_id,
           role: msg.role as 'user' | 'assistant',
           content: msg.content,
           sources: msg.sources || [],
           created_at: msg.created_at,
-        }))
+        })),
       }
     } catch (error) {
       console.error('Failed to fetch conversation:', error)
@@ -123,11 +111,8 @@ export class ConversationService {
   ): Promise<Message> {
     const githubToken = authService.getStoredToken()
     const user = authService.getStoredUser()
-    
-    if (!githubToken || !user) {
-      throw new Error('No authentication found')
-    }
-    
+    if (!githubToken || !user) throw new Error('No authentication found')
+
     try {
       const response = await axios.post(`${BACKEND_URL}/conversations/${conversationId}/messages`, {
         conversation_id: conversationId,
@@ -136,7 +121,6 @@ export class ConversationService {
         sources,
         user_id: user.github_id,
         github_token: githubToken,
-        // has_groq_key: user.has_api_key // <-- use only this flag
       })
 
       return {
@@ -159,25 +143,17 @@ export class ConversationService {
   async updateConversation(conversationId: string, title: string): Promise<Conversation> {
     const githubToken = authService.getStoredToken()
     const user = authService.getStoredUser()
-
-    if (!githubToken || !user) {
-      throw new Error('No authentication found')
-    }
+    if (!githubToken || !user) throw new Error('No authentication found')
 
     try {
       const response = await axios.put(`${BACKEND_URL}/conversations/${conversationId}`, null, {
-        params: {
-          title,
-          user_id: user.github_id
-        },
-        headers: {
-          'Authorization': `Bearer ${githubToken}`,
-        },
+        params: { title, user_id: user.github_id },
+        headers: { Authorization: `Bearer ${githubToken}` },
       })
 
       return {
         id: response.data.id,
-        user_id: response.data.user_id.toString(),
+        user_id: response.data.user_id?.toString?.() ?? String(response.data.user_id),
         title: response.data.title,
         created_at: response.data.created_at,
         updated_at: response.data.updated_at,
