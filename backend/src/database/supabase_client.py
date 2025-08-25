@@ -452,6 +452,30 @@ class SupabaseClient:
             logger.error(f"Error updating conversation: {e}")
             raise e
 
+    def delete_conversation(self, conversation_id: str, user_internal_id: int) -> bool:
+        """Delete a conversation and its messages"""
+        if not self.service_client:
+            raise Exception("Supabase service client not initialized")
+
+        try:
+            # Delete messages first
+            self.service_client.table("messages") \
+                .delete() \
+                .eq("conversation_id", conversation_id) \
+                .execute()
+
+            # Then delete conversation
+            result = self.service_client.table("conversations") \
+                .delete() \
+                .eq("id", conversation_id) \
+                .eq("user_id", user_internal_id) \
+                .execute()
+
+            return bool(result.data and len(result.data) > 0)
+        except Exception as e:
+            logger.error(f"Error deleting conversation: {e}")
+            return False
+
     def get_usage_stats(self) -> Dict[str, Any]:
         """Get overall usage statistics"""
         if not self.service_client:

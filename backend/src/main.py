@@ -655,6 +655,43 @@ async def update_conversation(
         raise HTTPException(status_code=500, detail="Failed to update conversation")
 
 
+@app.delete("/conversations/{conversation_id}")
+async def delete_conversation(
+    conversation_id: str,
+    user_id: int,
+    auth_svc: GitHubAuthService = Depends(get_auth_service)
+):
+    """Delete a conversation and its messages"""
+    try:
+        from .database.supabase_client import supabase_client
+
+        if not supabase_client.is_connected():
+            raise HTTPException(status_code=503, detail="Database not available")
+
+        # Get user's internal ID
+        user_internal_id = supabase_client.get_user_internal_id(user_id)
+        if not user_internal_id:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Verify ownership
+        if not supabase_client.verify_conversation_ownership(conversation_id, user_internal_id):
+            raise HTTPException(status_code=403, detail="Access denied")
+
+        # Perform deletion
+        deleted = supabase_client.delete_conversation(conversation_id, user_internal_id)
+
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Conversation not found or already deleted")
+
+        return {"status": "success", "message": "Conversation deleted successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting conversation: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete conversation")
+
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check(
     auth_svc: GitHubAuthService = Depends(get_auth_service),
