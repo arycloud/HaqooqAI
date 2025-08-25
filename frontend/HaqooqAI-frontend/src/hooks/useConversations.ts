@@ -6,14 +6,15 @@ import { conversationService } from '@/services/backend/conversationService'
 import { generateConversationTitle } from '@/utils/formatters'
 import toast from 'react-hot-toast'
 import { useConversationStore } from '@/store/conversationStore'
-import { useNavigate } from 'react-router-dom';
-
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const QUERY_KEY = (githubId?: number | string) => ['conversations', githubId ?? 'anon']
-const navigate = useNavigate();
+
 export const useConversations = () => {
   const { user } = useAuth()
   const queryClient = useQueryClient()
+  const navigate = useNavigate();
+  const location = useLocation();
   const [loadingConversationId, setLoadingConversationId] = useState<string | null>(null)
 
   // Create a stable key for React Query
