@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useAuth } from './useAuth'
 import { Conversation } from '@/types/conversation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -13,6 +13,11 @@ export const useConversations = () => {
   const queryClient = useQueryClient()
   const [loadingConversationId, setLoadingConversationId] = useState<string | null>(null)
 
+  // Create a stable key for React Query
+  const userQueryKey = useMemo(
+    () => ['conversations', user?.github_id ?? user?.id ?? 'guest'],
+    [user]
+  )
   // ====== Query: conversations list (cached) ======
   const {
     data: conversations = [],
@@ -21,11 +26,13 @@ export const useConversations = () => {
     error,
     refetch,
   } = useQuery<Conversation[]>({
-    queryKey: QUERY_KEY(user?.github_id ?? user?.id),
+    queryKey: userQueryKey,
     queryFn: () => conversationService.getConversations(),
     enabled: !!user,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000,   // use gcTime instead of cacheTime in React Query v5
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     placeholderData: (prev) => prev, // keeps old data visible while refreshing
   })
 
@@ -80,16 +87,33 @@ export const useConversations = () => {
 
   const createConversation = async (title?: string): Promise<Conversation> => {
     if (!user) throw new Error('User not authenticated')
-    const conversationTitle = title || 'New Conversation'
-    return await createMutation.mutateAsync(conversationTitle)
+    try {
+      const conversationTitle = title || 'New Conversation'
+      const conversation = await conversationService.createConversation(conversationTitle)
+      return conversation
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create conversation'
+      toast.error(errorMessage)
+      throw err
+    }
   }
 
   const updateConversation = async (
     conversationId: string,
     updates: Partial<Pick<Conversation, 'title'>>
   ): Promise<void> => {
+
     if (!updates.title) return
-    await updateMutation.mutateAsync({ id: conversationId, title: updates.title })
+
+    try {
+      await conversationService.updateConversation(conversationId, updates.title)
+      toast.success('Conversation renamed successfully')
+      refetch() // refresh list after rename
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update conversation'
+      toast.error(errorMessage)
+      throw err
+    }
   }
 
   const deleteConversation = async (_conversationId: string): Promise<void> => {
@@ -133,6 +157,6 @@ export const useConversations = () => {
     getConversation,
     updateConversationTitle,
     selectConversation,
-    refreshConversations: () => refetch(),
+    refreshConversations: () => refetch,
   }
 }
