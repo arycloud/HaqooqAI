@@ -1,0 +1,280 @@
+"""
+Legal Assistant Agent for HaqooqAI Backend
+Adapted from existing agent.py with improved integration
+"""
+import os
+import logging
+from typing import Optional, Dict, Any
+from langchain.agents import AgentExecutor, create_tool_calling_agent
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI
+import re
+
+from .tools import legal_document_search, web_search_tool
+from ..config import GROQ_API_BASE, GROQ_MODEL, DEFAULT_GROQ_KEY
+
+logger = logging.getLogger(__name__)
+
+
+class LegalAssistantAgent:
+    """Enhanced Legal Assistant Agent for Pakistani law queries"""
+
+    def __init__(self):
+        """Initializes the enhanced agent and its tools."""
+        self.groq_api_base = GROQ_API_BASE
+        self.groq_model = GROQ_MODEL
+        self.default_groq_key = DEFAULT_GROQ_KEY
+
+        # 2. Define the tools the agent will use
+        self.tools = [
+            legal_document_search,
+            web_search_tool
+        ]
+
+        # 3. Enhanced prompt template with better search strategy
+        self.prompt = ChatPromptTemplate.from_messages([
+            ("system",
+             "You are HaqooqAI, a specialized legal assistant for Pakistani law. Follow this enhanced decision flow:\n\n"
+
+             "## SCOPE CHECK ##\n"
+             "First, verify if the question relates to Pakistan:\n"
+             "- If NOT about Pakistan: Reply 'Out of scope – I only answer questions about Pakistan.'\n"
+             "- If unclear, ask for clarification about Pakistani context\n\n"
+
+             "## SEARCH STRATEGY ##\n"
+             "For Pakistani legal questions, use this intelligent routing:\n\n"
+
+             "### Time-Sensitive Queries ###\n"
+             "If query involves current events, recent changes, or time-sensitive information:\n"
+             "- Keywords: 'recent', 'current', 'latest', 'new', '2024', '2023', 'today'\n"
+             "- Action: Use web_search tool FIRST\n"
+             "- Examples: recent amendments, current officeholders, latest court decisions\n\n"
+
+             "### Historical/Established Legal Queries ###\n"
+             "For established laws, constitutional provisions, or historical information:\n"
+             "- Action: Try legal_document_search FIRST\n"
+             "- If no relevant results (distance > 0.7 or no matches): Fallback to web_search\n"
+             "- Examples: constitutional articles, established procedures, statutory provisions\n\n"
+
+             "### Query Enhancement ###\n"
+             "When using web_search, enhance queries with:\n"
+             "- Pakistan context if missing: 'Pakistan constitution amendments'\n"
+             "- Official sources: Add 'site:na.gov.pk OR site:pakistan.gov.pk' for government info\n"
+             "- Legal context: Add 'legal' or 'government' for legal queries\n\n"
+
+             "## RESPONSE QUALITY ##\n"
+             "- Always verify information through tools before answering\n"
+             "- Never hallucinate or guess\n"
+             "- If search results are irrelevant (wrong language, off-topic), try alternative queries\n"
+             "- For poor web search results, try simpler or different keyword combinations\n\n"
+
+             "## CITATION RULES ##\n"
+             "- Local knowledge: 'Source: My Knowledge – [specific document/section]'\n"
+             "- Web search: 'Source: Web Search – [title/URL if available]'\n"
+             "- If multiple sources conflict, mention the discrepancy\n"
+             "- Always include disclaimer: 'This is informational and not a substitute for formal legal advice.'\n\n"
+
+             "## QUALITY CHECKS ##\n"
+             "Before providing final answer, verify:\n"
+             "1. Results are relevant to Pakistan\n"
+             "2. Information addresses the specific question asked\n"
+             "3. Sources are properly cited\n"
+             "4. Language/content is appropriate (not Chinese, Arabic, etc. unless specifically relevant)\n\n"
+
+             "If initial search fails, try alternative approaches:\n"
+             "- Different keywords\n"
+             "- Simpler queries\n"
+             "- Both local and web search\n\n"
+
+             "Always prioritize accuracy and relevance over speed."
+            ),
+            ("placeholder", "{chat_history}"),
+            ("human", "{question}"),
+            ("placeholder", "{agent_scratchpad}"),
+        ])
+
+        # Initialize with default LLM if available
+        self.default_llm = None
+        if self.default_groq_key:
+            try:
+                self.default_llm = self._create_llm(self.default_groq_key)
+                self.default_agent_executor = self._create_agent_executor(self.default_llm)
+                logger.info("Default LLM initialized successfully")
+            except Exception as e:
+                logger.error(f"Error initializing default LLM: {e}")
+                self.default_agent_executor = None
+        else:
+            self.default_agent_executor = None
+            logger.warning("No default Groq API key provided")
+
+    def _create_llm(self, groq_api_key: str) -> ChatOpenAI:
+        """Create a ChatOpenAI instance with the provided key"""
+        return ChatOpenAI(
+            model=self.groq_model,
+            openai_api_base=self.groq_api_base,
+            openai_api_key=groq_api_key,
+            temperature=0.1,
+            max_tokens=10000,
+            verbose=True
+        )
+
+    def _create_agent_executor(self, llm: ChatOpenAI) -> AgentExecutor:
+        """Create an agent executor with the provided LLM"""
+        agent = create_tool_calling_agent(llm, self.tools, self.prompt)
+        return AgentExecutor(
+            agent=agent,
+            tools=self.tools,
+            verbose=True,
+            max_iterations=5,  # Allow more iterations for better results
+            early_stopping_method="generate"
+        )
+
+    def _preprocess_query(self, query: str) -> dict:
+        """Analyze query to determine search strategy."""
+        query_lower = query.lower()
+
+        analysis = {
+            'is_pakistan_related': any(term in query_lower for term in [
+                'pakistan', 'pakistani', 'lahore', 'karachi', 'islamabad',
+                'sindh', 'punjab', 'balochistan', 'kpk', 'khyber pakhtunkhwa'
+            ]),
+            'is_time_sensitive': any(term in query_lower for term in [
+                'recent', 'latest', 'current', 'new', 'update', 'today', 'now',
+                '2024', '2023', 'this year', 'last year', 'currently'
+            ]),
+            'is_legal_query': any(term in query_lower for term in [
+                'constitution', 'amendment', 'law', 'act', 'ordinance', 'legal',
+                'court', 'judge', 'justice', 'parliament', 'assembly'
+            ]),
+            'suggested_strategy': None
+        }
+
+        # Determine suggested strategy
+        if not analysis['is_pakistan_related']:
+            analysis['suggested_strategy'] = 'scope_check'
+        elif analysis['is_time_sensitive']:
+            analysis['suggested_strategy'] = 'web_first'
+        elif analysis['is_legal_query']:
+            analysis['suggested_strategy'] = 'local_first'
+        else:
+            analysis['suggested_strategy'] = 'web_first'
+
+        return analysis
+
+    async def run(self, query: str, groq_api_key: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Enhanced run method with preprocessing and better error handling.
+
+        Args:
+            query: User query
+            groq_api_key: Optional user's Groq API key
+
+        Returns:
+            Dict containing response and metadata
+        """
+        try:
+            # Determine which executor to use
+            executor_to_use = self.default_agent_executor
+
+            if groq_api_key:
+                # Create a temporary ChatOpenAI instance with the provided key
+                temp_llm = self._create_llm(groq_api_key)
+                executor_to_use = self._create_agent_executor(temp_llm)
+            elif not self.default_agent_executor:
+                return {
+                    "response": "Service temporarily unavailable. Please provide your own Groq API key or try again later.",
+                    "error": "No API key available",
+                    "sources": []
+                }
+
+            # Preprocess the query for insights
+            query_analysis = self._preprocess_query(query)
+
+            # Handle obvious scope issues early
+            if query_analysis['suggested_strategy'] == 'scope_check':
+                if not query_analysis['is_pakistan_related']:
+                    return {
+                        "response": "Out of scope – I only answer questions about Pakistan. Please rephrase your question to include Pakistani context if relevant.",
+                        "sources": [],
+                        "query_analysis": query_analysis
+                    }
+
+            # Add preprocessing context to the query
+            enhanced_context = f"""
+Query Analysis:
+- Pakistan-related: {query_analysis['is_pakistan_related']}
+- Time-sensitive: {query_analysis['is_time_sensitive']}
+- Legal query: {query_analysis['is_legal_query']}
+- Suggested strategy: {query_analysis['suggested_strategy']}
+
+Original Question: {query}
+"""
+
+            response = await executor_to_use.ainvoke({
+                "question": enhanced_context,
+                "chat_history": []
+            })
+
+            output_string = response.get("output", "I was unable to find a relevant answer.")
+
+            # Clean up any tool code artifacts
+            cleaned_output_string = re.sub(r"<tool_code>.*?</tool_code>", "", output_string, flags=re.DOTALL)
+
+            # Post-process the response
+            final_response = self._post_process_response(cleaned_output_string.strip(), query)
+
+            return {
+                "response": final_response,
+                "sources": self._extract_sources_from_response(final_response),
+                "query_analysis": query_analysis
+            }
+
+        except Exception as e:
+            logger.error(f"Error in agent run: {e}")
+            return {
+                "response": f"I encountered an error while processing your question: {str(e)}. Please try rephrasing your question or try again later.",
+                "error": str(e),
+                "sources": []
+            }
+
+    def _post_process_response(self, response: str, original_query: str) -> str:
+        """Post-process the response for quality and consistency."""
+
+        # Check if response seems incomplete or irrelevant
+        if len(response) < 50:
+            response = f"{response}\n\nNote: This response seems brief. If you need more detailed information, please rephrase your question or provide more specific details."
+
+        # Ensure disclaimer is present for legal queries
+        query_lower = original_query.lower()
+        is_legal_query = any(term in query_lower for term in [
+            'constitution', 'amendment', 'law', 'act', 'ordinance', 'legal',
+            'court', 'judge', 'justice', 'parliament'
+        ])
+
+        if is_legal_query and "substitute for formal legal advice" not in response:
+            response += "\n\n**Disclaimer:** This information is for general guidance only and is not a substitute for formal legal advice. For specific legal matters, please consult a qualified legal professional."
+
+        return response
+
+    def _extract_sources_from_response(self, response: str) -> list:
+        """Extract source information from the response text."""
+        sources = []
+
+        # Look for source patterns in the response
+        source_patterns = [
+            r"Source: My Knowledge – ([^\\n]+)",
+            r"Source: Web Search – ([^\\n]+)",
+            r"\[Source: ([^\]]+)\]"
+        ]
+
+        for pattern in source_patterns:
+            matches = re.findall(pattern, response)
+            for match in matches:
+                source_type = "legal_doc" if "My Knowledge" in pattern else "web_search"
+                sources.append({
+                    "type": source_type,
+                    "title": match.strip(),
+                    "reference": match.strip()
+                })
+
+        return sources

@@ -1,0 +1,33 @@
+name: Deploy Backend to Hugging Face Space
+
+on:
+  push:
+    branches:
+      - backend
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Deploy backend to Hugging Face
+        env:
+          HF_USERNAME: ary91
+          HF_SPACE_NAME: haqooqai-backend
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          SPACE_REPO="https://user:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME}"
+          git clone $SPACE_REPO space_repo
+          rsync -av --delete --exclude ".git" backend/ space_repo/
+          cd space_repo
+          git config user.name "${HF_USERNAME}"
+          git config user.email "${HF_USERNAME}@users.noreply.huggingface.co"
+          git add .
+          git commit -m "Deploy backend from backend branch via GitHub Actions" || echo "No changes to commit"
+          DEFAULT_BRANCH=$(git remote show origin | grep 'HEAD branch' | cut -d: -f2 | tr -d ' ')
+          git push $SPACE_REPO $DEFAULT_BRANCH

@@ -1,0 +1,14 @@
+{
+  "_metadata": {
+    "description": "User usage tracking for HaqooqAI Backend",
+    "version": "1.0",
+    "created": "2025-08-22T00:00:00Z",
+    "format": {
+      "user_id": {
+        "count": "number of queries used in current period",
+        "reset_at": "ISO timestamp when quota resets",
+        "created_at": "ISO timestamp when user first used service"
+      }
+    }
+  }
+}
