@@ -26,7 +26,7 @@ export default defineConfig({
       }
     }
   },
-  base: '/HaqooqAI/',
+  base: '/',
   // server: {
   //   port: 5173,
   //   host: true
