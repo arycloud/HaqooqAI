@@ -10,8 +10,12 @@ import './index.css'
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      staleTime: 10 * 60 * 1000,   // Cache stays fresh for 10 minutes
+      gcTime: 30 * 60 * 1000,
       retry: 1,
+      refetchOnMount: false,
       refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
     },
   },
 })

@@ -33,11 +33,12 @@ export const useConversations = () => {
     queryKey: userQueryKey,
     queryFn: () => conversationService.getConversations(),
     enabled: !!user,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000,   // use gcTime instead of cacheTime in React Query v5
+    staleTime: 10 * 60 * 1000,  // 10 minutes to match global settings
+    gcTime: 30 * 60 * 1000,     // 30 minutes in cache
+    refetchOnMount: false,      // Do NOT refetch on mount
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-    placeholderData: (prev) => prev, // keeps old data visible while refreshing
+    placeholderData: (prev) => prev, // keeps old data in UI while refreshing
   })
 
   // ====== Mutation: create conversation (optimistic add) ======
