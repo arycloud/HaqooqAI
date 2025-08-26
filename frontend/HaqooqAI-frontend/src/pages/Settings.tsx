@@ -10,7 +10,7 @@ export function Settings() {
   }, [])
 
   return (
-    <MainLayout>
+    // <MainLayout>
       <div className="h-full overflow-y-auto">
         <div className="max-w-2xl mx-auto p-6 space-y-6">
           <div>
@@ -73,6 +73,6 @@ export function Settings() {
           </Card>
         </div>
       </div>
-    </MainLayout>
+    // </MainLayout>
   )
 }

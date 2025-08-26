@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Scale, MessageSquare, BookOpen, Zap } from 'lucide-react'
-import { MainLayout } from '@/components/layout/MainLayout'
+// import { MainLayout } from '@/components/layout/MainLayout'
 import { useConversations } from '@/hooks/useConversations'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
@@ -37,7 +37,8 @@ export function Dashboard() {
   }
 
   return (
-    <MainLayout className="p-0"> {/* Remove default padding to control it ourselves */}
+
+    // <MainLayout className="p-0"> {/* Remove default padding to control it ourselves */}
       <div className="h-full overflow-y-auto">
         <div className="max-w-none mx-auto p-8 lg:p-12 xl:p-16 space-y-16 lg:space-y-20">
           {/* Enhanced Welcome Section with larger elements */}
@@ -178,6 +179,7 @@ export function Dashboard() {
           )}
         </div>
       </div>
-    </MainLayout>
+    // </MainLayout>
+
   )
 }
