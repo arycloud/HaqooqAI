@@ -47,7 +47,7 @@ EMBEDDED_CHUNKS_PATH = DATA_DIR / "pakistan_laws_chunks_with_embeddings.csv"
 
 # CORS Configuration
 ALLOWED_ORIGINS: List[str] = [
-    "https://arycloud.github.io",
+    "https://haqooqai.com",
     "http://localhost:3000",
     "http://localhost:5173",
     "http://127.0.0.1:3000",
@@ -82,4 +82,4 @@ API_KEYS_TABLE = "api_keys"
 
 # Database Schema Validation
 REQUIRED_SUPABASE_TABLES = [USERS_TABLE, USAGE_TABLE, API_KEYS_TABLE]
-FRONTEND_PRUDCTION_URL = os.getenv("FRONTEND_PRODUCTION_URL", "https://arycloud.github.io/HaqooqAI")
+FRONTEND_PRUDCTION_URL = os.getenv("FRONTEND_PRODUCTION_URL", "https://haqooqai.com")

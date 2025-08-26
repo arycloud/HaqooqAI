@@ -423,9 +423,9 @@ async def github_callback(code: str = None, error: str = None):
                 )
 
             # Redirect to frontend with the access token
-            FRONTEND_URL="https://arycloud.github.io/HaqooqAI"
+            FRONTEND_URL="https://haqooqai.com/"
             return RedirectResponse(
-                url=f"{FRONTEND_URL}?access_token={access_token}",
+                url=f"{FRONTEND_URL}#/dashboard?access_token={access_token}",
                 status_code=302
             )
 
