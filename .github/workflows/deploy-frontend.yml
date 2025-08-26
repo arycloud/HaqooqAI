@@ -23,18 +23,25 @@ jobs:
         with:
           node-version: 20
 
-      - name: Clear npm cache
-        working-directory: ./frontend/HaqooqAI-frontend
-        run: npm cache clean --force
+      # - name: Clear npm cache
+      #   working-directory: ./frontend/HaqooqAI-frontend
+      #   run: npm cache clean --force
+      - name: Cache npm
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('frontend/HaqooqAI-frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
       - name: Install Frontend Dependencies
         working-directory: ./frontend/HaqooqAI-frontend
-        # run: npm ci --no-audit --prefer-offline
-        run: |
-          npm config set fetch-retries 5
-          npm config set fetch-retry-mintimeout 20000
-          npm config set fetch-retry-maxtimeout 120000
-          npm ci --no-audit --prefer-offline
+        run: npm ci --no-audit --prefer-offline
+        # run: |
+        #   npm config set fetch-retries 5
+        #   npm config set fetch-retry-mintimeout 20000
+        #   npm config set fetch-retry-maxtimeout 120000
+        #   npm ci --no-audit --prefer-offline
 
       - name: Build Frontend
         working-directory: ./frontend/HaqooqAI-frontend
