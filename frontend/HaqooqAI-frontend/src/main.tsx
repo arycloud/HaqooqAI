@@ -34,7 +34,7 @@ persistQueryClient({
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <HashRouter basename="/HaqooqAI">
+      <HashRouter basename="/">
         <App />
         <Toaster 
           position="top-right"
