@@ -366,73 +366,33 @@ async def get_user_quota(
 # GitHub OAuth Endpoints
 
 @app.get("/login/github")
-async def github_login(redirect_uri: Optional[str] = None):
-    """Redirect to GitHub OAuth authorization. Optionally accept a redirect_uri query param
-    (useful for mobile custom-scheme flows). Note: redirect_uri must be registered in the
-    GitHub OAuth app settings to be accepted by GitHub."""
+async def github_login():
+    """Redirect to GitHub OAuth authorization"""
     if not GITHUB_CLIENT_ID:
         raise HTTPException(
             status_code=500,
             detail="GitHub OAuth not configured"
         )
 
-    # Use provided redirect_uri if present, otherwise fall back to configured value
-    target_redirect = redirect_uri or GITHUB_REDIRECT_URI
-
     # GitHub OAuth authorization URL
     github_auth_url = (
         f"https://github.com/login/oauth/authorize"
         f"?client_id={GITHUB_CLIENT_ID}"
         f"&scope=user:email"
-        f"&redirect_uri={target_redirect}"
+        f"&redirect_uri={GITHUB_REDIRECT_URI}"
     )
 
     return RedirectResponse(url=github_auth_url)
 
 
-@app.post('/auth/exchange')
-async def exchange_code_for_token(payload: dict):
-    """Exchange GitHub authorization code for an access token and return JSON.
-    This endpoint is intended for mobile/native apps: the app receives the
-    authorization code via a custom scheme redirect and posts it here to obtain
-    the server-side access token (server keeps client_secret)."""
-    code = payload.get('code')
-    if not code:
-        raise HTTPException(status_code=400, detail='Authorization code is required')
-
-    if not GITHUB_CLIENT_ID or not GITHUB_CLIENT_SECRET:
-        raise HTTPException(status_code=500, detail='GitHub OAuth not configured')
-
-    try:
-        async with httpx.AsyncClient() as client:
-            token_response = await client.post(
-                "https://github.com/login/oauth/access_token",
-                data={
-                    'client_id': GITHUB_CLIENT_ID,
-                    'client_secret': GITHUB_CLIENT_SECRET,
-                    'code': code,
-                },
-                headers={'Accept': 'application/json'}
-            )
-
-            token_data = token_response.json()
-            access_token = token_data.get('access_token')
-
-            if not access_token:
-                raise HTTPException(status_code=400, detail='Failed to get access token from GitHub')
-
-            return {'access_token': access_token}
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f'Error exchanging code for token: {e}')
-        raise HTTPException(status_code=500, detail='Failed to exchange code')
-
-
 @app.get("/HaqooqAI/callback")
-async def github_callback(code: str = None, error: str = None):
-    """Handle GitHub OAuth callback and return access token"""
+async def github_callback(code: str = None, error: str = None, state: Optional[str] = None):
+    """Handle GitHub OAuth callback and return access token
+    If `state` indicates a mobile flow (state starts with 'mobile|'), forward
+    the code to the mobile app custom-scheme contained in the state. Otherwise
+    perform the normal web flow (exchange code for access token and redirect
+    to the web frontend).
+    """
     if error:
         raise HTTPException(
             status_code=400,
@@ -446,7 +406,19 @@ async def github_callback(code: str = None, error: str = None):
         )
 
     try:
-        # Exchange code for access token
+        # If state indicates a mobile flow, forward the code to the mobile app
+        # Expected state format: 'mobile|<encoded_target>'
+        if state and state.startswith('mobile|'):
+            encoded_target = state.split('|', 1)[1]
+            try:
+                from urllib.parse import unquote
+                target = unquote(encoded_target)
+            except Exception:
+                target = encoded_target
+
+            return RedirectResponse(url=f"{target}?code={code}", status_code=302)
+
+        # Default web flow: exchange code
         async with httpx.AsyncClient() as client:
             token_response = await client.post(
                 "https://github.com/login/oauth/access_token",
