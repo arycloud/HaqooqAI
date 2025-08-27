@@ -4,11 +4,23 @@ Simplified AI service for Pakistani legal information
 """
 import logging
 import uuid
-from datetime import datetime
-from typing import Optional
+from datetime import datetime, timedelta
+from typing import Optional, Dict
 from dotenv import load_dotenv
 import httpx
 from fastapi import Header
+
+# In-memory state management for OAuth flows
+state_map: Dict[str, str] = {}
+state_timestamps: Dict[str, datetime] = {}
+
+def cleanup_expired_states():
+    """Remove states older than 10 minutes"""
+    cutoff_time = datetime.now() - timedelta(minutes=10)
+    expired_states = [s for s, t in state_timestamps.items() if t < cutoff_time]
+    for state in expired_states:
+        state_map.pop(state, None)
+        state_timestamps.pop(state, None)
 
 from .database.supabase_client import supabase_client
 # import os
@@ -385,79 +397,6 @@ async def github_login():
     return RedirectResponse(url=github_auth_url)
 
 
-# In-memory state mapping for mobile flows: state_id -> target_scheme
-state_map = {}
-
-
-@app.post('/auth/exchange')
-async def exchange_code(payload: dict):
-    """Exchange authorization code for GitHub access token
-    This is the missing endpoint your mobile app is trying to call.
-    """
-    code = payload.get('code')
-    if not code:
-        raise HTTPException(status_code=400, detail="Authorization code is required")
-    
-    try:
-        async with httpx.AsyncClient() as client:
-            token_response = await client.post(
-                "https://github.com/login/oauth/access_token",
-                data={
-                    "client_id": GITHUB_CLIENT_ID,
-                    "client_secret": GITHUB_CLIENT_SECRET,
-                    "code": code,
-                },
-                headers={"Accept": "application/json"}
-            )
-
-            token_data = token_response.json()
-            access_token = token_data.get("access_token")
-
-            if not access_token:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Failed to get access token from GitHub"
-                )
-
-            return {"access_token": access_token}
-
-    except Exception as e:
-        logger.error(f"Code exchange error: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to exchange authorization code"
-        )
-
-
-@app.post('/login/github/start')
-async def github_login_start(payload: dict):
-    """Start an OAuth flow and return an auth URL for mobile
-    Updated to properly handle mobile flow state format.
-    """
-    target = payload.get('target')
-    import secrets
-    state_id = secrets.token_urlsafe(16)
-    
-    # Format state for mobile flow recognition
-    if target:
-        from urllib.parse import quote
-        encoded_target = quote(target)
-        mobile_state = f"mobile|{encoded_target}"
-        state_map[state_id] = mobile_state
-    else:
-        state_map[state_id] = None
-
-    # Build the GitHub authorize URL using the registered redirect URI and mobile state
-    github_auth_url = (
-        f"https://github.com/login/oauth/authorize"
-        f"?client_id={GITHUB_CLIENT_ID}"
-        f"&scope=user:email"
-        f"&redirect_uri={GITHUB_REDIRECT_URI}"
-        f"&state={mobile_state if target else state_id}"
-    )
-
-    return {'auth_url': github_auth_url, 'state': state_id}
-
 @app.get("/HaqooqAI/callback")
 async def github_callback(code: str = None, error: str = None, state: Optional[str] = None):
     """Handle GitHub OAuth callback - updated for proper mobile flow handling"""
@@ -473,20 +412,35 @@ async def github_callback(code: str = None, error: str = None, state: Optional[s
             detail="Authorization code is required"
         )
 
+    logger.info(f"Received callback with state: {state}")
+
     try:
-        # Check if this is a mobile flow
-        if state and state.startswith('mobile|'):
-            encoded_target = state.split('|', 1)[1]
+        # Clean up any expired states first
+        cleanup_expired_states()
+
+        # Look up the target from state_map for mobile flow
+        target = None
+        if state and state in state_map:
+            target = state_map[state]
+            logger.info(f"Found mobile target for state {state}: {target}")
+            # Clean up used state immediately
+            state_map.pop(state)
+            state_timestamps.pop(state, None)
+
+        if target:
             try:
                 from urllib.parse import unquote
-                target = unquote(encoded_target)
-            except Exception:
-                target = encoded_target
+                target = unquote(target)
+                logger.info(f"Redirecting to mobile target: {target}")
+            except Exception as e:
+                logger.error(f"Error unquoting target: {e}")
+                # Keep original target if unquote fails
 
             # Redirect to mobile app with the code
             return RedirectResponse(url=f"{target}?code={code}", status_code=302)
 
         # Default web flow: exchange code for token
+        logger.info("Proceeding with web flow token exchange")
         async with httpx.AsyncClient() as client:
             token_response = await client.post(
                 "https://github.com/login/oauth/access_token",
@@ -497,31 +451,13 @@ async def github_callback(code: str = None, error: str = None, state: Optional[s
                 },
                 headers={"Accept": "application/json"}
             )
-
-            token_data = token_response.json()
-            access_token = token_data.get("access_token")
-
-            if not access_token:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Failed to get access token from GitHub"
-                )
-
-            # Redirect to frontend with the access token
-            FRONTEND_URL = "https://haqooqai.com/"
-            return RedirectResponse(
-                url=f"{FRONTEND_URL}#/dashboard?access_token={access_token}",
-                status_code=302
-            )
-
-    except HTTPException:
-        raise
     except Exception as e:
-        logger.error(f"OAuth callback error: {e}")
+        logger.error(f"Error in callback handler: {e}")
         raise HTTPException(
             status_code=500,
-            detail="OAuth callback processing failed"
+            detail=f"OAuth callback processing failed: {str(e)}"
         )
+
 
 # Conversation Management Endpoints
 
