@@ -51,8 +51,24 @@ ALLOWED_ORIGINS: List[str] = [
     "http://localhost:3000",
     "http://localhost:5173",
     "http://127.0.0.1:3000",
-    "http://127.0.0.1:5173"
+    "http://127.0.0.1:5173",
+    # Mobile app support
+    "capacitor://localhost",
+    "ionic://localhost",
+    "http://localhost",
+    "https://localhost",
+    # Flutter mobile app custom schemes
+    "haqooqai://",
+    "haqooqai://auth",
+    # Allow any localhost port for development
+    "http://localhost:*",
+    "https://localhost:*"
 ]
+
+# Additional CORS settings for mobile support
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+CORS_ALLOW_HEADERS = ["*"]
 
 # API Configuration
 API_TITLE = "HaqooqAI AI Service"

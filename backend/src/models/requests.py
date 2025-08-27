@@ -107,6 +107,18 @@ class MessageCreateRequest(BaseModel):
         return v
 
 
+class TokenExchangeRequest(BaseModel):
+    """Request model for exchanging authorization code for access token"""
+    code: str = Field(..., description="Authorization code from GitHub OAuth")
+    state: Optional[str] = Field(None, description="State parameter for security")
+
+    @validator('code')
+    def validate_code(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Authorization code is required')
+        return v.strip()
+
+
 class HealthCheckRequest(BaseModel):
     """Request model for health check (optional parameters)"""
     detailed: bool = Field(False, description="Whether to return detailed health information")

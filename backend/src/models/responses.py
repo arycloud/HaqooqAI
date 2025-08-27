@@ -40,6 +40,15 @@ class AuthResponse(BaseModel):
     message: Optional[str] = Field(None, description="Additional message")
 
 
+class TokenExchangeResponse(BaseModel):
+    """Response for token exchange"""
+    status: str = Field(..., description="Response status")
+    access_token: str = Field(..., description="GitHub access token")
+    user: UserProfile = Field(..., description="User profile information")
+    quota: QuotaInfo = Field(..., description="User quota information")
+    message: Optional[str] = Field(None, description="Additional message")
+
+
 class AIResponse(BaseModel):
     """Response for AI query processing"""
     status: str = Field(..., description="Response status")
