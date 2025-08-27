@@ -11,17 +11,27 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const { user, loading, isAuthenticated } = useAuth()
   const location = useLocation()
 
+  // Check if we're currently processing an OAuth callback
+  const isProcessingOAuth = () => {
+    const hashParams = new URLSearchParams(location.hash.substring(1))
+    const urlParams = new URLSearchParams(location.search)
+    return !!(hashParams.get('access_token') || urlParams.get('access_token'))
+  }
+
   useEffect(() => {
-    // If we're on a protected route and not authenticated, 
+    // If we're on a protected route and not authenticated,
     // the redirect will happen automatically
   }, [isAuthenticated, location])
 
-  if (loading) {
+  // Show loading while authenticating or processing OAuth callback
+  if (loading || isProcessingOAuth()) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <LoadingSpinner size="lg" className="mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">
+            {isProcessingOAuth() ? 'Completing authentication...' : 'Loading...'}
+          </p>
         </div>
       </div>
     )

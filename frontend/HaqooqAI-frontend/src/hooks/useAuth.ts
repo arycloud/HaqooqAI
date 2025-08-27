@@ -37,17 +37,42 @@ export const useAuth = () => {
 
       if (error) {
         const errorDescription = urlParams.get('error_description') || hashParams.get('error_description') || error
-        throw new Error(`GitHub OAuth error: ${errorDescription}`)
+        setError(`GitHub OAuth error: ${errorDescription}`)
+        toast.error(`Authentication failed: ${errorDescription}`)
+        // Clear error from URL and redirect to login
+        window.history.replaceState({}, document.title, location.pathname)
+        navigate('/login', { replace: true })
+        return
       }
 
       if (accessToken) {
-        // Handle GitHub callback with access token
-        const auth = await authService.validateToken(accessToken)
-        if (auth && auth.user) {
-          setUser(auth.user)
-          // Clear the access_token from URL (both query params and fragment)
+        console.log('Processing OAuth callback with access token:', accessToken.substring(0, 10) + '...')
+
+        try {
+          // Handle GitHub callback with access token
+          const auth = await authService.validateToken(accessToken)
+          if (auth && auth.user) {
+            console.log('Authentication successful for user:', auth.user.username)
+            setUser(auth.user)
+
+            // Clear the access_token from URL (both query params and fragment)
+            window.history.replaceState({}, document.title, location.pathname)
+            toast.success(`Welcome back, ${auth.user.username}!`)
+
+            // Navigate to dashboard after successful authentication
+            console.log('Navigating to dashboard...')
+            navigate('/', { replace: true })
+          } else {
+            console.error('Authentication failed: No user data received')
+            throw new Error('Authentication failed: No user data received')
+          }
+        } catch (authError) {
+          console.error('Token validation failed:', authError)
+          setError('Authentication failed. Please try again.')
+          toast.error('Authentication failed. Please try again.')
+          // Clear token from URL and redirect to login
           window.history.replaceState({}, document.title, location.pathname)
-          toast.success(`Welcome back, ${auth.user.username}!`)
+          navigate('/login', { replace: true })
         }
         return
       }
