@@ -389,43 +389,78 @@ async def github_login():
 state_map = {}
 
 
+@app.post('/auth/exchange')
+async def exchange_code(payload: dict):
+    """Exchange authorization code for GitHub access token
+    This is the missing endpoint your mobile app is trying to call.
+    """
+    code = payload.get('code')
+    if not code:
+        raise HTTPException(status_code=400, detail="Authorization code is required")
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            token_response = await client.post(
+                "https://github.com/login/oauth/access_token",
+                data={
+                    "client_id": GITHUB_CLIENT_ID,
+                    "client_secret": GITHUB_CLIENT_SECRET,
+                    "code": code,
+                },
+                headers={"Accept": "application/json"}
+            )
+
+            token_data = token_response.json()
+            access_token = token_data.get("access_token")
+
+            if not access_token:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Failed to get access token from GitHub"
+                )
+
+            return {"access_token": access_token}
+
+    except Exception as e:
+        logger.error(f"Code exchange error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to exchange authorization code"
+        )
+
+
 @app.post('/login/github/start')
 async def github_login_start(payload: dict):
-    """Start an OAuth flow and return an auth URL. Payload may contain:
-    { "target": "haqooqai://callback" }
-    This issues a server-side state id that maps to the target and returns an
-    auth URL that the mobile app can open. The auth URL uses the registered
-    redirect URI and includes the server state. This avoids embedding custom
-    redirect URIs in the request to GitHub.
-    Response: { "auth_url": "https://...", "state": "..." }
+    """Start an OAuth flow and return an auth URL for mobile
+    Updated to properly handle mobile flow state format.
     """
     target = payload.get('target')
     import secrets
     state_id = secrets.token_urlsafe(16)
+    
+    # Format state for mobile flow recognition
     if target:
-        state_map[state_id] = target
+        from urllib.parse import quote
+        encoded_target = quote(target)
+        mobile_state = f"mobile|{encoded_target}"
+        state_map[state_id] = mobile_state
+    else:
+        state_map[state_id] = None
 
-    # Build the GitHub authorize URL using the registered redirect URI and state
-    target_redirect = GITHUB_REDIRECT_URI
+    # Build the GitHub authorize URL using the registered redirect URI and mobile state
     github_auth_url = (
         f"https://github.com/login/oauth/authorize"
         f"?client_id={GITHUB_CLIENT_ID}"
         f"&scope=user:email"
-        f"&redirect_uri={target_redirect}"
-        + (f"&state={state_id}" if state_id else "")
+        f"&redirect_uri={GITHUB_REDIRECT_URI}"
+        f"&state={mobile_state if target else state_id}"
     )
 
-    return { 'auth_url': github_auth_url, 'state': state_id }
-
+    return {'auth_url': github_auth_url, 'state': state_id}
 
 @app.get("/HaqooqAI/callback")
 async def github_callback(code: str = None, error: str = None, state: Optional[str] = None):
-    """Handle GitHub OAuth callback and return access token
-    If `state` indicates a mobile flow (state starts with 'mobile|'), forward
-    the code to the mobile app custom-scheme contained in the state. Otherwise
-    perform the normal web flow (exchange code for access token and redirect
-    to the web frontend).
-    """
+    """Handle GitHub OAuth callback - updated for proper mobile flow handling"""
     if error:
         raise HTTPException(
             status_code=400,
@@ -439,8 +474,7 @@ async def github_callback(code: str = None, error: str = None, state: Optional[s
         )
 
     try:
-        # If state indicates a mobile flow, forward the code to the mobile app
-        # Expected state format: 'mobile|<encoded_target>'
+        # Check if this is a mobile flow
         if state and state.startswith('mobile|'):
             encoded_target = state.split('|', 1)[1]
             try:
@@ -449,9 +483,10 @@ async def github_callback(code: str = None, error: str = None, state: Optional[s
             except Exception:
                 target = encoded_target
 
+            # Redirect to mobile app with the code
             return RedirectResponse(url=f"{target}?code={code}", status_code=302)
 
-        # Default web flow: exchange code
+        # Default web flow: exchange code for token
         async with httpx.AsyncClient() as client:
             token_response = await client.post(
                 "https://github.com/login/oauth/access_token",
@@ -473,7 +508,7 @@ async def github_callback(code: str = None, error: str = None, state: Optional[s
                 )
 
             # Redirect to frontend with the access token
-            FRONTEND_URL="https://haqooqai.com/"
+            FRONTEND_URL = "https://haqooqai.com/"
             return RedirectResponse(
                 url=f"{FRONTEND_URL}#/dashboard?access_token={access_token}",
                 status_code=302
@@ -487,7 +522,6 @@ async def github_callback(code: str = None, error: str = None, state: Optional[s
             status_code=500,
             detail="OAuth callback processing failed"
         )
-
 
 # Conversation Management Endpoints
 
