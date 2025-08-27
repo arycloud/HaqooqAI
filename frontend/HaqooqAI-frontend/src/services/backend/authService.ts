@@ -1,9 +1,17 @@
 import axios from 'axios';
 import { BACKEND_URL, API_ENDPOINTS, STORAGE_KEYS } from '@/utils/constants';
-import { AuthRequest, AuthResponse, ApiKeyRequest, ApiKeyResponse } from '@/types/api';
+import { AuthRequest, AuthResponse, ApiKeyRequest, ApiKeyResponse, TokenExchangeRequest, TokenExchangeResponse, MobileOAuthRequest, MobileOAuthResponse } from '@/types/api';
 import { User } from '@/types/auth';
 
 class AuthService {
+  /**
+   * Authentication Service for HaqooqAI Frontend
+   *
+   * Supports both web and mobile authentication flows:
+   * - Web: Direct redirect to /login/github, callback handled via URL fragment
+   * - Mobile: Use startMobileOAuth() and exchangeCodeForToken() methods
+   */
+
   /**
    * Store GitHub token
    */
@@ -42,22 +50,72 @@ class AuthService {
   }
 
   /**
-   * Handle GitHub OAuth callback
+   * Exchange authorization code for access token (for mobile apps)
    */
-  async handleGitHubCallback(code: string): Promise<{ user: User; quota: any }> {
+  async exchangeCodeForToken(code: string, state?: string): Promise<{ user: User; quota: any }> {
     try {
-      const response = await fetch(`${BACKEND_URL}${API_ENDPOINTS.GITHUB_CALLBACK}?code=${code}`);
-      const data = await response.json();
+      const response = await axios.post<TokenExchangeResponse>(
+        `${BACKEND_URL}${API_ENDPOINTS.AUTH_EXCHANGE}`,
+        {
+          code,
+          state: state || undefined
+        } as TokenExchangeRequest,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-      if (!data.access_token) {
-        throw new Error('No access token received');
+      if (response.data.status !== 'success') {
+        throw new Error('Token exchange failed');
       }
 
-      this.storeToken(data.access_token);
-      return await this.validateToken(data.access_token);
+      const { access_token, user, quota } = response.data;
+      this.storeToken(access_token);
+
+      const userObj: User = {
+        id: user.github_id.toString(),
+        github_id: user.github_id,
+        username: user.username,
+        email: user.email,
+        avatar_url: user.avatar_url,
+        groq_api_key: undefined,
+        has_api_key: quota?.has_api_key || false,
+        groq_api_key_present: quota?.has_api_key || false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      this.storeUser(userObj);
+      return { user: userObj, quota };
     } catch (error) {
-      console.error('GitHub callback failed:', error);
-      throw new Error('Failed to complete GitHub authentication');
+      console.error('Token exchange failed:', error);
+      throw new Error('Failed to exchange authorization code for token');
+    }
+  }
+
+  /**
+   * Start mobile OAuth flow (returns auth URL)
+   */
+  async startMobileOAuth(targetUrl?: string): Promise<{ auth_url: string; state: string }> {
+    try {
+      const response = await axios.post<MobileOAuthResponse>(
+        `${BACKEND_URL}${API_ENDPOINTS.GITHUB_LOGIN_MOBILE}`,
+        {
+          target: targetUrl
+        } as MobileOAuthRequest,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('Failed to start mobile OAuth:', error);
+      throw new Error('Failed to start mobile OAuth flow');
     }
   }
 
@@ -176,7 +234,7 @@ class AuthService {
     if (!githubToken) throw new Error('No GitHub token found');
 
     await axios.delete(
-      `${BACKEND_URL}${API_ENDPOINTS.SAVE_API_KEY}`,
+      `${BACKEND_URL}${API_ENDPOINTS.DELETE_API_KEY}`,
       {
         headers: { Authorization: `Bearer ${githubToken}` },
         data: { user_id: userGithubId, github_token: githubToken }

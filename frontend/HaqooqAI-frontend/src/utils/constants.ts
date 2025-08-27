@@ -13,12 +13,26 @@ export const STORAGE_KEYS = {
 
 // API Endpoints
 export const API_ENDPOINTS = {
+  // Authentication endpoints
   AUTH_VALIDATE: '/auth/validate',
+  AUTH_EXCHANGE: '/auth/exchange', // New: for mobile token exchange
+  GITHUB_LOGIN: '/login/github',
+  GITHUB_LOGIN_MOBILE: '/login/github/start', // New: for mobile OAuth flow
+  GITHUB_CALLBACK: '/HaqooqAI/callback',
+
+  // AI and user endpoints
   ASK_QUESTION: '/ask/',
   SAVE_API_KEY: '/user/groq-key',
+  DELETE_API_KEY: '/user/groq-key',
   GET_QUOTA: '/user/quota',
-  GITHUB_LOGIN: '/login/github',
-  GITHUB_CALLBACK: '/HaqooqAI/callback',
+
+  // Conversation endpoints
+  CONVERSATIONS: '/conversations',
+  CONVERSATION_MESSAGES: '/conversations', // Base path, append /{id}/messages
+
+  // System endpoints
+  HEALTH: '/health',
+  STATS: '/stats',
 } as const;
 
 // App Configuration

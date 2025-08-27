@@ -21,13 +21,23 @@ export const useAuth = () => {
       setLoading(true)
       setError(null)
 
-      // Check for GitHub OAuth callback
+      // Check for GitHub OAuth callback - handle both query params and URL fragment
       const urlParams = new URLSearchParams(location.search)
-      const accessToken = urlParams.get('access_token')
-      const error = urlParams.get('error')
+      const hashParams = new URLSearchParams(location.hash.substring(1))
+
+      // Check for access token in URL fragment (new backend behavior)
+      let accessToken = hashParams.get('access_token')
+      // Fallback to query params for backward compatibility
+      if (!accessToken) {
+        accessToken = urlParams.get('access_token')
+      }
+
+      // Check for errors in both locations
+      const error = urlParams.get('error') || hashParams.get('error')
 
       if (error) {
-        throw new Error(`GitHub OAuth error: ${error}`)
+        const errorDescription = urlParams.get('error_description') || hashParams.get('error_description') || error
+        throw new Error(`GitHub OAuth error: ${errorDescription}`)
       }
 
       if (accessToken) {
@@ -35,8 +45,9 @@ export const useAuth = () => {
         const auth = await authService.validateToken(accessToken)
         if (auth && auth.user) {
           setUser(auth.user)
-          // Clear the access_token from URL
+          // Clear the access_token from URL (both query params and fragment)
           window.history.replaceState({}, document.title, location.pathname)
+          toast.success(`Welcome back, ${auth.user.username}!`)
         }
         return
       }

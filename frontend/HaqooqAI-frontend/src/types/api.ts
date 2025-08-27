@@ -18,6 +18,15 @@ export interface ApiKeyRequest {
   github_token: string;
 }
 
+export interface TokenExchangeRequest {
+  code: string;
+  state?: string;
+}
+
+export interface MobileOAuthRequest {
+  target?: string;
+}
+
 // Backend API Response Types
 export interface AuthResponse {
   status: string;
@@ -41,6 +50,24 @@ export interface ApiKeyResponse {
   status: string;
   message: string;
   has_unlimited: boolean;
+}
+
+export interface TokenExchangeResponse {
+  status: string;
+  access_token: string;
+  user: {
+    github_id: number;
+    username: string;
+    email?: string;
+    avatar_url?: string;
+  };
+  quota: QuotaInfo;
+  message?: string;
+}
+
+export interface MobileOAuthResponse {
+  auth_url: string;
+  state: string;
 }
 
 export interface QuotaResponse {
