@@ -646,8 +646,8 @@ async def github_callback(code: str = None, error: str = None, state: Optional[s
                 logger.error(f"GitHub OAuth error: {token_data}")
                 # Redirect to frontend login page with error
                 from .config import FRONTEND_PRUDCTION_URL
-                frontend_url = FRONTEND_PRUDCTION_URL or "https://haqooqai.com"
-                login_url = f"{frontend_url.rstrip('/')}/login"
+                frontend_url = FRONTEND_PRUDCTION_URL or "https://haqooqai.com/"
+                login_url = "https://haqooqai.com/#/login"
                 return RedirectResponse(
                     url=f"{login_url}?error={token_data.get('error', 'oauth_error')}&error_description={token_data.get('error_description', 'OAuth authentication failed')}",
                     status_code=302
@@ -658,7 +658,7 @@ async def github_callback(code: str = None, error: str = None, state: Optional[s
                 logger.error("No access token received from GitHub")
                 from .config import FRONTEND_PRUDCTION_URL
                 frontend_url = FRONTEND_PRUDCTION_URL or "https://haqooqai.com"
-                login_url = f"{frontend_url.rstrip('/')}/login"
+                login_url = "https://haqooqai.com/#/login"
                 return RedirectResponse(
                     url=f"{login_url}?error=no_token&error_description=No access token received",
                     status_code=302
@@ -673,9 +673,9 @@ async def github_callback(code: str = None, error: str = None, state: Optional[s
 
             # Redirect to frontend dashboard with access token
             from .config import FRONTEND_PRUDCTION_URL
-            frontend_url = FRONTEND_PRUDCTION_URL or "https://haqooqai.com"
+            frontend_url = FRONTEND_PRUDCTION_URL or "https://haqooqai.com/"
             # Redirect to dashboard page instead of root to avoid AuthGuard issues
-            # dashboard_url = f"{frontend_url.rstrip('/')}/dashboard"
+            dashboard_url = f"{frontend_url}#/dashboard?access_token={access_token}"
             logger.info(f"Redirecting to frontend dashboard with token for web flow: {dashboard_url}")
             return RedirectResponse(
                 url=f"{frontend_url}#/dashboard?access_token={access_token}",
