@@ -644,11 +644,12 @@ async def github_callback(code: str = None, error: str = None, state: Optional[s
 
             if "error" in token_data:
                 logger.error(f"GitHub OAuth error: {token_data}")
-                # Redirect to frontend with error
+                # Redirect to frontend login page with error
                 from .config import FRONTEND_PRUDCTION_URL
                 frontend_url = FRONTEND_PRUDCTION_URL or "https://haqooqai.com"
+                login_url = f"{frontend_url.rstrip('/')}/login"
                 return RedirectResponse(
-                    url=f"{frontend_url}?error={token_data.get('error', 'oauth_error')}&error_description={token_data.get('error_description', 'OAuth authentication failed')}",
+                    url=f"{login_url}?error={token_data.get('error', 'oauth_error')}&error_description={token_data.get('error_description', 'OAuth authentication failed')}",
                     status_code=302
                 )
 
@@ -657,17 +658,27 @@ async def github_callback(code: str = None, error: str = None, state: Optional[s
                 logger.error("No access token received from GitHub")
                 from .config import FRONTEND_PRUDCTION_URL
                 frontend_url = FRONTEND_PRUDCTION_URL or "https://haqooqai.com"
+                login_url = f"{frontend_url.rstrip('/')}/login"
                 return RedirectResponse(
-                    url=f"{frontend_url}?error=no_token&error_description=No access token received",
+                    url=f"{login_url}?error=no_token&error_description=No access token received",
                     status_code=302
                 )
 
-            # Redirect to frontend with access token
+            # FRONTEND_URL = "https://haqooqai.com/"
+            # return RedirectResponse(
+            #     url=f"{FRONTEND_URL}#/dashboard?access_token={access_token}",
+            #     status_code=302
+            # )
+
+
+            # Redirect to frontend dashboard with access token
             from .config import FRONTEND_PRUDCTION_URL
             frontend_url = FRONTEND_PRUDCTION_URL or "https://haqooqai.com"
-            logger.info(f"Redirecting to frontend with token for web flow")
+            # Redirect to dashboard page instead of root to avoid AuthGuard issues
+            # dashboard_url = f"{frontend_url.rstrip('/')}/dashboard"
+            logger.info(f"Redirecting to frontend dashboard with token for web flow: {dashboard_url}")
             return RedirectResponse(
-                url=f"{frontend_url}#access_token={access_token}",
+                url=f"{frontend_url}#/dashboard?access_token={access_token}",
                 status_code=302
             )
 
@@ -675,12 +686,13 @@ async def github_callback(code: str = None, error: str = None, state: Optional[s
         raise
     except Exception as e:
         logger.error(f"Error in callback handler: {e}")
-        # Redirect to frontend with error
+        # Redirect to frontend login page with error
         try:
             from .config import FRONTEND_PRUDCTION_URL
             frontend_url = FRONTEND_PRUDCTION_URL or "https://haqooqai.com"
+            login_url = f"{frontend_url.rstrip('/')}/login"
             return RedirectResponse(
-                url=f"{frontend_url}?error=callback_error&error_description=OAuth callback processing failed",
+                url=f"{login_url}?error=callback_error&error_description=OAuth callback processing failed",
                 status_code=302
             )
         except:
