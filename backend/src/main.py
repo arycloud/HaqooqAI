@@ -397,6 +397,45 @@ async def github_login():
     return RedirectResponse(url=github_auth_url)
 
 
+@app.post('/login/github/start')
+async def github_login_start(payload: dict):
+    """Start an OAuth flow and return an auth URL for mobile"""
+    target = payload.get('target')
+    
+    # Clean up expired states first
+    cleanup_expired_states()
+    
+    # Generate new state
+    import secrets
+    state_id = secrets.token_urlsafe(16)
+    
+    logger.info(f"Starting OAuth flow with state: {state_id}")
+    
+    # Store state data
+    if target:
+        from urllib.parse import quote
+        encoded_target = quote(target)
+        state_map[state_id] = encoded_target
+        logger.info(f"Stored mobile target for state {state_id}: {encoded_target}")
+    else:
+        state_map[state_id] = None
+        logger.info("Web flow - no target stored")
+
+    # Record timestamp for cleanup
+    state_timestamps[state_id] = datetime.now()
+
+    # Build the GitHub authorize URL
+    github_auth_url = (
+        f"https://github.com/login/oauth/authorize"
+        f"?client_id={GITHUB_CLIENT_ID}"
+        f"&scope=user:email"
+        f"&redirect_uri={GITHUB_REDIRECT_URI}"
+        f"&state={state_id}"
+    )
+
+    return {'auth_url': github_auth_url, 'state': state_id}
+
+
 @app.get("/HaqooqAI/callback")
 async def github_callback(code: str = None, error: str = None, state: Optional[str] = None):
     """Handle GitHub OAuth callback - updated for proper mobile flow handling"""
