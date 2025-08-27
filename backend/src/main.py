@@ -385,6 +385,39 @@ async def github_login():
     return RedirectResponse(url=github_auth_url)
 
 
+# In-memory state mapping for mobile flows: state_id -> target_scheme
+state_map = {}
+
+
+@app.post('/login/github/start')
+async def github_login_start(payload: dict):
+    """Start an OAuth flow and return an auth URL. Payload may contain:
+    { "target": "haqooqai://callback" }
+    This issues a server-side state id that maps to the target and returns an
+    auth URL that the mobile app can open. The auth URL uses the registered
+    redirect URI and includes the server state. This avoids embedding custom
+    redirect URIs in the request to GitHub.
+    Response: { "auth_url": "https://...", "state": "..." }
+    """
+    target = payload.get('target')
+    import secrets
+    state_id = secrets.token_urlsafe(16)
+    if target:
+        state_map[state_id] = target
+
+    # Build the GitHub authorize URL using the registered redirect URI and state
+    target_redirect = GITHUB_REDIRECT_URI
+    github_auth_url = (
+        f"https://github.com/login/oauth/authorize"
+        f"?client_id={GITHUB_CLIENT_ID}"
+        f"&scope=user:email"
+        f"&redirect_uri={target_redirect}"
+        + (f"&state={state_id}" if state_id else "")
+    )
+
+    return { 'auth_url': github_auth_url, 'state': state_id }
+
+
 @app.get("/HaqooqAI/callback")
 async def github_callback(code: str = None, error: str = None, state: Optional[str] = None):
     """Handle GitHub OAuth callback and return access token
