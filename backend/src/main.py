@@ -366,7 +366,9 @@ async def process_query(
             tracker.increment_usage(request.user_id)
 
         # Process query through RAG engine
-        result = await rag.process_query(request.query, request.groq_api_key)
+        result = await rag.process_query(request.query, request.groq_api_key,
+                                         conversation_id=request.conversation_id,
+                                         user_id=request.user_id)
 
         # Get updated quota
         updated_quota = tracker.check_quota(request.user_id)

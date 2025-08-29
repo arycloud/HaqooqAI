@@ -161,7 +161,8 @@ class LegalAssistantAgent:
 
         return analysis
 
-    async def run(self, query: str, groq_api_key: Optional[str] = None) -> Dict[str, Any]:
+    async def run(self, query: str, groq_api_key: Optional[str] = None,
+                  chat_history: List[Tuple[str, str]] = []) -> Dict[str, Any]:
         """
         Enhanced run method with preprocessing and better error handling.
 
@@ -201,18 +202,18 @@ class LegalAssistantAgent:
 
             # Add preprocessing context to the query
             enhanced_context = f"""
-Query Analysis:
-- Pakistan-related: {query_analysis['is_pakistan_related']}
-- Time-sensitive: {query_analysis['is_time_sensitive']}
-- Legal query: {query_analysis['is_legal_query']}
-- Suggested strategy: {query_analysis['suggested_strategy']}
+                                    Query Analysis:
+                                    - Pakistan-related: {query_analysis['is_pakistan_related']}
+                                    - Time-sensitive: {query_analysis['is_time_sensitive']}
+                                    - Legal query: {query_analysis['is_legal_query']}
+                                    - Suggested strategy: {query_analysis['suggested_strategy']}
 
-Original Question: {query}
-"""
+                                    Original Question: {query}
+                                """
 
             response = await executor_to_use.ainvoke({
                 "question": enhanced_context,
-                "chat_history": []
+                "chat_history": chat_history
             })
 
             output_string = response.get("output", "I was unable to find a relevant answer.")

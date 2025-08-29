@@ -11,6 +11,7 @@ from .agent import LegalAssistantAgent
 from .tools import retrieve_relevant_chunks
 from .searxng_client import searxng_client
 from ..models.responses import SourceInfo
+from ..services.context_manager import ContextManager
 
 logger = logging.getLogger(__name__)
 
@@ -25,11 +26,15 @@ class LegalRAGEngine:
         try:
             self.agent = LegalAssistantAgent()
             logger.info("LegalRAGEngine initialized successfully")
+            self.context_manager = ContextManager()
+            logger.info("Context Manager initialized successfully")
         except Exception as e:
             logger.error(f"Error initializing LegalRAGEngine: {e}")
             self.agent = None
 
-    async def process_query(self, query: str, groq_key: Optional[str] = None) -> Dict[str, Any]:
+    async def process_query(self, query: str, groq_key: Optional[str] = None,
+                            conversation_id: Optional[str] = None,
+                            user_id: Optional[int] = None) -> Dict[str, Any]:
         """
         Process a legal query and return structured response with sources
 
@@ -51,8 +56,11 @@ class LegalRAGEngine:
             }
 
         try:
+            chat_history = []
+            if conversation_id and user_id:
+                chat_history = await self.context_manager.get_chat_history(conversation_id, user_id)
             # Process query through the agent
-            agent_result = await self.agent.run(query, groq_key)
+            agent_result = await self.agent.run(query, groq_key, chat_history=chat_history)
 
             # Extract and enhance sources
             sources = await self._enhance_sources(

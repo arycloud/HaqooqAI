@@ -22,6 +22,7 @@ class QueryRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=1000, description="Legal query to process")
     user_id: int = Field(..., description="GitHub user ID")
     groq_api_key: Optional[str] = Field(None, description="Optional user's Groq API key")
+    conversation_id: str
 
     @validator('query')
     def validate_query(cls, v):

@@ -28,6 +28,8 @@ SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 # Usage Limits
 USAGE_LIMIT_DEFAULT = int(os.getenv("USAGE_LIMIT_DEFAULT", "5"))
 MAX_QUERY_LENGTH = int(os.getenv("MAX_QUERY_LENGTH", "1000"))
+MAX_CONTEXT_MESSAGES=int(os.getenv("MAX_CONTEXT_MESSAGES", 10))  # Sliding window size (N)
+MAX_CONTEXT_TOKENS=int(os.getenv("MAX_CONTEXT_MESSAGES", 6000))  # Max tokens for history
 
 # Groq API Configuration
 DEFAULT_GROQ_KEY = os.getenv("DEFAULT_GROQ_KEY", "")
