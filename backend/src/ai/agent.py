@@ -4,7 +4,7 @@ Adapted from existing agent.py with improved integration
 """
 import os
 import logging
-from typing import Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
