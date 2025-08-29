@@ -113,7 +113,7 @@ export const useMessages = (conversationId?: string) => {
       console.log('Sending AI request with:', { content, github_id: githubId })
 
       // Ask AI
-      const aiResponse = await aiService.askQuestion(content, githubId)
+      const aiResponse = await aiService.askQuestion(content, githubId, convId)
 
       // Create assistant message via backend
       const assistantMessage = await conversationService.createMessage(

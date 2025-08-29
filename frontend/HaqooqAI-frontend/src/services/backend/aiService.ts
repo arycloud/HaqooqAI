@@ -10,6 +10,7 @@ export class AIService {
   async askQuestion(
     query: string,
     userId: string,
+    conversationId: string,
     groqApiKey?: string
   ): Promise<AIResponse> {
     const githubToken = authService.getStoredToken()
@@ -31,6 +32,7 @@ export class AIService {
       const requestData: QueryRequest = {
         query: query.trim(),
         user_id: parsedUserId,
+        conversation_id: conversationId,
       }
 
       if (effectiveGroqKey) {
@@ -42,6 +44,7 @@ export class AIService {
         query: requestData.query,
         user_id: requestData.user_id,
         has_groq_key: Boolean(requestData.groq_api_key),
+        conversation_id: requestData.conversation_id,
       })
 
       // Validation checks

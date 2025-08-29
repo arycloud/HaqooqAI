@@ -10,6 +10,7 @@ export interface QueryRequest {
   query: string;
   user_id: number;  // GitHub user ID
   groq_api_key?: string;  // Optional, backend uses default key if not provided
+  conversation_id?: string;
 }
 
 export interface ApiKeyRequest {
