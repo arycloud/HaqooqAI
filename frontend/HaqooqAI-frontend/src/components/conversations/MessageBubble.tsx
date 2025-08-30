@@ -65,7 +65,7 @@ const extractStructuredContent = (content: string, existingSources?: Source[]) =
     }
   });
 
-  // Extract disclaimers and notes with flexible patterns
+  // Extract disclaimers and notes with flexible patterns (avoid duplicates)
   const disclaimerPatterns = [
     /This is informational and not a substitute for formal legal advice\. Consult a qualified Pakistani lawyer for specific cases\./g,
     /This is informational and not a substitute for formal legal advice\. Consult[^.]*\./g,
@@ -73,11 +73,17 @@ const extractStructuredContent = (content: string, existingSources?: Source[]) =
     /Disclaimer:\s*([^\n]+)/g,
   ];
 
+  const foundDisclaimers = new Set<string>(); // Use Set to avoid duplicates
+
   disclaimerPatterns.forEach(pattern => {
     const matches = content.match(pattern);
     if (matches) {
       matches.forEach(match => {
-        notes.push(match.replace(/\*\*Disclaimer\*\*:?\s*/, '').trim());
+        const cleanedDisclaimer = match.replace(/\*\*Disclaimer\*\*:?\s*/, '').trim();
+        if (!foundDisclaimers.has(cleanedDisclaimer)) {
+          foundDisclaimers.add(cleanedDisclaimer);
+          notes.push(cleanedDisclaimer);
+        }
         cleanContent = cleanContent.replace(match, '').trim();
       });
     }
