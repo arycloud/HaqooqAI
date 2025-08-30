@@ -27,7 +27,7 @@ interface MessageBubbleProps {
   message: Message;
 }
 
-// 1. Updated and more robust extraction function
+// Updated and more robust extraction function
 const extractStructuredContent = (content: string, existingSources?: Source[]) => {
   if (!content || typeof content !== 'string') {
     return { cleanContent: '', sources: existingSources, notes: [] };
@@ -37,14 +37,24 @@ const extractStructuredContent = (content: string, existingSources?: Source[]) =
   let extractedSources: Source[] = [...(existingSources || [])];
   let notes: string[] = [];
 
-  // Regex to match "Source: [title] - [url]" or "Source: [title]"
-  const sourceRegex = /Source:\s*(.*?)(?:\s*—\s*Web Search)?\s*–\s*([^,]+)/g;
+  // Regex to match and extract sources. This regex is more flexible.
+  const sourceRegex = /(?:Source:\s*(.*?)(?:\s*–\s*([^,]+))?)/g;
   let match;
   while ((match = sourceRegex.exec(cleanContent)) !== null) {
-    const title = match[1].trim();
-    const reference = match[2].trim();
-    if (title && reference) {
-      extractedSources.push({ type: 'web_search', title, reference });
+    const fullMatch = match[0].trim();
+    const sourceTitle = match[1]?.trim() || '';
+    const sourceReference = match[2]?.trim() || '';
+    
+    // Check if the source is valid before adding
+    if (sourceTitle && sourceReference) {
+      const type = sourceTitle.toLowerCase().includes('web search') ? 'web_search' : 'local_docs';
+      extractedSources.push({
+        type: type,
+        title: sourceReference,
+        reference: sourceTitle,
+        url: type === 'web_search' ? sourceReference.includes('http') ? sourceReference : undefined : undefined,
+      });
+      cleanContent = cleanContent.replace(fullMatch, '').trim(); // Remove the full source line
     }
   }
 
@@ -53,24 +63,24 @@ const extractStructuredContent = (content: string, existingSources?: Source[]) =
   const disclaimerMatch = content.match(disclaimerRegex);
   if (disclaimerMatch) {
     notes.push(disclaimerMatch[0]);
+    cleanContent = cleanContent.replace(disclaimerMatch[0], '').trim(); // Remove the disclaimer text
   }
 
-  // Clean the content by removing the extracted sources and disclaimer
+  // Markdown formatting cleanup
   cleanContent = cleanContent
-    .replace(sourceRegex, '')
-    .replace(disclaimerRegex, '')
+    .replace(/\n\n+/g, '\n\n') // Normalize multiple newlines
+    .replace(/:\s*\n/g, ':\n\n') // Add newline after a list heading
+    .replace(/^-\s*\*\*([^*]+)\*\*:?/gm, '**$1**:') // Normalize bolded list headers
+    .replace(/^-\s*\*\*([^*]+)\*\*\s*/gm, '\n\n- **$1** ') // Convert bullet points to proper markdown headings for list items
+    .replace(/^\s*[,]\s*/gm, '') // Remove residual commas
+    .replace(/\s+$/, '') // Remove trailing spaces
+    .replace(/^\s*\n/g, '') // Remove leading newlines
     .trim();
-
-  // Final cleanup and formatting for Markdown
-  cleanContent = cleanContent
-    .replace(/\n\s*$/, '') // remove trailing newlines
-    .replace(/\s+$/g, '') // remove trailing spaces
-    .replace(/\.\s*$/, '.'); // ensure sentences end with a period
 
   return { cleanContent, sources: extractedSources, notes };
 };
 
-// 2. Main React Component
+// Main React Component (Mostly unchanged, with minor tweaks for rendering logic)
 export function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const extractionResult = isUser
@@ -161,9 +171,9 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                               <h4 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-2">
                                 {source.title}
                               </h4>
-                              {source.section && (
+                              {source.reference && (
                                 <p className="text-sm lg:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
-                                  {source.section}
+                                  {source.reference}
                                 </p>
                               )}
                             </div>
