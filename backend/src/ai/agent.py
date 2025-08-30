@@ -129,38 +129,115 @@ class LegalAssistantAgent:
             early_stopping_method="generate"
         )
 
-    def _preprocess_query(self, query: str) -> dict:
-        """Analyze query to determine search strategy."""
+    def _preprocess_query(self, query: str, chat_history: list = None) -> dict:
+        """Analyze query and chat history to determine search strategy."""
         query_lower = query.lower()
+        
+        # List of Pakistan-related terms
+        pakistan_terms = [
+            # === COUNTRY & NATIONAL TERMS ===
+            'pakistan', 'pakistani', 'pak', 'pakistān', 'pakis', 'pakisani',
+            'islamic republic of pakistan', 'republic of pakistan',
+            
+            # === PROVINCES & ADMINISTRATIVE REGIONS ===
+            'punjab', 'sindh', 'khyber pakhtunkhwa', 'kp', 'kpk', 'balochistan', 'gilgit', 'baltistan',
+            'federally administered tribal areas', 'fata', 'azad kashmir', 'ajk', 'islamabad capital territory', 'ict',
+            'potohar', 'saraiki', 'makran', 'cholistan', 'thar', 'nubra', 'skardu', 'hunza', 'shigar',
+            
+            # === MAJOR CITIES & TOWNS ===
+            'karachi', 'lahore', 'islamabad', 'rawalpindi', 'faisalabad', 'multan', 'hyderabad', 'quetta',
+            'peshawar', 'mardan', 'abbottabad', 'swat', 'mansehra', 'murree', 'gulberg', 'defence', 'dha',
+            'clifton', 'gulshan', 'bahria', 'model town', 'johar town', 'walled city', 'old city',
+            
+            # === LEGISLATION & ACTS ===
+            'pakistan penal code', 'ppc', 'criminal procedure code', 'crpc', 'civil procedure code', 'cpc',
+            'qanun-e-shahadat', 'evidence act', 'contract act 1872', 'sale of goods act 1930',
+            'partnership act 1932', 'limitation act 1908', 'specific relief act 1877',
+            'property act 1882', 'registration act 1908', 'transfer of property act 1882',
+            'guardians and wards act 1890', 'guardianship law', 'custody law',
+            'child marriage restraint act 1929', 'cmra', 'sindh child marriage restraint act 2020',
+            'punjab dowry act 2021', 'dowry prohibition', 'bride price', 'mahr', 'dower',
+            'zakat', 'ushr', 'waqf', 'wakf', 'charity law', 'religious endowment',
+            'defamation law', 'cybercrime law', 'peca', 'prevention of electronic crimes act 2016',
+            'anti-corruption', 'nab', 'national accountability bureau', 'accountability court',
+            'provincial assembly', 'national assembly', 'senate', 'parliament',
+            
+            # === GOVERNMENT & INSTITUTIONS ===
+            'government of pakistan', 'federal government', 'provincial government',
+            'ministry of law', 'law and justice division', 'attorney general', 'solicitor general',
+            'district commissioner', 'dc', 'deputy commissioner', 'assistant commissioner', 'ac',
+            'police', 'ppc', 'punjab police', 'sindh police', 'kpk police', 'balochistan police',
+            'fia', 'federal investigation agency', 'nhsrc', 'national human rights commission',
+            'lc', 'local commission', 'ombudsman', 'mohtasib', 'wafaqi mohtasib',
+            'land revenue', 'revenue department', 'patwari', 'mutation', 'fard', 'intiqal',
+            'stamp duty', 'registration fee', 'property tax', 'municipal tax',
+            # === RELIGIOUS & CULTURAL CONTEXT (Legal Relevance) ===
+            'sunni', 'shiite', 'ahmadi', 'qadiani', 'blasphemy', '295c', 'section 295c',
+            'islamic ideology', 'niqab', 'hijab', 'burqa', 'purdah',
+            'interest', 'usury', 'zina', 
+            'nikah', 'nikkah','nikah nama', 'dissolution of muslim marriages act 1939',
+            'khula', 'talaq', 'divorce', 'iddat', 'iddah', 'maintenance', 'muta',
+            'wali', 'guardian', 'consent', 'minor marriage', 'child marriage',
+            'inheritance', 'sharia inheritance', 'faraid', 'ulama', 'mufti',
 
-        analysis = {
-            'is_pakistan_related': any(term in query_lower for term in [
-                'pakistan', 'pakistani', 'lahore', 'karachi', 'islamabad',
-                'sindh', 'punjab', 'balochistan', 'kpk', 'khyber pakhtunkhwa'
-            ]),
-            'is_time_sensitive': any(term in query_lower for term in [
-                'recent', 'latest', 'current', 'new', 'update', 'today', 'now',
-                '2024', '2023', 'this year', 'last year', 'currently'
-            ]),
-            'is_legal_query': any(term in query_lower for term in [
-                'constitution', 'amendment', 'law', 'act', 'ordinance', 'legal',
-                'court', 'judge', 'justice', 'parliament', 'assembly'
-            ]),
-            'suggested_strategy': None
-        }
-
+            'christian marriage act 1872', 'hindu marriage act 2017',
+            'sikh gurdwara act 1925', 'special marriage act 1872',
+        ]
+        
+        # Check if the query itself has Pakistan terms
+        is_pakistan_in_query = any(term in query_lower for term in pakistan_terms)
+        
+        # Check chat history for Pakistan context if available
+        is_pakistan_in_history = False
+        if chat_history:
+            # Extract text from chat history messages
+            history_text = ''
+            for msg in chat_history:
+                if hasattr(msg, 'content'):
+                    history_text += msg.content + ' '
+                elif isinstance(msg, str):
+                    history_text += msg + ' '
+                elif isinstance(msg, dict) and 'content' in msg:
+                    history_text += msg['content'] + ' '
+            history_lower = history_text.lower()
+            is_pakistan_in_history = any(term in history_lower for term in pakistan_terms)
+        
+        # If either query or history has Pakistan context, it's related
+        is_pakistan_related = is_pakistan_in_query or is_pakistan_in_history
+        
+        # Analyze time sensitivity and legal nature
+        is_time_sensitive = any(term in query_lower for term in [
+            'recent', 'latest', 'current', 'new', 'update', 'today', 'now',
+            '2024', '2023', 'this year', 'last year', 'currently'
+        ])
+        
+        is_legal_query = any(term in query_lower for term in [
+            # === LEGAL & CONSTITUTIONAL TERMS ===
+            'constitution of pakistan', '1973 constitution', 'pakistani constitution', 'constitution',
+            'fundamental rights', 'article 9', 'article 14', 'article 15', 'article 16', 'article 17', 'article 18',
+            'article 19', 'article 20', 'article 21', 'article 25', 'equality before law',
+            'shariat', 'islamic law', 'hudood', 'qisas', 'diyat', 'tazir', 'federal shariat court', 'fsc',
+            'high court', 'supreme court of pakistan', 'scp', 'sindh high court', 'lahore high court', 'balochistan high court',
+            'anti-terrorism court', 'atc', 'speedy trial court', 'civil court', 'criminal court',
+            'family court', 'labour court', 'service tribunal', 'income tax appellate tribunal',
+        ])
+        
         # Determine suggested strategy
-        if not analysis['is_pakistan_related']:
-            analysis['suggested_strategy'] = 'scope_check'
-        elif analysis['is_time_sensitive']:
-            analysis['suggested_strategy'] = 'web_first'
-        elif analysis['is_legal_query']:
-            analysis['suggested_strategy'] = 'local_first'
+        if not is_pakistan_related:
+            suggested_strategy = 'scope_check'
+        elif is_time_sensitive:
+            suggested_strategy = 'web_first'
+        elif is_legal_query:
+            suggested_strategy = 'local_first'
         else:
-            analysis['suggested_strategy'] = 'web_first'
-
-        return analysis
-
+            suggested_strategy = 'web_first'
+        
+        return {
+            'is_pakistan_related': is_pakistan_related,
+            'is_time_sensitive': is_time_sensitive,
+            'is_legal_query': is_legal_query,
+            'suggested_strategy': suggested_strategy
+        }
     async def run(self, query: str, groq_api_key: Optional[str] = None,
                   chat_history: List[Tuple[str, str]] = []) -> Dict[str, Any]:
         """
@@ -189,25 +266,25 @@ class LegalAssistantAgent:
                 }
 
             # Preprocess the query for insights
-            query_analysis = self._preprocess_query(query)
+            query_analysis = self._preprocess_query(query, chat_history)
 
             # Handle obvious scope issues early
             if query_analysis['suggested_strategy'] == 'scope_check':
                 if not query_analysis['is_pakistan_related']:
                     return {
-                        "response": "Out of scope – I only answer questions about Pakistan. Please rephrase your question to include Pakistani context if relevant.",
+                        "response": "I'm not sure if you're still asking about Pakistan.\n"
+                        "To keep things clear, please mention 'Pakistan' in your follow-up questions. ",
                         "sources": [],
                         "query_analysis": query_analysis
                     }
 
             # Add preprocessing context to the query
             enhanced_context = f"""
-                                    Query Analysis:
+                                Query Analysis:
                                     - Pakistan-related: {query_analysis['is_pakistan_related']}
                                     - Time-sensitive: {query_analysis['is_time_sensitive']}
                                     - Legal query: {query_analysis['is_legal_query']}
                                     - Suggested strategy: {query_analysis['suggested_strategy']}
-
                                     Original Question: {query}
                                 """
 
