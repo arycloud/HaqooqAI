@@ -331,11 +331,12 @@ class LegalAssistantAgent:
             }
 
     def _sanitize_llm_response(self, response: str) -> str:
-        """Ensure response is plain text and remove any structured formats"""
+        """Ensure response is plain text and remove any structured formats but keep markdown structure."""
+
         # Remove JSON-like structures that might have been generated
         response = re.sub(r'\{[^}]*"type"[^}]*\}', '', response)
         response = re.sub(r'\{[^}]*"children"[^}]*\}', '', response)
-        
+
         # Remove specific structured patterns
         structured_patterns = [
             r'"type":\s*"container"',
@@ -346,19 +347,23 @@ class LegalAssistantAgent:
             r'"type":\s*"disclaimerCard"',
             r'"style":\s*{[^}]*}'
         ]
-        
         for pattern in structured_patterns:
             response = re.sub(pattern, '', response)
-        
-        # Remove JSON brackets if present at start/end
+
+        # Remove JSON wrapping if present
         response = re.sub(r'^\s*{.*?}\s*$', '', response, flags=re.DOTALL)
-        
-        # Clean up any remaining artifacts
-        response = re.sub(r'\\n', '\n', response)
-        response = re.sub(r'\\', '', response)
-        response = re.sub(r'\s+', ' ', response).strip()
-        
-        return response
+
+        # Convert escaped newlines
+        response = response.replace("\\n", "\n")
+
+        # 🚨 Keep multiple newlines (section spacing), only collapse >3 into 2
+        response = re.sub(r'\n{3,}', '\n\n', response)
+
+        # Remove leftover backslashes
+        response = response.replace("\\", "")
+
+        # Trim trailing/leading whitespace
+        return response.strip()
 
     def _post_process_response(self, response: str, original_query: str) -> str:
         """Post-process the response for quality and consistency."""
