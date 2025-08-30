@@ -3,9 +3,8 @@ import { User, Scale, ExternalLink } from 'lucide-react'
 import { Message, Source } from '@/types/message'
 import { formatMessageTime } from '@/utils/formatters'
 import ReactMarkdown from 'react-markdown'
-import remarkGfm from "remark-gfm";
+import remarkGfm from "remark-gfm"
 
-// Enhanced helper function to extract and separate all structured content from backend response
 const extractStructuredContent = (content: string, existingSources?: Source[]) => {
   if (!content || typeof content !== 'string') {
     return { cleanContent: '', sources: existingSources, notes: [] }
@@ -83,8 +82,65 @@ const extractStructuredContent = (content: string, existingSources?: Source[]) =
     }
   } catch (e) {}
 
-  // --- [Regex-based extraction unchanged, same as your version] ---
-  // (skipping details here for brevity, keep your version as-is)
+  // --- [Regex-based extraction for sources and disclaimer] ---
+  const sourceStart = content.search(/Source:/i);
+  if (sourceStart !== -1) {
+    cleanContent = content.substring(0, sourceStart).trim();
+    const rest = content.substring(sourceStart);
+    const restLines = rest.split('\n');
+    let sourceEndIndex = restLines.length;
+    for (let i = 0; i < restLines.length; i++) {
+      const trimmed = restLines[i].trim();
+      if (!trimmed.startsWith('Source:') && trimmed !== '') {
+        sourceEndIndex = i;
+        break;
+      }
+    }
+    const sourcesText = restLines.slice(0, sourceEndIndex).join('\n');
+    const disclaimerText = restLines.slice(sourceEndIndex).join('\n').trim();
+
+    // Extract sources
+    const sourceMatches = [...sourcesText.matchAll(/Source:\s*(.+)/gi)];
+    sourceMatches.forEach((match) => {
+      let title = match[1].trim();
+      let url = null;
+      const urlMatch = title.match(/(https?:\/\/[^\s]+)/);
+      if (urlMatch) {
+        url = urlMatch[0];
+        title = title.replace(url, '').trim();
+      }
+      // Clean title prefixes
+      if (title.startsWith('Web Search – ')) {
+        title = title.replace('Web Search – ', '');
+      } else if (title.startsWith('Local Legal Docs – ')) {
+        title = title.replace('Local Legal Docs – ', '');
+      }
+      extractedSources.push({
+        type: 'web_search',
+        title,
+        reference: title,
+        // url,
+      });
+    });
+
+    if (disclaimerText) {
+      notes.push(disclaimerText);
+    }
+  } else {
+    // Check for disclaimer without sources
+    const disclaimerPatterns = [
+      /This is informational and not a substitute for formal legal advice\. Consult a qualified Pakistani lawyer for specific cases\./,
+      // Add more patterns if needed
+    ];
+    for (let pattern of disclaimerPatterns) {
+      const dMatch = content.match(pattern);
+      if (dMatch) {
+        cleanContent = content.replace(pattern, '').trim();
+        notes.push(dMatch[0]);
+        break;
+      }
+    }
+  }
 
   // final cleanup
   cleanContent = cleanContent
@@ -173,71 +229,62 @@ export function MessageBubble({ message }: MessageBubbleProps) {
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{normalizedContent}</ReactMarkdown>
             </div>
           )}
-
-          {/* Sources + Notes */}
-          {!isUser && ((filteredSources && filteredSources.length > 0) || notes.length > 0) && (
-            <div className="mt-6 lg:mt-8">
-              <div className="bg-gray-100/60 dark:bg-slate-700/40 rounded-2xl p-6 lg:p-8 border border-gray-200/40 dark:border-slate-600/40 shadow-sm">
-
-                {/* Sources */}
-                {filteredSources && filteredSources.length > 0 && (
-                  <div className="mb-6">
-                    <div className="flex items-center space-x-3 mb-5">
-                      <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md">
-                        <ExternalLink className="w-4 h-4 lg:w-5 lg:h-5 text-white" />
-                      </div>
-                      <h3 className="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-200">
-                        📄 Legal Sources &amp; References
-                      </h3>
-                    </div>
-                    <div className="space-y-4">
-                      {Array.from(
-                        new Map(filteredSources.map((src) => [src.title + (src.url ?? ""), src])).values()
-                      ).map((source, index) => (
-                        <div key={index}
-                          className="bg-white/80 dark:bg-slate-800/60 rounded-xl p-4 lg:p-5 border border-gray-200/50 dark:border-slate-600/50 cursor-pointer hover:bg-white dark:hover:bg-slate-800/80 hover:shadow-md transition-all duration-200 group"
-                          onClick={() => source.url && window.open(source.url, "_blank")}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h4 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-2">
-                                {source.title}
-                              </h4>
-                              {source.section && (
-                                <p className="text-sm lg:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
-                                  {source.section}
-                                </p>
-                              )}
-                            </div>
-                            {source.url && (
-                              <div className="ml-4 flex-shrink-0">
-                                <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-xl bg-gray-100 dark:bg-slate-700 flex items-center justify-center group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30">
-                                  <ExternalLink className="w-4 h-4 lg:w-5 lg:h-5 text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Notes */}
-                {notes.length > 0 && (
-                  <div className="bg-amber-50/80 dark:bg-amber-900/20 rounded-xl p-4 lg:p-5 border border-amber-200/50 dark:border-amber-700/30">
-                    <div className="prose prose-base lg:prose-lg max-w-none dark:prose-invert">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {notes[notes.length - 1]}
-                      </ReactMarkdown>
-                    </div>
-                  </div>
-                )}
-
-              </div>
-            </div>
-          )}
         </div>
+
+        {/* Sources */}
+        {!isUser && filteredSources && filteredSources.length > 0 && (
+          <div className="mt-6 lg:mt-8 bg-gray-100/60 dark:bg-slate-700/40 rounded-2xl p-6 lg:p-8 border border-gray-200/40 dark:border-slate-600/40 shadow-sm">
+            <div className="flex items-center space-x-3 mb-5">
+              <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md">
+                <ExternalLink className="w-4 h-4 lg:w-5 lg:h-5 text-white" />
+              </div>
+              <h3 className="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-200">
+                📄 Legal Sources &amp; References
+              </h3>
+            </div>
+            <div className="space-y-4">
+              {Array.from(
+                new Map(filteredSources.map((src) => [src.title + (src.url ?? ""), src])).values()
+              ).map((source, index) => (
+                <div key={index}
+                  className="bg-white/80 dark:bg-slate-800/60 rounded-xl p-4 lg:p-5 border border-gray-200/50 dark:border-slate-600/50 cursor-pointer hover:bg-white dark:hover:bg-slate-800/80 hover:shadow-md transition-all duration-200 group"
+                  onClick={() => source.url && window.open(source.url, "_blank")}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h4 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-2">
+                        {source.title}
+                      </h4>
+                      {source.section && (
+                        <p className="text-sm lg:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
+                          {source.section}
+                        </p>
+                      )}
+                    </div>
+                    {source.url && (
+                      <div className="ml-4 flex-shrink-0">
+                        <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-xl bg-gray-100 dark:bg-slate-700 flex items-center justify-center group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30">
+                          <ExternalLink className="w-4 h-4 lg:w-5 lg:h-5 text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Disclaimer */}
+        {!isUser && notes.length > 0 && (
+          <div className="mt-6 lg:mt-8 bg-amber-50/80 dark:bg-amber-900/20 rounded-2xl p-6 lg:p-8 border border-amber-200/50 dark:border-amber-700/30 shadow-sm">
+            <div className="prose prose-base lg:prose-lg max-w-none dark:prose-invert">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {notes[notes.length - 1]}
+              </ReactMarkdown>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
