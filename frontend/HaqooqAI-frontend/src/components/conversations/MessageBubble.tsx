@@ -521,27 +521,18 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                   </div>
                 )}
 
-                {/* Single Disclaimer/Note Section */}
-                {(notes.length > 0) && (
-                  <div>
-                    <div className="flex items-center space-x-3 mb-5">
-                      <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-md">
-                        <AlertCircle className="w-4 h-4 lg:w-5 lg-h-5 text-white" />
-                      </div>
-                      <h3 className="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-200">
-                        ⚠️ Important Notes & Disclaimers
-                      </h3>
-                    </div>
-
-                    <div className="bg-amber-50/80 dark:bg-amber-900/20 rounded-xl p-4 lg:p-5 border border-amber-200/50 dark:border-amber-700/30">
-                      <div className="prose prose-base lg:prose-lg max-w-none dark:prose-invert">
-                        <ReactMarkdown>
-                          {notes.join("\n\n")}
-                        </ReactMarkdown>
-                      </div>
-                    </div>
+                {/* Disclaimer Section - Show only once */}
+                {notes.length > 0 && (
+                <div className="bg-amber-50/80 dark:bg-amber-900/20 rounded-xl p-4 lg:p-5 border border-amber-200/50 dark:border-amber-700/30">
+                  <div className="prose prose-base lg:prose-lg max-w-none dark:prose-invert">
+                    <ReactMarkdown>
+                      {notes[notes.length - 1]}
+                    </ReactMarkdown>
                   </div>
-                )}
+                </div>
+              )}
+
+
               </div>
             </div>
           )}
