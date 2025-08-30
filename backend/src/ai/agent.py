@@ -273,7 +273,7 @@ class LegalAssistantAgent:
                     return {
                         "response": "This seems unrelated to Pakistan.\n"
                         "If it's a follow-up, please reference it clearly (e.g., 'the previous Pakistan PM')."
-                        "Otherwise, rephrase with Pakistan context.",
+                        " Otherwise, rephrase with Pakistan context.",
                         "sources": [],
                         "query_analysis": query_analysis
                     }

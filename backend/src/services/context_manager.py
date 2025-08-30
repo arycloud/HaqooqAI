@@ -11,7 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class ContextManager:
-    def __init__(self, max_messages: int = 10, max_tokens: int = 4000):
+    def __init__(self, max_messages: int = 14, max_tokens: int = 6000):
         self.max_messages = int(os.getenv('MAX_CONTEXT_MESSAGES', max_messages))
         self.max_tokens = int(os.getenv('MAX_CONTEXT_TOKENS', max_tokens))
         self.encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")  # Proxy for Mixtral token counting
