@@ -37,6 +37,16 @@ class LegalAssistantAgent:
             ("system",
             f"CURRENT DATE: {current_date}\n\n"
             "You are HaqooqAI, a specialized legal assistant for Pakistani law. Always respond in clear, professional English. Follow this enhanced decision flow strictly:\n\n"
+            
+            "## CRITICAL OUTPUT RULES ##\n"
+            "- NEVER output JSON, XML, or any structured data format\n"
+            "- ALWAYS output plain text only\n"
+            "- Format lists using simple bullet points with hyphens (-)\n"
+            "- Format bold text using **double asterisks**\n"
+            "- NEVER include 'type', 'children', 'metadata', or other structural elements\n"
+            "- Sources MUST appear at the end in this EXACT format:\n"
+            "  Source: [Type] – [Description]\n"
+            "  Example: 'Source: Web Search – Government of Pakistan Official Portal'\n\n"
 
             "## SCOPE CHECK ##\n"
             "First, verify if the question or conversation history relates to Pakistan:\n"
@@ -241,6 +251,7 @@ class LegalAssistantAgent:
             'is_legal_query': is_legal_query,
             'suggested_strategy': suggested_strategy
         }
+
     async def run(self, query: str, groq_api_key: Optional[str] = None,
                   chat_history: List[Tuple[str, str]] = []) -> Dict[str, Any]:
         """
@@ -319,8 +330,40 @@ class LegalAssistantAgent:
                 "sources": []
             }
 
+    def _sanitize_llm_response(self, response: str) -> str:
+        """Ensure response is plain text and remove any structured formats"""
+        # Remove JSON-like structures that might have been generated
+        response = re.sub(r'\{[^}]*"type"[^}]*\}', '', response)
+        response = re.sub(r'\{[^}]*"children"[^}]*\}', '', response)
+        
+        # Remove specific structured patterns
+        structured_patterns = [
+            r'"type":\s*"container"',
+            r'"type":\s*"card"',
+            r'"type":\s*"infoBlock"',
+            r'"type":\s*"paragraph"',
+            r'"type":\s*"metadata"',
+            r'"type":\s*"disclaimerCard"',
+            r'"style":\s*{[^}]*}'
+        ]
+        
+        for pattern in structured_patterns:
+            response = re.sub(pattern, '', response)
+        
+        # Remove JSON brackets if present at start/end
+        response = re.sub(r'^\s*{.*?}\s*$', '', response, flags=re.DOTALL)
+        
+        # Clean up any remaining artifacts
+        response = re.sub(r'\\n', '\n', response)
+        response = re.sub(r'\\', '', response)
+        response = re.sub(r'\s+', ' ', response).strip()
+        
+        return response
+
     def _post_process_response(self, response: str, original_query: str) -> str:
         """Post-process the response for quality and consistency."""
+
+        response = self._sanitize_llm_response(response)
 
         # Check if response seems incomplete or irrelevant
         if len(response) < 50:
@@ -344,19 +387,48 @@ class LegalAssistantAgent:
 
         # Look for source patterns in the response
         source_patterns = [
-            r"Source: My Knowledge – ([^\\n]+)",
-            r"Source: Web Search – ([^\\n]+)",
-            r"\[Source: ([^\]]+)\]"
+        # Standard patterns
+            r"Source:\s*([A-Za-z\s]+)\s*–\s*(.+?)(?=\n\n|\n[A-Z]|\n$|$)",
+            r"Source:\s*([A-Za-z\s]+)\s*-\s*(.+?)(?=\n\n|\n[A-Z]|\n$|$)",
+            r"Source:\s*([A-Za-z\s]+)\s*:\s*(.+?)(?=\n\n|\n[A-Z]|\n$|$)",
+            
+            # Alternative patterns
+            r"\[Source:\s*([^\]]+)\]\s*-\s*(.+?)(?=\n\n|\n[A-Z]|\n$|$)",
+            r"\*\*Source:\s*([^\*]+)\*\*\s*-\s*(.+?)(?=\n\n|\n[A-Z]|\n$|$)",
+            
+            # Fallback pattern for any "Source" mention
+            r"Source:\s*(.*?)(?=\n\n|\n[A-Z]|\n$|$)"
         ]
 
         for pattern in source_patterns:
-            matches = re.findall(pattern, response)
+            matches = re.findall(pattern, response, re.DOTALL)
             for match in matches:
-                source_type = "legal_doc" if "My Knowledge" in pattern else "web_search"
+                # Handle different pattern structures
+                if len(match) == 2:
+                    source_type, description = match
+                else:
+                    source_type = "web_search"  # Default type
+                    description = match[0] if match else ""
+                
+                # Clean up source type
+                source_type = source_type.strip()
+                if "Web Search" in source_type or "web search" in source_type:
+                    source_type = "web_search"
+                elif "Local Legal Docs" in source_type or "local knowledge" in source_type:
+                    source_type = "legal_doc"
+                else:
+                    source_type = "web_search"  # Default fallback
+                
+                # Clean up description
+                description = re.sub(r'\n+', ' ', description).strip()
+                
                 sources.append({
                     "type": source_type,
-                    "title": match.strip(),
-                    "reference": match.strip()
+                    "title": description,
+                    "reference": description
                 })
 
+        # Remove sources from the main response text
+        for pattern in source_patterns:
+            response = re.sub(pattern, '', response, flags=re.DOTALL)
         return sources
