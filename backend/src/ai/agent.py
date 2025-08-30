@@ -315,11 +315,13 @@ class LegalAssistantAgent:
 
             # Post-process the response
             final_response = self._post_process_response(cleaned_output_string.strip(), query)
-
+            sources, disclaimer = self._extract_sources_from_response(final_response)
+            print(f'Sources found: {sources}')
+            print(f'Disclaimer found: {disclaimer}')
             return {
                 "response": final_response,
-                "sources": self._extract_sources_from_response(final_response),
-                "query_analysis": query_analysis
+                "sources": sources,
+                "disclaimer": disclaimer
             }
 
         except Exception as e:
@@ -386,47 +388,33 @@ class LegalAssistantAgent:
 
         return response
 
-    def _extract_sources_from_response(self, response: str) -> list:
-        """Extract source information from the response text."""
+    def _extract_sources_from_response(self, response: str) -> tuple[list[dict], str | None]:
+        """Extract sources and disclaimer from LLM response text."""
         sources = []
+        disclaimer = None
 
-        source_patterns = [
-            r"Source:\s*(Web Search|Local Legal Docs|Conversation History|[A-Za-z ]+)\s*[-–:]\s*(.+?)(?=\n\n|\n[A-Z]|\n$|$)"
-        ]
-        
-        for pattern in source_patterns:
-            matches = re.findall(pattern, response, re.DOTALL)
-            for match in matches:
-                if len(match) == 2:
-                    source_type, description = match
-                else:
-                    source_type = "web_search"
-                    description = match[0] if match else ""
+        # Regex for sources
+        source_pattern = r"Source:\s*(?:Web Search\s*[-–]\s*)?(.+)"
+        for match in re.finditer(source_pattern, response, re.IGNORECASE):
+            source_text = match.group(1).strip()
+            if source_text and len(source_text) > 3:
+                sources.append({"title": source_text})
 
-                source_type = source_type.strip()
-                if "Web Search" in source_type:
-                    source_type = "web_search"
-                elif "Local Legal Docs" in source_type:
-                    source_type = "legal_doc"
-                elif "Conversation History" in source_type:
-                    source_type = "history"
-                else:
-                    source_type = "web_search"
+        # Regex for disclaimer
+        disclaimer_pattern = r"\*\*Disclaimer\*\*:?(.+)"
+        m = re.search(disclaimer_pattern, response, re.IGNORECASE | re.DOTALL)
+        if m:
+            disclaimer = "**Disclaimer**:" + m.group(1).strip()
 
-                # Clean up description
-                description = re.sub(r"(Disclaimer:.*|This is informational.*)", "", description).strip()
+        # Deduplicate sources by title
+        seen = set()
+        unique_sources = []
+        for s in sources:
+            if s["title"] not in seen:
+                seen.add(s["title"])
+                unique_sources.append(s)
 
-                # 🚨 Filter out stray letters/junk
-                if len(source_type) <= 2 or len(description) <= 3:
-                    continue
-
-                sources.append({
-                    "type": source_type,
-                    "title": description,
-                    "reference": description
-                })
-
-        return sources
+        return unique_sources, disclaimer
     
 
 
