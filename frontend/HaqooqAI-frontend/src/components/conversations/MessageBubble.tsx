@@ -470,25 +470,27 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           )}
 
           {/* Nested Information Container - Single container for both Sources and Notes */}
+          {/* Nested Information Container */}
           {!isUser && (notes.length > 0 || (filteredSources && filteredSources.length > 0)) && (
             <div className="mt-6 lg:mt-8">
-              {/* Single Nested Container with lighter background */}
               <div className="bg-gray-100/60 dark:bg-slate-700/40 rounded-2xl p-6 lg:p-8 border border-gray-200/40 dark:border-slate-600/40 shadow-sm">
 
-                {/* Sources Section - Display first */}
+                {/* Sources Section */}
                 {filteredSources && filteredSources.length > 0 && (
-                  <div className="mb-6 last:mb-0">
-                    {/* Sources Header */}
+                  <div className="mb-6">
                     <div className="flex items-center space-x-3 mb-5">
                       <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md">
                         <ExternalLink className="w-4 h-4 lg:w-5 lg:h-5 text-white" />
                       </div>
-                      <h3 className="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-200">📄 Legal Sources & References</h3>
+                      <h3 className="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-200">
+                        📄 Legal Sources & References
+                      </h3>
                     </div>
 
-                    {/* Sources List */}
                     <div className="space-y-4">
-                      {filteredSources.map((source, index) => (
+                      {Array.from(
+                        new Map(filteredSources.map(src => [src.title + src.url, src])).values()
+                      ).map((source, index) => (
                         <div
                           key={index}
                           className="bg-white/80 dark:bg-slate-800/60 rounded-xl p-4 lg:p-5 border border-gray-200/50 dark:border-slate-600/50 cursor-pointer hover:bg-white dark:hover:bg-slate-800/80 hover:shadow-md transition-all duration-200 group"
@@ -519,46 +521,31 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                   </div>
                 )}
 
-                {/* Notes/Disclaimers Section - Display after sources */}
-                {notes.length > 0 && (
+                {/* Single Disclaimer/Note Section */}
+                {(notes.length > 0) && (
                   <div>
-                    {/* Notes Header */}
                     <div className="flex items-center space-x-3 mb-5">
                       <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-md">
                         <AlertCircle className="w-4 h-4 lg:w-5 lg-h-5 text-white" />
                       </div>
-                      <h3 className="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-200">⚠️ Important Notes & Disclaimers</h3>
+                      <h3 className="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-200">
+                        ⚠️ Important Notes & Disclaimers
+                      </h3>
                     </div>
 
-                    {/* Notes List */}
-                    <div className="space-y-4">
-                      {notes.map((note, index) => (
-                        <div
-                          key={index}
-                          className="bg-amber-50/80 dark:bg-amber-900/20 rounded-xl p-4 lg:p-5 border border-amber-200/50 dark:border-amber-700/30"
-                        >
-                          <div className="prose prose-base lg:prose-lg max-w-none dark:prose-invert">
-                            <ReactMarkdown
-                              components={{
-                                p: ({ children }) => <p className="mb-3 last:mb-0 text-base lg:text-lg leading-relaxed text-gray-800 dark:text-gray-200">{children}</p>,
-                                ul: ({ children }) => <ul className="list-disc list-inside mb-3 space-y-2 text-base lg:text-lg text-gray-800 dark:text-gray-200 pl-5">{children}</ul>,
-                                ol: ({ children }) => <ol className="list-decimal list-inside mb-3 space-y-2 text-base lg:text-lg text-gray-800 dark:text-gray-200 pl-5">{children}</ol>,
-                                li: ({ children }) => <li className="text-gray-700 dark:text-gray-300 leading-relaxed pl-2">{children}</li>,
-                                strong: ({ children }) => <strong className="font-bold text-gray-900 dark:text-gray-100">{children}</strong>,
-                                em: ({ children }) => <em className="italic text-gray-700 dark:text-gray-300">{children}</em>,
-                              }}
-                            >
-                              {note}
-                            </ReactMarkdown>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="bg-amber-50/80 dark:bg-amber-900/20 rounded-xl p-4 lg:p-5 border border-amber-200/50 dark:border-amber-700/30">
+                      <div className="prose prose-base lg:prose-lg max-w-none dark:prose-invert">
+                        <ReactMarkdown>
+                          {notes.join("\n\n")} {/* Combine notes into one block */}
+                        </ReactMarkdown>
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
             </div>
           )}
+
         </div>
       </div>
     </div>
