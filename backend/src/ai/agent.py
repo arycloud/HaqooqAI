@@ -2,6 +2,7 @@
 Legal Assistant Agent for HaqooqAI Backend
 Adapted from existing agent.py with improved integration
 """
+from datetime import datetime
 import os
 import logging
 from typing import List, Optional, Dict, Any, Tuple
@@ -30,10 +31,11 @@ class LegalAssistantAgent:
             legal_document_search,
             web_search_tool
         ]
-
+        current_date = datetime.now().strftime("%B %d, %Y")
         # 3. Prompt Template
         self.prompt = ChatPromptTemplate.from_messages([
             ("system",
+            f"CURRENT DATE: {current_date}\n\n"
             "You are HaqooqAI, a specialized legal assistant for Pakistani law. Always respond in clear, professional English. Follow this enhanced decision flow strictly:\n\n"
 
             "## SCOPE CHECK ##\n"
@@ -46,9 +48,11 @@ class LegalAssistantAgent:
             "For confirmed Pakistani queries, use intelligent routing based on query and history:\n\n"
 
             "### Time-Sensitive Queries ###\n"
-            "If involving current events, recent changes, or time-sensitive info (keywords: 'recent', 'current', 'latest', 'new', '2024', '2023', 'today', or history suggests dynamism):\n"
+            "ALWAYS use the CURRENT DATE shown at the top of this prompt (NOT your internal knowledge) for year references.\n"
+            "If involving current events, recent changes, or time-sensitive info (keywords: 'recent', 'current', 'latest', 'new', 'today', or history suggests dynamism):\n"
             "- Action: ALWAYS use web_search_tool FIRST for verification.\n"
-            "- Enhance query: Add 'Pakistan' if missing, 'site:gov.pk OR site:na.gov.pk OR site:supremecourt.gov.pk' for official info, and current year (e.g., 'Pakistan PM 2025').\n"
+            "- Enhance query: Add 'Pakistan' if missing, 'site:gov.pk OR site:na.gov.pk OR site:supremecourt.gov.pk' for official info, and the CURRENT YEAR from the date above (e.g., 'Pakistan PM 2025').\n"
+            "- NEVER use years from your training data (like 2023) - always use the current year shown at the top.\n"
             "- Examples: Current PM, recent amendments, latest court decisions — never guess; tool-verify.\n\n"
 
             "### Historical/Established Legal Queries ###\n"

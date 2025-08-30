@@ -32,6 +32,42 @@ class LegalRAGEngine:
             logger.error(f"Error initializing LegalRAGEngine: {e}")
             self.agent = None
 
+    def enhance_query_for_time_sensitivity(self, query: str, is_time_sensitive: bool) -> str:
+        """Enhance query with current year and official sites, ensuring correct year usage"""
+        if not is_time_sensitive:
+            return query
+            
+        current_year = datetime.now().year
+        
+        # Check if query contains outdated years
+        if re.search(r'\b(202[0-3])\b', query):
+            # Replace outdated years with current year
+            query = re.sub(r'\b(202[0-3])\b', str(current_year), query)
+        
+        # Add Pakistan context if missing
+        if 'pakistan' not in query.lower():
+            query += " Pakistan"
+        
+        # Add site restrictions and current year
+        query += f" {current_year} site:gov.pk OR site:na.gov.pk OR site:supremecourt.gov.pk"
+        
+        return query
+
+
+    def verify_date_relevance(self, response: str, query: str, is_time_sensitive: bool) -> str:
+        """Check if response contains outdated date references for time-sensitive queries"""
+        if not is_time_sensitive:
+            return response
+            
+        current_year = datetime.now().year
+        
+        # Check if response mentions outdated years for current positions
+        if "current" in query.lower() or "present" in query.lower():
+            if re.search(r'\b(202[0-3])\b', response):
+                return response + "\n\n⚠️ Note: This response may contain outdated information. Always verify with current official sources."
+        
+        return response
+
     async def process_query(self, query: str, groq_key: Optional[str] = None,
                             conversation_id: Optional[str] = None,
                             user_id: Optional[int] = None) -> Dict[str, Any]:
@@ -62,6 +98,19 @@ class LegalRAGEngine:
             # Process query through the agent
             agent_result = await self.agent.run(query, groq_key, chat_history=chat_history)
 
+            # Get query analysis from agent result
+            query_analysis = agent_result.get("query_analysis", {})
+            is_time_sensitive = query_analysis.get("is_time_sensitive", False)
+            
+            # ENHANCEMENT: Apply time-sensitive query enhancement
+            enhanced_query = self.enhance_query_for_time_sensitivity(query, is_time_sensitive)
+            
+            # ENHANCEMENT: Verify date relevance in response
+            final_response = self.verify_date_relevance(
+                agent_result.get("response", ""),
+                query,
+                is_time_sensitive
+            )
             # Extract and enhance sources
             sources = await self._enhance_sources(
                 agent_result.get("sources", []),
@@ -71,10 +120,10 @@ class LegalRAGEngine:
             processing_time = time.time() - start_time
 
             return {
-                "response": agent_result.get("response", "No response generated"),
+                "response": final_response,
                 "sources": sources,
                 "processing_time": processing_time,
-                "query_analysis": agent_result.get("query_analysis", {}),
+                "query_analysis": query_analysis,
                 "error": agent_result.get("error")
             }
 

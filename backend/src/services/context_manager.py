@@ -95,3 +95,4 @@ class ContextManager:
             current_tokens += msg_tokens
 
         return chat_history
+    
