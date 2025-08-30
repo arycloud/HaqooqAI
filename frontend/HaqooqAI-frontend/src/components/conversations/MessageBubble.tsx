@@ -30,51 +30,64 @@ interface MessageBubbleProps {
 // Updated and more robust extraction function
 const extractStructuredContent = (content: string, existingSources?: Source[]) => {
   if (!content || typeof content !== 'string') {
-    return { cleanContent: '', sources: existingSources, notes: [] };
+    return { cleanContent: '', sources: existingSources || [], notes: [] };
   }
 
   let cleanContent = content;
   let extractedSources: Source[] = [...(existingSources || [])];
   let notes: string[] = [];
 
-  // Regex to match and extract sources. This regex is more flexible.
-  const sourceRegex = /(?:Source:\s*(.*?)(?:\s*–\s*([^,]+))?)/g;
-  let match;
-  while ((match = sourceRegex.exec(cleanContent)) !== null) {
-    const fullMatch = match[0].trim();
-    const sourceTitle = match[1]?.trim() || '';
-    const sourceReference = match[2]?.trim() || '';
-    
-    // Check if the source is valid before adding
-    if (sourceTitle && sourceReference) {
-      const type = sourceTitle.toLowerCase().includes('web search') ? 'web_search' : 'local_docs';
-      extractedSources.push({
-        type: type,
-        title: sourceReference,
-        reference: sourceTitle,
-        url: type === 'web_search' ? sourceReference.includes('http') ? sourceReference : undefined : undefined,
-      });
-      cleanContent = cleanContent.replace(fullMatch, '').trim(); // Remove the full source line
+  // Extract sources with more flexible patterns
+  const sourcePatterns = [
+    // Pattern: "Source: Web Search – Government of Pakistan Official Portal, Supreme Court of Pakistan Rulings"
+    /Source:\s*([^–\n]+)(?:\s*–\s*([^\n]+))?/g,
+    // Pattern: "Source: Local Legal Docs – Muslim Personal Law (Shariat) Application Act, 1937"
+    /Source:\s*([^–\n]+)(?:\s*–\s*([^\n]+))?/g,
+  ];
+
+  sourcePatterns.forEach(pattern => {
+    let match;
+    while ((match = pattern.exec(content)) !== null) {
+      const fullMatch = match[0].trim();
+      const sourceType = match[1]?.trim() || '';
+      const sourceDetails = match[2]?.trim() || '';
+
+      if (sourceType && sourceDetails) {
+        const type = sourceType.toLowerCase().includes('web search') ? 'web_search' : 'local_docs';
+        extractedSources.push({
+          type: type,
+          title: sourceDetails,
+          reference: sourceType,
+          url: type === 'web_search' && sourceDetails.includes('http') ? sourceDetails : undefined,
+        });
+        cleanContent = cleanContent.replace(fullMatch, '').trim();
+      }
     }
-  }
+  });
 
-  // Regex to match the disclaimer at the end
-  const disclaimerRegex = /This is informational and not a substitute for formal legal advice\. Consult a qualified Pakistani lawyer for specific cases\./g;
-  const disclaimerMatch = content.match(disclaimerRegex);
-  if (disclaimerMatch) {
-    notes.push(disclaimerMatch[0]);
-    cleanContent = cleanContent.replace(disclaimerMatch[0], '').trim(); // Remove the disclaimer text
-  }
+  // Extract disclaimers and notes with flexible patterns
+  const disclaimerPatterns = [
+    /This is informational and not a substitute for formal legal advice\. Consult a qualified Pakistani lawyer for specific cases\./g,
+    /This is informational and not a substitute for formal legal advice\. Consult[^.]*\./g,
+    /\*\*Disclaimer\*\*:?\s*([^\n]+)/g,
+    /Disclaimer:\s*([^\n]+)/g,
+  ];
 
-  // Markdown formatting cleanup
+  disclaimerPatterns.forEach(pattern => {
+    const matches = content.match(pattern);
+    if (matches) {
+      matches.forEach(match => {
+        notes.push(match.replace(/\*\*Disclaimer\*\*:?\s*/, '').trim());
+        cleanContent = cleanContent.replace(match, '').trim();
+      });
+    }
+  });
+
+  // Clean up the content for better markdown rendering
   cleanContent = cleanContent
     .replace(/\n\n+/g, '\n\n') // Normalize multiple newlines
-    .replace(/:\s*\n/g, ':\n\n') // Add newline after a list heading
-    .replace(/^-\s*\*\*([^*]+)\*\*:?/gm, '**$1**:') // Normalize bolded list headers
-    .replace(/^-\s*\*\*([^*]+)\*\*\s*/gm, '\n\n- **$1** ') // Convert bullet points to proper markdown headings for list items
-    .replace(/^\s*[,]\s*/gm, '') // Remove residual commas
-    .replace(/\s+$/, '') // Remove trailing spaces
-    .replace(/^\s*\n/g, '') // Remove leading newlines
+    .replace(/^\s*\n+/g, '') // Remove leading newlines
+    .replace(/\n+\s*$/g, '') // Remove trailing newlines
     .trim();
 
   return { cleanContent, sources: extractedSources, notes };
@@ -140,7 +153,29 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             </p>
           ) : (
             <div className="prose prose-base lg:prose-lg max-w-none dark:prose-invert leading-relaxed">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{cleanContent}</ReactMarkdown>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  // Ensure proper spacing for paragraphs
+                  p: ({ children }) => <p className="mb-4 last:mb-0">{children}</p>,
+                  // Style unordered lists properly
+                  ul: ({ children }) => <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>,
+                  // Style ordered lists properly
+                  ol: ({ children }) => <ol className="list-decimal pl-6 mb-4 space-y-2">{children}</ol>,
+                  // Style list items
+                  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                  // Style headings
+                  h1: ({ children }) => <h1 className="text-2xl font-bold mb-4 mt-6 first:mt-0">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-xl font-bold mb-3 mt-5 first:mt-0">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-lg font-bold mb-2 mt-4 first:mt-0">{children}</h3>,
+                  // Style strong/bold text
+                  strong: ({ children }) => <strong className="font-bold text-gray-900 dark:text-gray-100">{children}</strong>,
+                  // Style emphasis/italic text
+                  em: ({ children }) => <em className="italic">{children}</em>,
+                }}
+              >
+                {cleanContent}
+              </ReactMarkdown>
             </div>
           )}
 
@@ -193,11 +228,23 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                 
                 {/* Disclaimer Box */}
                 {notes.length > 0 && (
-                  <div className="bg-amber-50/80 dark:bg-amber-900/20 rounded-xl p-4 lg:p-5 border border-amber-200/50 dark:border-amber-700/30">
-                    <div className="prose prose-base lg:prose-lg max-w-none dark:prose-invert">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {notes[notes.length - 1]}
-                      </ReactMarkdown>
+                  <div className="bg-amber-50 dark:bg-amber-900/30 rounded-xl p-4 lg:p-5 border border-amber-200 dark:border-amber-700/50 shadow-sm">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-white text-sm font-bold">!</span>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-2">
+                          Important Notice
+                        </h4>
+                        <div className="text-sm text-amber-700 dark:text-amber-300 leading-relaxed">
+                          {notes.map((note, index) => (
+                            <p key={index} className="mb-2 last:mb-0">
+                              {note}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
