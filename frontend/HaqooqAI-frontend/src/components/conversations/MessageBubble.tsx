@@ -14,7 +14,170 @@ const extractStructuredContent = (content: string, existingSources?: Source[]) =
   let extractedSources: Source[] = [...(existingSources || [])]
   let notes: string[] = []
 
-  // 1. First, extract and remove all notes content to prevent it from being captured as sources
+  // 1. First, check if content is JSON (handle inconsistent backend responses)
+  try {
+    // Try to find JSON object in the string (in case it's embedded in text)
+    let jsonMatch = content.match(/({\s*"type"\s*:\s*".*?"\s*,[\s\S]*})/)
+    let jsonStr = jsonMatch ? jsonMatch[0] : content
+    
+    // Attempt to parse as JSON
+    const possibleJson = JSON.parse(jsonStr);
+    
+    // Check if it's a structured response format we recognize
+    if (possibleJson.type && (possibleJson.type === 'container' || possibleJson.type === 'card' || possibleJson.type === 'infoBlock')) {
+      // This is structured JSON - extract content and sources
+      const flattenContent = (node: any): string => {
+        if (typeof node === 'string') return node;
+        
+        // Handle text nodes
+        if (node.type === 'text' && node.value !== undefined) {
+          return node.value;
+        }
+        
+        // Handle content arrays
+        if (node.content !== undefined) {
+          if (typeof node.content === 'string') {
+            return node.content;
+          } else if (Array.isArray(node.content)) {
+            return node.content.map(flattenContent).join('');
+          }
+        }
+        
+        // Handle children arrays
+        if (node.children !== undefined) {
+          if (typeof node.children === 'string') {
+            return node.children;
+          } else if (Array.isArray(node.children)) {
+            return node.children.map(flattenContent).join('\n\n');
+          }
+        }
+        
+        // Fallback for other structures
+        if (node.title || node.value || node.text) {
+          return node.title || node.value || node.text;
+        }
+        
+        return '';
+      };
+
+      cleanContent = flattenContent(possibleJson);
+      
+      // Extract sources from the structured format
+      const extractSources = (node: any): Source[] => {
+        if (!node || typeof node !== 'object') return [];
+        
+        let sources: Source[] = [];
+        
+        // Look for metadata blocks
+        const processMetadata = (metadata: any) => {
+          const items = metadata.children || metadata.items || [];
+          
+          items.forEach((item: any) => {
+            if ((item.label === 'Source' || item.label === 'Sources') && item.value) {
+              sources.push({
+                type: 'web_search',
+                title: item.value,
+                reference: item.value
+              });
+            }
+          });
+        };
+        
+        if (node.type === 'metadata' || node.type === 'metadataBlock') {
+          processMetadata(node);
+        } else if (node.children) {
+          // Check for metadata blocks in children
+          node.children.forEach((child: any) => {
+            if (child.type === 'metadata' || child.type === 'metadataBlock') {
+              processMetadata(child);
+            }
+          });
+          
+          // Recursively check children
+          node.children.forEach((child: any) => {
+            sources = [...sources, ...extractSources(child)];
+          });
+        }
+        
+        return sources;
+      };
+      
+      // Extract notes from structured format
+      const extractNotes = (node: any): string[] => {
+        if (!node || typeof node !== 'object') return [];
+        
+        let noteItems: string[] = [];
+        
+        // Look for disclaimer cards or note sections
+        const processNote = (content: any) => {
+          if (typeof content === 'string') {
+            noteItems.push(content);
+          } else if (content && typeof content === 'object') {
+            if (content.value) {
+              noteItems.push(content.value);
+            } else if (content.content) {
+              if (typeof content.content === 'string') {
+                noteItems.push(content.content);
+              } else if (Array.isArray(content.content)) {
+                const text = content.content
+                  .map((c: any) => c.value || c.text || c)
+                  .filter(Boolean)
+                  .join('');
+                if (text) noteItems.push(text);
+              }
+            }
+          }
+        };
+        
+        if (node.type === 'disclaimerCard' || 
+            node.type === 'alertBox' ||
+            (node.label && node.label.includes('Disclaimer')) ||
+            (node.title && node.title.includes('Disclaimer'))) {
+          if (node.content) {
+            processNote(node.content);
+          } else if (node.children) {
+            node.children.forEach((child: any) => {
+              if (child.type === 'alertBox' && child.content) {
+                processNote(child.content);
+              }
+            });
+          }
+        }
+        
+        // Recursively check children
+        if (node.children) {
+          node.children.forEach((child: any) => {
+            noteItems = [...noteItems, ...extractNotes(child)];
+          });
+        }
+        
+        return noteItems;
+      };
+      
+      // Apply structured extraction
+      const jsonSources = extractSources(possibleJson);
+      if (jsonSources.length > 0) {
+        extractedSources = [...jsonSources, ...extractedSources];
+      }
+      
+      const jsonNotes = extractNotes(possibleJson);
+      if (jsonNotes.length > 0) {
+        notes = [...jsonNotes, ...notes];
+      }
+      
+      // We've processed the JSON, so we'll use the flattened content for the rest
+      // No need to continue with regex-based extraction
+      return {
+        cleanContent,
+        sources: extractedSources,
+        notes
+      };
+    }
+  } catch (e) {
+    // Not JSON, continue with normal processing
+  }
+
+  // 2. First, extract and remove all notes content to prevent it from being captured as sources
   const notePatterns = [
     // Markdown bold format
     /\*\*(?:Important\s+)?Notes?\s*:\*\*(.*?)(?=\n\n\*\*|\n\n[A-Z]|\n\n$|$)/gs,
@@ -65,7 +228,7 @@ const extractStructuredContent = (content: string, existingSources?: Source[]) =
     }
   })
 
-  // 2. Extract Sources/References section (after notes are removed)
+  // 3. Extract Sources/References section (after notes are removed)
   const sourcePatterns = [
     // Markdown bold format
     /\*\*(?:Legal\s+)?Sources?(?:\s+(?:and|&)\s+References?)?\s*:\*\*(.*?)(?=\n\n\*\*|\n\n[A-Z]|\n\n$|$)/gs,
@@ -101,7 +264,7 @@ const extractStructuredContent = (content: string, existingSources?: Source[]) =
             }
 
             // Clean up bullet points and numbering
-            const cleanLine = trimmedLine.replace(/^[-•*]\s*/, '').replace(/^\d+\.\s*/, '').trim()
+            const cleanLine = trimmedLine.replace(/^[-•]\s*/, '').replace(/^\d+\.\s*/, '').trim()
 
             if (cleanLine && !cleanLine.toLowerCase().startsWith('note:')) {
               // Try to extract title and URL if present
@@ -145,9 +308,7 @@ const extractStructuredContent = (content: string, existingSources?: Source[]) =
     }
   })
 
-  // Notes were already extracted above, so this section is removed to avoid duplication
-
-  // 3. Clean up the main content
+  // 4. Clean up the main content
   cleanContent = cleanContent
     .replace(/\n\n+/g, '\n\n') // Remove excessive line breaks
     .replace(/^\s*[-•]\s*/gm, '') // Remove bullet points from main content
@@ -157,13 +318,11 @@ const extractStructuredContent = (content: string, existingSources?: Source[]) =
     .replace(/\s+$/, '') // Remove trailing whitespace
     .trim()
 
-  // 4. Remove any remaining section headers that might be left
+  // 5. Remove any remaining section headers that might be left
   cleanContent = cleanContent.replace(/^\*\*[A-Z][^:]*:\*\*\s*$/gm, '').trim()
 
-  // 5. Final cleanup - remove any trailing periods that might have been left
+  // 6. Final cleanup - remove any trailing periods
   cleanContent = cleanContent.replace(/\.\s*$/, '').trim()
-
-
 
   return {
     cleanContent,
@@ -348,7 +507,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                     {/* Notes Header */}
                     <div className="flex items-center space-x-3 mb-5">
                       <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-md">
-                        <AlertCircle className="w-4 h-4 lg:w-5 lg:h-5 text-white" />
+                        <AlertCircle className="w-4 h-4 lg:w-5 lg-h-5 text-white" />
                       </div>
                       <h3 className="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-200">⚠️ Important Notes & Disclaimers</h3>
                     </div>
