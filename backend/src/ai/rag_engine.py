@@ -3,6 +3,7 @@ RAG Engine for HaqooqAI Backend
 Integrates LegalAssistantAgent with source extraction and processing
 """
 import logging
+import re
 import time
 from typing import Dict, Any, List, Optional
 from datetime import datetime
