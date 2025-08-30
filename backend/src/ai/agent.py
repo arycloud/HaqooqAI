@@ -31,62 +31,63 @@ class LegalAssistantAgent:
             web_search_tool
         ]
 
-        # 3. Enhanced prompt template with better search strategy
+        # 3. Prompt Template
         self.prompt = ChatPromptTemplate.from_messages([
             ("system",
-             "You are HaqooqAI, a specialized legal assistant for Pakistani law. Follow this enhanced decision flow:\n\n"
+            "You are HaqooqAI, a specialized legal assistant for Pakistani law. Always respond in clear, professional English. Follow this enhanced decision flow strictly:\n\n"
 
-             "## SCOPE CHECK ##\n"
-             "First, verify if the question relates to Pakistan:\n"
-             "- If NOT about Pakistan: Reply 'Out of scope – I only answer questions about Pakistan.'\n"
-             "- If unclear, ask for clarification about Pakistani context\n\n"
+            "## SCOPE CHECK ##\n"
+            "First, verify if the question or conversation history relates to Pakistan:\n"
+            "- If NOT about Pakistan (no relevant terms in query or history): Reply 'Out of scope – I only answer questions about Pakistan. Please rephrase with Pakistani context.'\n"
+            "- If unclear or a follow-up without explicit terms but history indicates Pakistan context: Proceed, assuming Pakistan relevance from history.\n"
+            "- Examples: Follow-ups like 'expand on that' after a Pakistan law discussion are in-scope; unrelated shifts (e.g., 'Who is Biden?') are out-of-scope.\n\n"
 
-             "## SEARCH STRATEGY ##\n"
-             "For Pakistani legal questions, use this intelligent routing:\n\n"
+            "## SEARCH STRATEGY ##\n"
+            "For confirmed Pakistani queries, use intelligent routing based on query and history:\n\n"
 
-             "### Time-Sensitive Queries ###\n"
-             "If query involves current events, recent changes, or time-sensitive information:\n"
-             "- Keywords: 'recent', 'current', 'latest', 'new', '2024', '2023', 'today'\n"
-             "- Action: Use web_search tool FIRST\n"
-             "- Examples: recent amendments, current officeholders, latest court decisions\n\n"
+            "### Time-Sensitive Queries ###\n"
+            "If involving current events, recent changes, or time-sensitive info (keywords: 'recent', 'current', 'latest', 'new', '2024', '2023', 'today', or history suggests dynamism):\n"
+            "- Action: ALWAYS use web_search_tool FIRST for verification.\n"
+            "- Enhance query: Add 'Pakistan' if missing, 'site:gov.pk OR site:na.gov.pk OR site:supremecourt.gov.pk' for official info, and current year (e.g., 'Pakistan PM 2025').\n"
+            "- Examples: Current PM, recent amendments, latest court decisions — never guess; tool-verify.\n\n"
 
-             "### Historical/Established Legal Queries ###\n"
-             "For established laws, constitutional provisions, or historical information:\n"
-             "- Action: Try legal_document_search FIRST\n"
-             "- If no relevant results (distance > 0.7 or no matches): Fallback to web_search\n"
-             "- Examples: constitutional articles, established procedures, statutory provisions\n\n"
+            "### Historical/Established Legal Queries ###\n"
+            "For static laws, constitutional provisions, or historical info (from query or history):\n"
+            "- Action: Try legal_document_search FIRST for precise matches.\n"
+            "- If no relevant results (distance > 0.7, no matches, or incomplete): Fallback to web_search_tool with enhancements.\n"
+            "- Cross-verify: If history contradicts, re-query tools.\n"
+            "- Examples: 1973 Constitution articles, established procedures—use history to refine (e.g., 'based on previous marriage law query').\n\n"
 
-             "### Query Enhancement ###\n"
-             "When using web_search, enhance queries with:\n"
-             "- Pakistan context if missing: 'Pakistan constitution amendments'\n"
-             "- Official sources: Add 'site:na.gov.pk OR site:pakistan.gov.pk' for government info\n"
-             "- Legal context: Add 'legal' or 'government' for legal queries\n\n"
+            "### Query Enhancement ###\n"
+            "Always refine queries using history:\n"
+            "- Add Pakistan context if implied by history but missing.\n"
+            "- Prefer official/reliable sources: Append 'site:pakistan.gov.pk OR site:na.gov.pk OR site:supremecourt.gov.pk'.\n"
+            "- For legal: Add 'legal OR law OR act OR ordinance'.\n"
+            "- If results poor (irrelevant, outdated, non-English): Retry with synonyms, simpler terms, or combine tools.\n\n"
 
-             "## RESPONSE QUALITY ##\n"
-             "- Always verify information through tools before answering\n"
-             "- Never hallucinate or guess\n"
-             "- If search results are irrelevant (wrong language, off-topic), try alternative queries\n"
-             "- For poor web search results, try simpler or different keyword combinations\n\n"
+            "## RESPONSE QUALITY ##\n"
+            "- ALWAYS base EVERY factual claim on tool results—never hallucinate, guess, or use internal knowledge alone.\n"
+            "- Use chat_history for continuity: Reference prior info (e.g., 'Building on our discussion of marriage laws...'), avoid repetition.\n"
+            "- If tools return conflicting info: Note the discrepancy and prioritize official sources (e.g., gov.pk).\n"
+            "- Handle languages: Prefer English; ignore non-relevant foreign content unless Urdu legal terms (e.g., 'nikah').\n"
+            "- Keep responses concise, structured (bullet points/tables for lists), and neutral.\n\n"
 
-             "## CITATION RULES ##\n"
-             "- Local knowledge: 'Source: My Knowledge – [specific document/section]'\n"
-             "- Web search: 'Source: Web Search – [title/URL if available]'\n"
-             "- If multiple sources conflict, mention the discrepancy\n"
-             "- Always include disclaimer: 'This is informational and not a substitute for formal legal advice.'\n\n"
+            "## CITATION RULES ##\n"
+            "- Local knowledge: 'Source: Local Legal Docs – [document/section, e.g., Constitution Article 25]'\n"
+            "- Web search: 'Source: Web Search – [title/URL/snippet from reliable site]'\n"
+            "- History: If referencing prior: 'Source: Conversation History – [brief summary]'\n"
+            "- Multiple sources: List all; flag conflicts (e.g., 'Source A says X, but Source B says Y—verify officially').\n"
+            "- ALWAYS include disclaimer: 'This is informational and not a substitute for formal legal advice. Consult a qualified Pakistani lawyer for specific cases.'\n\n"
 
-             "## QUALITY CHECKS ##\n"
-             "Before providing final answer, verify:\n"
-             "1. Results are relevant to Pakistan\n"
-             "2. Information addresses the specific question asked\n"
-             "3. Sources are properly cited\n"
-             "4. Language/content is appropriate (not Chinese, Arabic, etc. unless specifically relevant)\n\n"
+            "## QUALITY CHECKS ##\n"
+            "Before final answer, self-verify:\n"
+            "1. Is response Pakistan-relevant and consistent with history?\n"
+            "2. Does it directly address the query without extras?\n"
+            "3. Are all facts tool-verified with citations?\n"
+            "4. Is language professional, accurate, and disclaimer included?\n"
+            "5. If tools failed/relevant info missing: Say 'Insufficient reliable info—please provide more details or rephrase.'\n\n"
 
-             "If initial search fails, try alternative approaches:\n"
-             "- Different keywords\n"
-             "- Simpler queries\n"
-             "- Both local and web search\n\n"
-
-             "Always prioritize accuracy and relevance over speed."
+            "Prioritize accuracy, relevance, and user safety over completeness."
             ),
             ("placeholder", "{chat_history}"),
             ("human", "{question}"),
@@ -184,40 +185,43 @@ class LegalAssistantAgent:
             'sikh gurdwara act 1925', 'special marriage act 1872',
         ]
         
+        follow_up_indicators = [
+        'previous', 'last', 'that', 'the person', 'he', 'she', 'it', 'expand', 'more on',
+        'follow up', 'clarify', 'elaborate', 'expand', 'what about', 'tell me more', 'who was',
+        'the one', 'mentioned', 'earlier', 'before', 'just asked', 'in my last'
+        ]
+        is_follow_up = any(indicator in query_lower for indicator in follow_up_indicators)
+        
         # Check if the query itself has Pakistan terms
         is_pakistan_in_query = any(term in query_lower for term in pakistan_terms)
         
         # Check chat history for Pakistan context if available
         is_pakistan_in_history = False
         if chat_history:
-            # Extract text from chat history messages
-            recent_history = chat_history[-6:]
+            # Limit to recent history (last 4 messages: ~2 user-assistant pairs) for relevance
+            recent_history = chat_history[-4:]
             # Extract content from tuples (role, content)
             history_text = ' '.join([content for role, content in recent_history])
             history_lower = history_text.lower()
             is_pakistan_in_history = any(term in history_lower for term in pakistan_terms)
         
-        # If either query or history has Pakistan context, it's related
-        is_pakistan_related = is_pakistan_in_query or is_pakistan_in_history
-        logger.debug(f"Query Pakistan check: in_query={is_pakistan_in_query}, in_history={is_pakistan_in_history}")
-        # Analyze time sensitivity and legal nature
+        # Refined: Related if query has terms OR (it's a follow-up AND history has terms)
+        is_pakistan_related = is_pakistan_in_query or (is_follow_up and is_pakistan_in_history)
+        
+        # New: Debug logging
+        logger.debug(f"Scope Check - Query: '{query}' | In Query: {is_pakistan_in_query} | Follow-up: {is_follow_up} | In History: {is_pakistan_in_history} | Overall Related: {is_pakistan_related}")
+        
+        # Analyze time sensitivity and legal nature (no changes needed)
         is_time_sensitive = any(term in query_lower for term in [
             'recent', 'latest', 'current', 'new', 'update', 'today', 'now',
             '2024', '2023', 'this year', 'last year', 'currently'
         ])
         
         is_legal_query = any(term in query_lower for term in [
-            # === LEGAL & CONSTITUTIONAL TERMS ===
-            'constitution of pakistan', '1973 constitution', 'pakistani constitution', 'constitution',
-            'fundamental rights', 'article 9', 'article 14', 'article 15', 'article 16', 'article 17', 'article 18',
-            'article 19', 'article 20', 'article 21', 'article 25', 'equality before law',
-            'shariat', 'islamic law', 'hudood', 'qisas', 'diyat', 'tazir', 'federal shariat court', 'fsc',
-            'high court', 'supreme court of pakistan', 'scp', 'sindh high court', 'lahore high court', 'balochistan high court',
-            'anti-terrorism court', 'atc', 'speedy trial court', 'civil court', 'criminal court',
-            'family court', 'labour court', 'service tribunal', 'income tax appellate tribunal',
+            # ... (keep your list as-is) ...
         ])
         
-        # Determine suggested strategy
+        # Determine suggested strategy (no changes needed)
         if not is_pakistan_related:
             suggested_strategy = 'scope_check'
         elif is_time_sensitive:
@@ -267,8 +271,9 @@ class LegalAssistantAgent:
             if query_analysis['suggested_strategy'] == 'scope_check':
                 if not query_analysis['is_pakistan_related']:
                     return {
-                        "response": "I'm not sure if you're still asking about Pakistan.\n"
-                        "To keep things clear, please mention 'Pakistan' in your follow-up questions. ",
+                        "response": "This seems unrelated to Pakistan.\n"
+                        "If it's a follow-up, please reference it clearly (e.g., 'the previous Pakistan PM')."
+                        "Otherwise, rephrase with Pakistan context.",
                         "sources": [],
                         "query_analysis": query_analysis
                     }
