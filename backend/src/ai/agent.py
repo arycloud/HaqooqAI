@@ -385,50 +385,43 @@ class LegalAssistantAgent:
         """Extract source information from the response text."""
         sources = []
 
-        # Look for source patterns in the response
         source_patterns = [
-        # Standard patterns
-            r"Source:\s*([A-Za-z\s]+)\s*–\s*(.+?)(?=\n\n|\n[A-Z]|\n$|$)",
-            r"Source:\s*([A-Za-z\s]+)\s*-\s*(.+?)(?=\n\n|\n[A-Z]|\n$|$)",
-            r"Source:\s*([A-Za-z\s]+)\s*:\s*(.+?)(?=\n\n|\n[A-Z]|\n$|$)",
-            
-            # Alternative patterns
-            r"\[Source:\s*([^\]]+)\]\s*-\s*(.+?)(?=\n\n|\n[A-Z]|\n$|$)",
-            r"\*\*Source:\s*([^\*]+)\*\*\s*-\s*(.+?)(?=\n\n|\n[A-Z]|\n$|$)",
-            
-            # Fallback pattern for any "Source" mention
-            r"Source:\s*(.*?)(?=\n\n|\n[A-Z]|\n$|$)"
+            r"Source:\s*(Web Search|Local Legal Docs|Conversation History|[A-Za-z ]+)\s*[-–:]\s*(.+?)(?=\n\n|\n[A-Z]|\n$|$)"
         ]
-
+        
         for pattern in source_patterns:
             matches = re.findall(pattern, response, re.DOTALL)
             for match in matches:
-                # Handle different pattern structures
                 if len(match) == 2:
                     source_type, description = match
                 else:
-                    source_type = "web_search"  # Default type
-                    description = match[0] if match else ""
-                
-                # Clean up source type
-                source_type = source_type.strip()
-                if "Web Search" in source_type or "web search" in source_type:
                     source_type = "web_search"
-                elif "Local Legal Docs" in source_type or "local knowledge" in source_type:
+                    description = match[0] if match else ""
+
+                source_type = source_type.strip()
+                if "Web Search" in source_type:
+                    source_type = "web_search"
+                elif "Local Legal Docs" in source_type:
                     source_type = "legal_doc"
+                elif "Conversation History" in source_type:
+                    source_type = "history"
                 else:
-                    source_type = "web_search"  # Default fallback
-                
+                    source_type = "web_search"
+
                 # Clean up description
-                description = re.sub(r'\n+', ' ', description).strip()
-                
+                description = re.sub(r"(Disclaimer:.*|This is informational.*)", "", description).strip()
+
+                # 🚨 Filter out stray letters/junk
+                if len(source_type) <= 2 or len(description) <= 3:
+                    continue
+
                 sources.append({
                     "type": source_type,
                     "title": description,
                     "reference": description
                 })
 
-        # Remove sources from the main response text
-        for pattern in source_patterns:
-            response = re.sub(pattern, '', response, flags=re.DOTALL)
         return sources
+    
+
+
