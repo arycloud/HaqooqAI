@@ -191,20 +191,15 @@ class LegalAssistantAgent:
         is_pakistan_in_history = False
         if chat_history:
             # Extract text from chat history messages
-            history_text = ''
-            for msg in chat_history:
-                if hasattr(msg, 'content'):
-                    history_text += msg.content + ' '
-                elif isinstance(msg, str):
-                    history_text += msg + ' '
-                elif isinstance(msg, dict) and 'content' in msg:
-                    history_text += msg['content'] + ' '
+            recent_history = chat_history[-6:]
+            # Extract content from tuples (role, content)
+            history_text = ' '.join([content for role, content in recent_history])
             history_lower = history_text.lower()
             is_pakistan_in_history = any(term in history_lower for term in pakistan_terms)
         
         # If either query or history has Pakistan context, it's related
         is_pakistan_related = is_pakistan_in_query or is_pakistan_in_history
-        
+        logger.debug(f"Query Pakistan check: in_query={is_pakistan_in_query}, in_history={is_pakistan_in_history}")
         # Analyze time sensitivity and legal nature
         is_time_sensitive = any(term in query_lower for term in [
             'recent', 'latest', 'current', 'new', 'update', 'today', 'now',
