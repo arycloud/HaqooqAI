@@ -471,69 +471,89 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
           {/* Nested Information Container - Single container for both Sources and Disclaimer */}
           {!isUser && ((filteredSources && filteredSources.length > 0) || notes.length > 0) && (
-            <div className="mt-6 lg:mt-8">
-              <div className="bg-gray-100/60 dark:bg-slate-700/40 rounded-2xl p-6 lg:p-8 border border-gray-200/40 dark:border-slate-600/40 shadow-sm">
+          <div className="mt-6 lg:mt-8">
+            <div className="bg-gray-100/60 dark:bg-slate-700/40 rounded-2xl p-6 lg:p-8 border border-gray-200/40 dark:border-slate-600/40 shadow-sm">
 
-                {/* Sources Section */}
-                {filteredSources && filteredSources.length > 0 && (
-                  <div className="mb-6">
-                    <div className="flex items-center space-x-3 mb-5">
-                      <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md">
-                        <ExternalLink className="w-4 h-4 lg:w-5 lg:h-5 text-white" />
-                      </div>
-                      <h3 className="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-200">
-                        📄 Legal Sources & References
-                      </h3>
+              {/* Sources Section */}
+              {filteredSources && filteredSources.length > 0 && (
+                <div className="mb-6">
+                  <div className="flex items-center space-x-3 mb-5">
+                    <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md">
+                      <ExternalLink className="w-4 h-4 lg:w-5 lg:h-5 text-white" />
                     </div>
+                    <h3 className="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-200">
+                      📄 Legal Sources & References
+                    </h3>
+                  </div>
 
-                    <div className="space-y-4">
-                      {Array.from(
-                        new Map(filteredSources.map(src => [src.title + (src.url ?? ""), src])).values()
-                      ).map((source, index) => (
-                        <div
-                          key={index}
-                          className="bg-white/80 dark:bg-slate-800/60 rounded-xl p-4 lg:p-5 border border-gray-200/50 dark:border-slate-600/50 cursor-pointer hover:bg-white dark:hover:bg-slate-800/80 hover:shadow-md transition-all duration-200 group"
-                          onClick={() => source.url && window.open(source.url, "_blank")}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h4 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200 mb-2">
-                                {source.title}
-                              </h4>
-                              {source.section && (
-                                <p className="text-sm lg:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
-                                  {source.section}
-                                </p>
-                              )}
-                            </div>
-                            {source.url && (
-                              <div className="ml-4 flex-shrink-0">
-                                <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-xl bg-gray-100 dark:bg-slate-700 flex items-center justify-center group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors duration-200">
-                                  <ExternalLink className="w-4 h-4 lg:w-5 lg:h-5 text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-                                </div>
-                              </div>
+                  <div className="space-y-4">
+                    {Array.from(
+                      new Map(filteredSources.map(src => [src.title + (src.url ?? ""), src])).values()
+                    ).map((source, index) => (
+                      <div
+                        key={index}
+                        className="bg-white/80 dark:bg-slate-800/60 rounded-xl p-4 lg:p-5 border border-gray-200/50 dark:border-slate-600/50 cursor-pointer hover:bg-white dark:hover:bg-slate-800/80 hover:shadow-md transition-all duration-200 group"
+                        onClick={() => source.url && window.open(source.url, "_blank")}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200 mb-2">
+                              {source.title}
+                            </h4>
+                            {source.section && (
+                              <p className="text-sm lg:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
+                                {source.section}
+                              </p>
                             )}
                           </div>
+                          {source.url && (
+                            <div className="ml-4 flex-shrink-0">
+                              <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-xl bg-gray-100 dark:bg-slate-700 flex items-center justify-center group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors duration-200">
+                                <ExternalLink className="w-4 h-4 lg:w-5 lg:h-5 text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Disclaimer Section - Show only once at the bottom */}
-                {notes.length > 0 && (
+              {/* Disclaimer Section - Show only once at the bottom */}
+              {notes.length > 0 && (
+                <div>
+                  {/* Header with amber icon */}
+                  <div className="flex items-center space-x-3 mb-5">
+                    <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-md">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
+                          viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+                          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" 
+                          className="w-4 h-4 lg:w-5 lg:h-5 text-white">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                      </svg>
+                    </div>
+                    <h3 className="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-200">
+                      ⚠️ Important Notes & Disclaimers
+                    </h3>
+                  </div>
+
+                  {/* Disclaimer content */}
                   <div className="bg-amber-50/80 dark:bg-amber-900/20 rounded-xl p-4 lg:p-5 border border-amber-200/50 dark:border-amber-700/30">
                     <div className="prose prose-base lg:prose-lg max-w-none dark:prose-invert">
                       <ReactMarkdown>
-                        {notes[notes.length - 1]} 
+                        {notes[notes.length - 1]}
                       </ReactMarkdown>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-              </div>
             </div>
-          )}
+          </div>
+        )}
 
 
         </div>
