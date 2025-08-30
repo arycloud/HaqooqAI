@@ -177,7 +177,23 @@ const extractStructuredContent = (content: string, existingSources?: Source[]) =
     // Not JSON, continue with normal processing
   }
 
-  // 2. First, extract and remove all notes content to prevent it from being captured as sources
+  // 2. ENHANCEMENT: Standardize list formatting for better Markdown rendering
+  // Convert inconsistent list formats to proper Markdown lists
+  cleanContent = cleanContent
+    // Handle cases like "Key requirements include: - Company Type..."
+    .replace(/([^.?!;:])(\s*- )/g, '$1\n$2')
+    // Ensure proper spacing after colons before lists
+    .replace(/([^.?!;:])(:\s*- )/g, '$1:\n$2')
+    // Fix nested lists with proper indentation
+    .replace(/(\n\s*- [^\n]+)(\n\s*- )/g, '$1\n  $2')
+    // Ensure multiple spaces after hyphens are standardized
+    .replace(/(\n\s*-)\s+/g, '\n- ')
+    // Add newline before numbered lists
+    .replace(/([^.?!;:])(\s*\d+\.\s)/g, '$1\n$2')
+    // Ensure proper spacing for nested numbered lists
+    .replace(/(\n\s*\d+\.[^\n]+)(\n\s*\d+\.\s)/g, '$1\n  $2')
+
+  // 3. First, extract and remove all notes content to prevent it from being captured as sources
   const notePatterns = [
     // Markdown bold format
     /\*\*(?:Important\s+)?Notes?\s*:\*\*(.*?)(?=\n\n\*\*|\n\n[A-Z]|\n\n$|$)/gs,
@@ -228,7 +244,7 @@ const extractStructuredContent = (content: string, existingSources?: Source[]) =
     }
   })
 
-  // 3. Extract Sources/References section (after notes are removed)
+  // 4. Extract Sources/References section (after notes are removed)
   const sourcePatterns = [
     // Markdown bold format
     /\*\*(?:Legal\s+)?Sources?(?:\s+(?:and|&)\s+References?)?\s*:\*\*(.*?)(?=\n\n\*\*|\n\n[A-Z]|\n\n$|$)/gs,
@@ -308,7 +324,7 @@ const extractStructuredContent = (content: string, existingSources?: Source[]) =
     }
   })
 
-  // 4. Clean up the main content
+  // 5. Clean up the main content
   cleanContent = cleanContent
     .replace(/\n\n+/g, '\n\n') // Remove excessive line breaks
     .replace(/^\s*[-•]\s*/gm, '') // Remove bullet points from main content
@@ -318,10 +334,10 @@ const extractStructuredContent = (content: string, existingSources?: Source[]) =
     .replace(/\s+$/, '') // Remove trailing whitespace
     .trim()
 
-  // 5. Remove any remaining section headers that might be left
+  // 6. Remove any remaining section headers that might be left
   cleanContent = cleanContent.replace(/^\*\*[A-Z][^:]*:\*\*\s*$/gm, '').trim()
 
-  // 6. Final cleanup - remove any trailing periods
+  // 7. Final cleanup - remove any trailing periods
   cleanContent = cleanContent.replace(/\.\s*$/, '').trim()
 
   return {
@@ -411,7 +427,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                       return true
                     })
                     return filteredChildren.length > 0 ? (
-                      <ul className="list-disc list-inside mb-4 lg:mb-5 space-y-2 text-lg lg:text-xl">{filteredChildren}</ul>
+                      <ul className="list-disc list-inside mb-4 lg:mb-5 space-y-2 text-lg lg:text-xl pl-5">{filteredChildren}</ul>
                     ) : null
                   },
                   ol: ({ children }) => {
@@ -424,7 +440,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                       return true
                     })
                     return filteredChildren.length > 0 ? (
-                      <ol className="list-decimal list-inside mb-4 lg:mb-5 space-y-2 text-lg lg:text-xl">{filteredChildren}</ol>
+                      <ol className="list-decimal list-inside mb-4 lg:mb-5 space-y-2 text-lg lg:text-xl pl-5">{filteredChildren}</ol>
                     ) : null
                   },
                   li: ({ children }) => {
@@ -433,7 +449,9 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                       typeof child === 'string' ? child.trim() : true
                     )
                     return hasContent ? (
-                      <li className="text-gray-700 dark:text-gray-300 leading-relaxed">{children}</li>
+                      <li className="text-gray-700 dark:text-gray-300 leading-relaxed pl-2">
+                        {children}
+                      </li>
                     ) : null
                   },
                   strong: ({ children }) => <strong className="font-semibold text-gray-900 dark:text-gray-100">{children}</strong>,
@@ -523,9 +541,9 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                             <ReactMarkdown
                               components={{
                                 p: ({ children }) => <p className="mb-3 last:mb-0 text-base lg:text-lg leading-relaxed text-gray-800 dark:text-gray-200">{children}</p>,
-                                ul: ({ children }) => <ul className="list-disc list-inside mb-3 space-y-2 text-base lg:text-lg text-gray-800 dark:text-gray-200">{children}</ul>,
-                                ol: ({ children }) => <ol className="list-decimal list-inside mb-3 space-y-2 text-base lg:text-lg text-gray-800 dark:text-gray-200">{children}</ol>,
-                                li: ({ children }) => <li className="text-gray-700 dark:text-gray-300 leading-relaxed">{children}</li>,
+                                ul: ({ children }) => <ul className="list-disc list-inside mb-3 space-y-2 text-base lg:text-lg text-gray-800 dark:text-gray-200 pl-5">{children}</ul>,
+                                ol: ({ children }) => <ol className="list-decimal list-inside mb-3 space-y-2 text-base lg:text-lg text-gray-800 dark:text-gray-200 pl-5">{children}</ol>,
+                                li: ({ children }) => <li className="text-gray-700 dark:text-gray-300 leading-relaxed pl-2">{children}</li>,
                                 strong: ({ children }) => <strong className="font-bold text-gray-900 dark:text-gray-100">{children}</strong>,
                                 em: ({ children }) => <em className="italic text-gray-700 dark:text-gray-300">{children}</em>,
                               }}
