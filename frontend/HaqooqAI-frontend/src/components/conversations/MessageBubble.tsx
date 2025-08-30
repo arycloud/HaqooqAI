@@ -3,6 +3,7 @@ import { User, Scale, ExternalLink, AlertCircle } from 'lucide-react'
 import { Message, Source } from '@/types/message'
 import { formatMessageTime } from '@/utils/formatters'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from "remark-gfm";
 
 // Enhanced helper function to extract and separate all structured content from backend response
 const extractStructuredContent = (content: string, existingSources?: Source[]) => {
@@ -352,42 +353,73 @@ interface MessageBubbleProps {
 }
 
 export function MessageBubble({ message }: MessageBubbleProps) {
-  const isUser = message.role === 'user'
+  const isUser = message.role === "user";
 
   // Extract structured content from AI responses
   const extractionResult = isUser
     ? { cleanContent: message.content, sources: undefined, notes: [] }
-    : extractStructuredContent(message.content, message.sources)
+    : extractStructuredContent(message.content, message.sources);
 
-  const { cleanContent, sources: extractedSources, notes } = extractionResult
+  const { cleanContent, sources: extractedSources, notes } = extractionResult;
 
   // Use extracted sources or fall back to message sources, but avoid duplicates
-  const displaySources = extractedSources && extractedSources.length > 0 ? extractedSources : message.sources
+  const displaySources =
+    extractedSources && extractedSources.length > 0
+      ? extractedSources
+      : message.sources;
 
   // Filter out any note content that might have leaked into sources
-  const filteredSources = displaySources?.filter(source => {
-    const title = source.title?.toLowerCase() || ''
-    return !title.includes('this information is current') &&
-           !title.includes('for real-time updates') &&
-           !title.includes('verify with official') &&
-           !title.startsWith('note:')
-  })
+  const filteredSources = displaySources?.filter((source) => {
+    const title = source.title?.toLowerCase() || "";
+    return (
+      !title.includes("this information is current") &&
+      !title.includes("for real-time updates") &&
+      !title.includes("verify with official") &&
+      !title.startsWith("note:") &&
+      !title.startsWith("**disclaimer**")
+    );
+  });
 
   // Fallback: if extraction resulted in empty content, use original content
-  let finalContent = cleanContent.trim() || message.content
-
+  let finalContent = (cleanContent || message.content || "").trim();
   // Additional cleanup for final content - remove any trailing periods
-  finalContent = finalContent.replace(/\.\s*$/, '').trim()
+  finalContent = finalContent.replace(/\.\s*$/, "").trim();
+
+  // --- Normalize bullets & spacing so Markdown parses reliably ---
+  const normalizeContentForMarkdown = (text: string) => {
+    let t = text;
+    // Convert common bullet glyphs at line-start to markdown hyphens
+    t = t.replace(/^\s*[•–—]\s+/gm, "- ");
+    // Ensure a blank line before list blocks so ReactMarkdown recognizes lists
+    t = t.replace(/([^\n])\n(-\s)/g, "$1\n\n$2");
+    // Collapse 3+ newlines into a clean double break
+    t = t.replace(/\n{3,}/g, "\n\n");
+    return t.trim();
+  };
+
+  const normalizedContent = normalizeContentForMarkdown(finalContent);
 
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-6 lg:mb-8`}>
-      <div className={`max-w-4xl lg:max-w-5xl ${isUser ? 'order-2' : 'order-1'}`}>
-        {/* Enhanced Message Header */}
-        <div className={`flex items-center space-x-3 mb-3 lg:mb-4 ${isUser ? 'justify-end' : 'justify-start'}`}>
-          <div className={`flex items-center space-x-3 ${isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
-            <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center shadow-md ${
-              isUser ? 'bg-gradient-to-br from-purple-600 to-blue-600' : 'bg-gradient-to-br from-gray-700 to-gray-800'
-            }`}>
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-6 lg:mb-8`}>
+      <div className={`max-w-4xl lg:max-w-5xl ${isUser ? "order-2" : "order-1"}`}>
+        {/* Header */}
+        <div
+          className={`flex items-center space-x-3 mb-3 lg:mb-4 ${
+            isUser ? "justify-end" : "justify-start"
+          }`}
+        >
+          <div
+            className={`flex items-center space-x-3 ${
+              isUser ? "flex-row-reverse space-x-reverse" : ""
+            }`}
+          >
+            <div
+              className={`w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center shadow-md ${
+                isUser
+                  ? "bg-gradient-to-br from-purple-600 to-blue-600"
+                  : "bg-gradient-to-br from-gray-700 to-gray-800"
+              }`}
+            >
               {isUser ? (
                 <User className="w-4 h-4 lg:w-5 lg:h-5 text-white" />
               ) : (
@@ -395,7 +427,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
               )}
             </div>
             <span className="text-base lg:text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {isUser ? 'You' : 'HaqooqAI'}
+              {isUser ? "You" : "HaqooqAI"}
             </span>
             <span className="text-sm lg:text-base text-gray-500 dark:text-gray-400">
               {formatMessageTime(message.created_at)}
@@ -403,161 +435,204 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           </div>
         </div>
 
-        {/* Enhanced Message Content */}
-        <div className={`rounded-2xl p-6 lg:p-8 shadow-lg border-2 ${
-          isUser
-            ? 'bg-gradient-to-br from-purple-600 to-blue-600 text-white border-purple-500/20'
-            : 'bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-slate-600'
-        }`}>
+        {/* Bubble */}
+        <div
+          className={`rounded-2xl p-6 lg:p-8 shadow-lg border-2 ${
+            isUser
+              ? "bg-gradient-to-br from-purple-600 to-blue-600 text-white border-purple-500/20"
+              : "bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-slate-600"
+          }`}
+        >
+          {/* Main content */}
           {isUser ? (
-            <p className="whitespace-pre-wrap text-lg lg:text-xl leading-relaxed font-medium">{message.content}</p>
+            <p className="whitespace-pre-wrap text-base lg:text-lg leading-relaxed font-medium">
+              {message.content}
+            </p>
           ) : (
-            <div className="prose prose-lg lg:prose-xl max-w-none dark:prose-invert">
+            <div className="prose prose-base lg:prose-lg max-w-none dark:prose-invert leading-relaxed">
               <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
                 components={{
-                  // Enhanced markdown rendering with better styling and larger text
-                  p: ({ children }) => <p className="mb-4 lg:mb-5 last:mb-0 text-lg lg:text-xl leading-relaxed">{children}</p>,
-                  ul: ({ children }) => {
-                    // Filter out empty children to prevent empty lists
-                    const filteredChildren = React.Children.toArray(children).filter(child => {
-                      if (React.isValidElement(child) && child.type === 'li') {
-                        const childContent = React.Children.toArray(child.props.children)
-                        return childContent.some(c => typeof c === 'string' ? c.trim() : true)
-                      }
-                      return true
-                    })
-                    return filteredChildren.length > 0 ? (
-                      <ul className="list-disc list-inside mb-4 lg:mb-5 space-y-2 text-lg lg:text-xl pl-5">{filteredChildren}</ul>
-                    ) : null
-                  },
-                  ol: ({ children }) => {
-                    // Filter out empty children to prevent empty lists
-                    const filteredChildren = React.Children.toArray(children).filter(child => {
-                      if (React.isValidElement(child) && child.type === 'li') {
-                        const childContent = React.Children.toArray(child.props.children)
-                        return childContent.some(c => typeof c === 'string' ? c.trim() : true)
-                      }
-                      return true
-                    })
-                    return filteredChildren.length > 0 ? (
-                      <ol className="list-decimal list-inside mb-4 lg:mb-5 space-y-2 text-lg lg:text-xl pl-5">{filteredChildren}</ol>
-                    ) : null
-                  },
-                  li: ({ children }) => {
-                    // Only render list items that have non-empty content
-                    const hasContent = React.Children.toArray(children).some(child =>
-                      typeof child === 'string' ? child.trim() : true
-                    )
-                    return hasContent ? (
-                      <li className="text-gray-700 dark:text-gray-300 leading-relaxed pl-2">
-                        {children}
-                      </li>
-                    ) : null
-                  },
-                  strong: ({ children }) => <strong className="font-semibold text-gray-900 dark:text-gray-100">{children}</strong>,
+                  // Headings with tidy sizes
+                  h1: ({ children }) => (
+                    <h1 className="text-2xl lg:text-3xl font-bold mb-4">{children}</h1>
+                  ),
+                  h2: ({ children }) => (
+                    <h2 className="text-xl lg:text-2xl font-bold mt-6 mb-3">{children}</h2>
+                  ),
+                  h3: ({ children }) => (
+                    <h3 className="text-lg lg:text-xl font-semibold mt-5 mb-2">{children}</h3>
+                  ),
+                  // Paragraphs
+                  p: ({ children }) => (
+                    <p className="mb-4 lg:mb-5 text-base lg:text-lg">{children}</p>
+                  ),
+                  // Lists (bullets/numbers)
+                  ul: ({ children }) => (
+                    <ul className="list-disc pl-6 space-y-2 mb-4 lg:mb-5">{children}</ul>
+                  ),
+                  ol: ({ children }) => (
+                    <ol className="list-decimal pl-6 space-y-2 mb-4 lg:mb-5">{children}</ol>
+                  ),
+                  li: ({ children }) => (
+                    <li className="text-gray-700 dark:text-gray-300">{children}</li>
+                  ),
+                  // Emphasis
+                  strong: ({ children }) => (
+                    <strong className="font-semibold text-gray-900 dark:text-gray-100">
+                      {children}
+                    </strong>
+                  ),
                   em: ({ children }) => <em className="italic">{children}</em>,
+                  // Links open in new tab
+                  a: ({ children, href }) => (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline decoration-dotted underline-offset-4 hover:decoration-solid"
+                    >
+                      {children}
+                    </a>
+                  ),
+                  // Code blocks / inline code
                   code: ({ children }) => (
-                    <code className="bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-lg text-base lg:text-lg font-mono text-gray-800 dark:text-gray-200">{children}</code>
+                    <code className="bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded-md text-sm font-mono text-gray-800 dark:text-gray-200">
+                      {children}
+                    </code>
                   ),
                   pre: ({ children }) => (
-                    <pre className="bg-gray-100 dark:bg-slate-700 p-4 lg:p-5 rounded-xl overflow-x-auto text-base lg:text-lg font-mono">{children}</pre>
+                    <pre className="bg-gray-100 dark:bg-slate-700 p-4 lg:p-5 rounded-xl overflow-x-auto text-sm lg:text-base font-mono">
+                      {children}
+                    </pre>
+                  ),
+                  // Blockquote
+                  blockquote: ({ children }) => (
+                    <blockquote className="border-l-4 border-gray-300 dark:border-slate-600 pl-4 italic text-gray-700 dark:text-gray-300 my-4">
+                      {children}
+                    </blockquote>
+                  ),
+                  hr: () => <hr className="my-6 border-gray-200 dark:border-slate-700" />,
+                  table: ({ children }) => (
+                    <div className="overflow-x-auto my-4">
+                      <table className="min-w-full border border-gray-200 dark:border-slate-600 rounded-md">
+                        {children}
+                      </table>
+                    </div>
+                  ),
+                  th: ({ children }) => (
+                    <th className="px-3 py-2 text-left bg-gray-50 dark:bg-slate-700/40 border-b border-gray-200 dark:border-slate-600">
+                      {children}
+                    </th>
+                  ),
+                  td: ({ children }) => (
+                    <td className="px-3 py-2 border-b border-gray-200 dark:border-slate-600">
+                      {children}
+                    </td>
                   ),
                 }}
               >
-                {finalContent}
+                {normalizedContent}
               </ReactMarkdown>
             </div>
           )}
 
-          {/* Nested Information Container - Single container for both Sources and Disclaimer */}
-          {!isUser && ((filteredSources && filteredSources.length > 0) || notes.length > 0) && (
-          <div className="mt-6 lg:mt-8">
-            <div className="bg-gray-100/60 dark:bg-slate-700/40 rounded-2xl p-6 lg:p-8 border border-gray-200/40 dark:border-slate-600/40 shadow-sm">
+          {/* Sources + Disclaimer container */}
+          {!isUser &&
+            ((filteredSources && filteredSources.length > 0) || notes.length > 0) && (
+              <div className="mt-6 lg:mt-8">
+                <div className="bg-gray-100/60 dark:bg-slate-700/40 rounded-2xl p-6 lg:p-8 border border-gray-200/40 dark:border-slate-600/40 shadow-sm">
+                  {/* Sources */}
+                  {filteredSources && filteredSources.length > 0 && (
+                    <div className="mb-6">
+                      <div className="flex items-center space-x-3 mb-5">
+                        <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md">
+                          <ExternalLink className="w-4 h-4 lg:w-5 lg:h-5 text-white" />
+                        </div>
+                        <h3 className="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-200">
+                          📄 Legal Sources &amp; References
+                        </h3>
+                      </div>
 
-              {/* Sources Section */}
-              {filteredSources && filteredSources.length > 0 && (
-                <div className="mb-6">
-                  <div className="flex items-center space-x-3 mb-5">
-                    <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md">
-                      <ExternalLink className="w-4 h-4 lg:w-5 lg:h-5 text-white" />
-                    </div>
-                    <h3 className="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-200">
-                      📄 Legal Sources & References
-                    </h3>
-                  </div>
-
-                  <div className="space-y-4">
-                    {Array.from(
-                      new Map(filteredSources.map(src => [src.title + (src.url ?? ""), src])).values()
-                    ).map((source, index) => (
-                      <div
-                        key={index}
-                        className="bg-white/80 dark:bg-slate-800/60 rounded-xl p-4 lg:p-5 border border-gray-200/50 dark:border-slate-600/50 cursor-pointer hover:bg-white dark:hover:bg-slate-800/80 hover:shadow-md transition-all duration-200 group"
-                        onClick={() => source.url && window.open(source.url, "_blank")}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <h4 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200 mb-2">
-                              {source.title}
-                            </h4>
-                            {source.section && (
-                              <p className="text-sm lg:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
-                                {source.section}
-                              </p>
-                            )}
-                          </div>
-                          {source.url && (
-                            <div className="ml-4 flex-shrink-0">
-                              <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-xl bg-gray-100 dark:bg-slate-700 flex items-center justify-center group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors duration-200">
-                                <ExternalLink className="w-4 h-4 lg:w-5 lg:h-5 text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                      <div className="space-y-4">
+                        {Array.from(
+                          new Map(
+                            filteredSources.map((src) => [src.title + (src.url ?? ""), src])
+                          ).values()
+                        ).map((source, index) => (
+                          <div
+                            key={index}
+                            className="bg-white/80 dark:bg-slate-800/60 rounded-xl p-4 lg:p-5 border border-gray-200/50 dark:border-slate-600/50 cursor-pointer hover:bg-white dark:hover:bg-slate-800/80 hover:shadow-md transition-all duration-200 group"
+                            onClick={() => source.url && window.open(source.url, "_blank")}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h4 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200 mb-2">
+                                  {source.title}
+                                </h4>
+                                {source.section && (
+                                  <p className="text-sm lg:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
+                                    {source.section}
+                                  </p>
+                                )}
                               </div>
+                              {source.url && (
+                                <div className="ml-4 flex-shrink-0">
+                                  <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-xl bg-gray-100 dark:bg-slate-700 flex items-center justify-center group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors duration-200">
+                                    <ExternalLink className="w-4 h-4 lg:w-5 lg:h-5 text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                          )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Disclaimer */}
+                  {notes.length > 0 && (
+                    <div>
+                      {/* Header */}
+                      <div className="flex items-center space-x-3 mb-5">
+                        <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-md">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="w-4 h-4 lg:w-5 lg:h-5 text-white"
+                          >
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                          </svg>
+                        </div>
+                        <h3 className="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-200">
+                          ⚠️ Important Notes &amp; Disclaimers
+                        </h3>
+                      </div>
+
+                      {/* Box */}
+                      <div className="bg-amber-50/80 dark:bg-amber-900/20 rounded-xl p-4 lg:p-5 border border-amber-200/50 dark:border-amber-700/30">
+                        <div className="prose prose-base lg:prose-lg max-w-none dark:prose-invert">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {notes[notes.length - 1]}
+                          </ReactMarkdown>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Disclaimer Section - Show only once at the bottom */}
-              {notes.length > 0 && (
-                <div>
-                  {/* Header with amber icon */}
-                  <div className="flex items-center space-x-3 mb-5">
-                    <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-md">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
-                          viewBox="0 0 24 24" fill="none" stroke="currentColor" 
-                          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" 
-                          className="w-4 h-4 lg:w-5 lg:h-5 text-white">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="8" x2="12" y2="12"></line>
-                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                      </svg>
                     </div>
-                    <h3 className="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-200">
-                      ⚠️ Important Notes & Disclaimers
-                    </h3>
-                  </div>
-
-                  {/* Disclaimer content */}
-                  <div className="bg-amber-50/80 dark:bg-amber-900/20 rounded-xl p-4 lg:p-5 border border-amber-200/50 dark:border-amber-700/30">
-                    <div className="prose prose-base lg:prose-lg max-w-none dark:prose-invert">
-                      <ReactMarkdown>
-                        {notes[notes.length - 1]}
-                      </ReactMarkdown>
-                    </div>
-                  </div>
+                  )}
                 </div>
-              )}
-
-            </div>
-          </div>
-        )}
-
-
+              </div>
+            )}
         </div>
       </div>
     </div>
-  )
+  );
 }
