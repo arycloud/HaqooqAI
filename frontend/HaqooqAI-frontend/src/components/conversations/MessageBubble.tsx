@@ -536,7 +536,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                     <div className="bg-amber-50/80 dark:bg-amber-900/20 rounded-xl p-4 lg:p-5 border border-amber-200/50 dark:border-amber-700/30">
                       <div className="prose prose-base lg:prose-lg max-w-none dark:prose-invert">
                         <ReactMarkdown>
-                          {notes.join("\n\n")} {/* Combine notes into one block */}
+                          {notes.join("\n\n")}
                         </ReactMarkdown>
                       </div>
                     </div>
