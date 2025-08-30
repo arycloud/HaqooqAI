@@ -469,9 +469,8 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             </div>
           )}
 
-          {/* Nested Information Container - Single container for both Sources and Notes */}
-          {/* Nested Information Container */}
-          {!isUser && (notes.length > 0 || (filteredSources && filteredSources.length > 0)) && (
+          {/* Nested Information Container - Single container for both Sources and Disclaimer */}
+          {!isUser && ((filteredSources && filteredSources.length > 0) || notes.length > 0) && (
             <div className="mt-6 lg:mt-8">
               <div className="bg-gray-100/60 dark:bg-slate-700/40 rounded-2xl p-6 lg:p-8 border border-gray-200/40 dark:border-slate-600/40 shadow-sm">
 
@@ -489,12 +488,12 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
                     <div className="space-y-4">
                       {Array.from(
-                        new Map(filteredSources.map(src => [src.title + src.url, src])).values()
+                        new Map(filteredSources.map(src => [src.title + (src.url ?? ""), src])).values()
                       ).map((source, index) => (
                         <div
                           key={index}
                           className="bg-white/80 dark:bg-slate-800/60 rounded-xl p-4 lg:p-5 border border-gray-200/50 dark:border-slate-600/50 cursor-pointer hover:bg-white dark:hover:bg-slate-800/80 hover:shadow-md transition-all duration-200 group"
-                          onClick={() => source.url && window.open(source.url, '_blank')}
+                          onClick={() => source.url && window.open(source.url, "_blank")}
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
@@ -521,21 +520,21 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                   </div>
                 )}
 
-                {/* Disclaimer Section - Show only once */}
+                {/* Disclaimer Section - Show only once at the bottom */}
                 {notes.length > 0 && (
-                <div className="bg-amber-50/80 dark:bg-amber-900/20 rounded-xl p-4 lg:p-5 border border-amber-200/50 dark:border-amber-700/30">
-                  <div className="prose prose-base lg:prose-lg max-w-none dark:prose-invert">
-                    <ReactMarkdown>
-                      {notes[notes.length - 1]}
-                    </ReactMarkdown>
+                  <div className="bg-amber-50/80 dark:bg-amber-900/20 rounded-xl p-4 lg:p-5 border border-amber-200/50 dark:border-amber-700/30">
+                    <div className="prose prose-base lg:prose-lg max-w-none dark:prose-invert">
+                      <ReactMarkdown>
+                        {notes[notes.length - 1]} 
+                      </ReactMarkdown>
+                    </div>
                   </div>
-                </div>
-              )}
-
+                )}
 
               </div>
             </div>
           )}
+
 
         </div>
       </div>
