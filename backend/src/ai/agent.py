@@ -36,7 +36,7 @@ class LegalAssistantAgent:
         self.prompt = ChatPromptTemplate.from_messages([
             ("system",
             f"CURRENT DATE: {current_date}\n\n"
-            "You are HaqooqAI, a specialized legal assistant for Pakistani law. Always respond in clear, professional English. Follow this enhanced decision flow strictly:\n\n"
+            "You are HaqooqAI, a specialized legal assistant for Pakistani laws and legal affairs. Always respond in clear, professional English. Follow this enhanced decision flow strictly:\n\n"
             
             "## CRITICAL OUTPUT RULES ##\n"
             "- NEVER output JSON, XML, or any structured data format\n"
@@ -45,8 +45,8 @@ class LegalAssistantAgent:
             "- Format bold text using **double asterisks**\n"
             "- NEVER include 'type', 'children', 'metadata', or other structural elements\n"
             "- Sources MUST appear at the end in this EXACT format:\n"
-            "  Source: [Type] – [Description]\n"
-            "  Example: 'Source: Web Search – Government of Pakistan Official Portal'\n\n"
+            "  Source: [Type] – [Description] - [url]\n"
+            "  Example: 'Source: Web Search – Government of Pakistan Official Portal - https://pakistan.gov.pk'\n\n"
 
             "## SCOPE CHECK ##\n"
             "First, verify if the question or conversation history relates to Pakistan:\n"
@@ -61,7 +61,7 @@ class LegalAssistantAgent:
             "ALWAYS use the CURRENT DATE shown at the top of this prompt (NOT your internal knowledge) for year references.\n"
             "If involving current events, recent changes, or time-sensitive info (keywords: 'recent', 'current', 'latest', 'new', 'today', or history suggests dynamism):\n"
             "- Action: ALWAYS use web_search_tool FIRST for verification.\n"
-            "- Enhance query: Add 'Pakistan' if missing, 'site:gov.pk OR site:na.gov.pk OR site:supremecourt.gov.pk' for official info, and the CURRENT YEAR from the date above (e.g., 'Pakistan PM 2025').\n"
+            "- Enhance query: Add 'Pakistan' if missing, 'site:https://pakistan.gov.pk OR site:finance.gov.pk OR site:supremecourt.gov.pk' for official info, and the CURRENT YEAR from the date above (e.g., 'Pakistan PM 2025').\n"
             "- NEVER use years from your training data (like 2023) - always use the current year shown at the top.\n"
             "- Examples: Current PM, recent amendments, latest court decisions — never guess; tool-verify.\n\n"
 
@@ -86,12 +86,24 @@ class LegalAssistantAgent:
             "- Handle languages: Prefer English; ignore non-relevant foreign content unless Urdu legal terms (e.g., 'nikah').\n"
             "- Keep responses concise, structured (bullet points/tables for lists), and neutral.\n\n"
 
+            # "## CITATION RULES ##\n"
+            # "- Local knowledge: 'Source: Local Legal Docs – [document/section, e.g., Constitution Article 25]'\n"
+            # "- Web search: 'Source: Web Search – [title/URL/snippet from reliable site]'\n"
+            # "- History: If referencing prior: 'Source: Conversation History – [brief summary]'\n"
+            # "- Multiple sources: List all; flag conflicts (e.g., 'Source A says X, but Source B says Y—verify officially').\n"
+            # "- ALWAYS include disclaimer: 'This is informational and not a substitute for formal legal advice. Consult a qualified Pakistani lawyer for specific cases.'\n\n"
             "## CITATION RULES ##\n"
-            "- Local knowledge: 'Source: Local Legal Docs – [document/section, e.g., Constitution Article 25]'\n"
-            "- Web search: 'Source: Web Search – [title/URL/snippet from reliable site]'\n"
-            "- History: If referencing prior: 'Source: Conversation History – [brief summary]'\n"
-            "- Multiple sources: List all; flag conflicts (e.g., 'Source A says X, but Source B says Y—verify officially').\n"
-            "- ALWAYS include disclaimer: 'This is informational and not a substitute for formal legal advice. Consult a qualified Pakistani lawyer for specific cases.'\n\n"
+            "- Sources MUST be listed at the very end of the response.\n"
+            "- Each source MUST be on a new line and follow this EXACT pipe-separated format:\n"
+            "  `Source: [Type] | [Title] | [URL]`\n"
+            "- For local documents without a URL, use 'N/A' for the URL part.\n"
+            "- This format is CRITICAL for the system to correctly identify sources.\n\n"
+            "  **Example (Web Search):**\n"
+            "  `Source: Web Search | The Constitution of the Islamic Republic of Pakistan | https://na.gov.pk/uploads/documents/1333523681_951.pdf`\n\n"
+            "  **Example (Local Document):**\n"
+            "  `Source: Local Legal Doc | Pakistan Penal Code, 1860 - Section 302 | N/A`\n\n"
+            "- ALWAYS include this disclaimer at the absolute end, after all sources:\n"
+            "  `**Disclaimer**: This is informational and not a substitute for formal legal advice. Consult a qualified Pakistani lawyer for specific cases.`\n\n"
 
             "## QUALITY CHECKS ##\n"
             "Before final answer, self-verify:\n"
@@ -316,7 +328,9 @@ class LegalAssistantAgent:
             # Post-process the response
             final_response = self._post_process_response(cleaned_output_string.strip(), query)
             sources, disclaimer = self._extract_sources_from_response(final_response)
-            print(f'Sources found: {sources}')
+            print("=======SOURCES=======")
+            for s, t, in sources:
+                print(f'Source: {s}, Type: {t}')
             print(f'Disclaimer found: {disclaimer}')
             return {
                 "response": final_response,
@@ -388,33 +402,91 @@ class LegalAssistantAgent:
 
         return response
 
+    # def _extract_sources_from_response(self, response: str) -> tuple[list[dict], str | None]:
+    #     """Extract sources and disclaimer from LLM response text."""
+    #     sources = []
+    #     disclaimer = None
+
+    #     # Regex for sources
+    #     source_pattern = r"Source:\s*(?:Web Search\s*[-–]\s*)?(.+)"
+    #     for match in re.finditer(source_pattern, response, re.IGNORECASE):
+    #         source_text = match.group(1).strip()
+    #         if source_text and len(source_text) > 3:
+    #             sources.append({"title": source_text})
+
+    #     # Regex for disclaimer
+    #     disclaimer_pattern = r"\*\*Disclaimer\*\*:?(.+)"
+    #     m = re.search(disclaimer_pattern, response, re.IGNORECASE | re.DOTALL)
+    #     if m:
+    #         disclaimer = "**Disclaimer**:" + m.group(1).strip()
+
+    #     # Deduplicate sources by title
+    #     seen = set()
+    #     unique_sources = []
+    #     for s in sources:
+    #         if s["title"] not in seen:
+    #             seen.add(s["title"])
+    #             unique_sources.append(s)
+
+    #     return unique_sources, disclaimer
+    
+
+
     def _extract_sources_from_response(self, response: str) -> tuple[list[dict], str | None]:
-        """Extract sources and disclaimer from LLM response text."""
+        """
+        Extracts structured sources and a disclaimer from the LLM response text.
+        Assumes sources are in the format: 'Source: [Type] | [Title] | [URL]'
+        """
         sources = []
         disclaimer = None
+        clean_response = response  # Start with the full response
 
-        # Regex for sources
-        source_pattern = r"Source:\s*(?:Web Search\s*[-–]\s*)?(.+)"
-        for match in re.finditer(source_pattern, response, re.IGNORECASE):
-            source_text = match.group(1).strip()
-            if source_text and len(source_text) > 3:
-                sources.append({"title": source_text})
+        # 1. Regex for the new, structured source format
+        # This pattern captures three groups separated by pipes.
+        source_pattern = re.compile(
+            r"^Source:\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*(.+?)$", 
+            re.MULTILINE | re.IGNORECASE
+        )
+        
+        for match in source_pattern.finditer(response):
+            source_type = match.group(1).strip()
+            title = match.group(2).strip()
+            url = match.group(3).strip()
 
-        # Regex for disclaimer
-        disclaimer_pattern = r"\*\*Disclaimer\*\*:?(.+)"
-        m = re.search(disclaimer_pattern, response, re.IGNORECASE | re.DOTALL)
-        if m:
-            disclaimer = "**Disclaimer**:" + m.group(1).strip()
+            # The frontend expects a 'type' field, as seen in its documentation
+            # Let's map it to a more structured format
+            source_doc_type = 'web_search' if 'web' in source_type.lower() else 'legal_doc'
 
-        # Deduplicate sources by title
+            sources.append({
+                "type": source_doc_type,
+                "title": title,
+                "url": url if url.lower() != 'n/a' else None, # Store None if URL is 'N/A'
+            })
+        
+        # Remove source lines from the response to clean it up for display
+        # clean_response = source_pattern.sub("", clean_response).strip()
+
+        # 2. Regex for disclaimer (can remain the same, but let's make it robust)
+        disclaimer_pattern = re.compile(r"(\*\*Disclaimer\*\*:.+)", re.IGNORECASE | re.DOTALL)
+        disclaimer_match = disclaimer_pattern.search(clean_response)
+        if disclaimer_match:
+            disclaimer = disclaimer_match.group(1).strip()
+            # Remove the disclaimer from the clean response
+            clean_response = disclaimer_pattern.sub("", clean_response).strip()
+
+        # 3. Deduplicate sources based on a combination of title and URL
+        # This prevents identical sources from appearing twice
         seen = set()
         unique_sources = []
         for s in sources:
-            if s["title"] not in seen:
-                seen.add(s["title"])
+            # Create a unique identifier for each source
+            identifier = (s["title"], s["url"])
+            if identifier not in seen:
+                seen.add(identifier)
                 unique_sources.append(s)
 
+        # The function now returns unique_sources, disclaimer, and the cleaned response
+        # You may need to adjust your RAG engine to handle this third return value.
+        # For now, let's stick to the original function signature.
         return unique_sources, disclaimer
-    
-
 
