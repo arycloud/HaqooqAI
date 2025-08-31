@@ -3,21 +3,29 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { cn } from '@/lib/utils';
 
 interface CyclingLoaderProps {
-  type: 'messages' | 'analyzing';
+  type: 'messages' | 'analyzing' | 'setup';
   className?: string;
 }
 
 const messageSets = {
   messages: [
+    'Loading your conversation history...',
+    'Retrieving past legal discussions...',
     'Preparing your HaqooqAI session faster than a court adjournment!',
     'Fetching messages quicker than a lawyer files a petition...'
   ],
   analyzing: [
-    'HaqooqAI is analyzing your legal query...',
+    'Analyzing your legal query...',
     'Scanning Pakistani statutes and case laws...',
     'Cross-referencing relevant provisions like a seasoned advocate...',
     'Formulating an accurate response with citations...',
     'Ensuring compliance insights faster than resolving a tehsil dispute!'
+  ],
+  setup: [
+    'Setting up the chat for you...',
+    'Initializing your new HaqooqAI conversation...',
+    'Preparing legal AI assistance faster than drafting a FIR!',
+    'Getting ready quicker than a bail hearing...'
   ]
 };
 

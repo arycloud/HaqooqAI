@@ -15,16 +15,18 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
   const navigate = useNavigate()
   const location = useLocation()
   const { createConversation } = useConversations()
-  const { messages, sendMessage, fetchingLoading, analyzingLoading } = useMessages(conversationId)
   const [currentConversationId, setCurrentConversationId] = useState(conversationId)
   const [isCreatingConversation, setIsCreatingConversation] = useState(false)
+  const [isNewConversation, setIsNewConversation] = useState(false)
 
   // Detect if sidebar should be collapsed (for chat routes, sidebar is auto-collapsed)
   const isChatRoute = location.pathname.startsWith('/chat/')
   const sidebarOpen = !isChatRoute
 
+  const { messages, sendMessage, fetchingLoading, setupLoading, analyzingLoading } = useMessages(currentConversationId, isNewConversation)
+
   // Compute combined loading
-  const messagesLoading = fetchingLoading || analyzingLoading
+  const messagesLoading = fetchingLoading || setupLoading || analyzingLoading
 
   // Update current conversation ID when the prop changes
   useEffect(() => {
@@ -44,6 +46,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
       setIsCreatingConversation(true)
       const conversation = await createConversation('New Conversation')
       setCurrentConversationId(conversation.id)
+      setIsNewConversation(true)
       navigate(`/chat/${conversation.id}`, { replace: true })
       
       // Send the initial prompt
@@ -67,6 +70,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
         const conversation = await createConversation('New Conversation')
         targetConversationId = conversation.id
         setCurrentConversationId(conversation.id)
+        setIsNewConversation(true)
         navigate(`/chat/${conversation.id}`, { replace: true })
       } catch (error) {
         console.error('Failed to create conversation:', error)
@@ -87,7 +91,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
     return (
       <div className="h-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 p-8 lg:p-12">
         <div className="text-center p-12 lg:p-16 rounded-3xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-2xl border border-gray-200/50 dark:border-slate-700/50 max-w-2xl">
-          <CyclingLoader type="messages" className="justify-center" />
+          <CyclingLoader type="setup" className="justify-center" />
           <p className="text-lg lg:text-xl text-gray-500 dark:text-gray-400 mt-4">Setting up your legal consultation</p>
         </div>
       </div>
@@ -106,7 +110,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
           loading={messagesLoading}
           conversationId={currentConversationId}
           sidebarOpen={sidebarOpen}
-          loadingType={analyzingLoading ? 'analyzing' : 'messages'}
+          loadingType={analyzingLoading ? 'analyzing' : (setupLoading ? 'setup' : 'messages')}
         />
       </div>
 

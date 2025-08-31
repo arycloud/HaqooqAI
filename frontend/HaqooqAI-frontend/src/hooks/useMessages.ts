@@ -7,11 +7,12 @@ import { aiService } from '@/services/backend/aiService'
 import { authService } from '@/services/backend/authService'
 import toast from 'react-hot-toast'
 
-export const useMessages = (conversationId?: string) => {
+export const useMessages = (conversationId?: string, isNewConversation = false) => {
   const { user } = useAuth()
   const { updateConversationTitle } = useConversations()
   const [messages, setMessages] = useState<Record<string, Message[]>>({})
   const [fetchingLoading, setFetchingLoading] = useState(false)
+  const [setupLoading, setSetupLoading] = useState(false)
   const [analyzingLoading, setAnalyzingLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -32,7 +33,11 @@ export const useMessages = (conversationId?: string) => {
     if (!convId) return
     
     try {
-      setFetchingLoading(true)
+      if (isNewConversation) {
+        setSetupLoading(true)
+      } else {
+        setFetchingLoading(true)
+      }
       setError(null)
       
       const { messages: conversationMessages } =
@@ -47,7 +52,11 @@ export const useMessages = (conversationId?: string) => {
       setError(errorMessage)
       console.error('Failed to load messages:', err)
     } finally {
-      setFetchingLoading(false)
+      if (isNewConversation) {
+        setSetupLoading(false)
+      } else {
+        setFetchingLoading(false)
+      }
     }
   }
 
@@ -176,6 +185,7 @@ export const useMessages = (conversationId?: string) => {
   return {
     messages,
     fetchingLoading,
+    setupLoading,
     analyzingLoading,
     error,
     sendMessage,
