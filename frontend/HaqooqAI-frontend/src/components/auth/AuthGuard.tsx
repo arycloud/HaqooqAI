@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+// import { InitialLoader } from '../ui/InitialLoader'
 
 interface AuthGuardProps {
   children: React.ReactNode
@@ -28,7 +29,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <LoadingSpinner size="lg" className="mx-auto mb-4" />
+          {/* <LoadingSpinner size="lg" className="mx-auto mb-4" /> */}
+          <InitialLoader />
           <p className="text-gray-600">
             {isProcessingOAuth() ? 'Completing authentication...' : 'Loading...'}
           </p>
