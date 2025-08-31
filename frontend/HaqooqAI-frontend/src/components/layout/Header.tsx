@@ -1,5 +1,5 @@
 import { Menu, Settings, LogOut, User } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import {
@@ -46,12 +46,16 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps) {
 
         {!sidebarOpen && (
           <div className="flex items-center space-x-4">
+            <Link to="/" className="text-xl font-bold hidden md:block">
             <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center shadow-lg">
               <span className="text-white font-bold text-lg lg:text-xl">H</span>
             </div>
+            </Link>
+            <Link to="/" className="text-xl font-bold hidden md:block">
             <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
               HaqooqAI
             </h1>
+            </Link>
           </div>
         )}
       </div>
