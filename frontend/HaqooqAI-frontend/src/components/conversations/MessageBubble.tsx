@@ -171,7 +171,8 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
   // Deduplicate sources by a unique key (title + reference)
   const uniqueSources = Array.from(
-    new Map(filteredSources?.map((src) => [src.title + src.reference, src])).values()
+    // new Map(filteredSources?.map((src) => [src.title + src.reference, src])).values()
+    new Map(filteredSources?.map((src) => [src.title + src.url, src])).values()
   );
 
   return (
