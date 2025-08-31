@@ -329,8 +329,8 @@ class LegalAssistantAgent:
             final_response = self._post_process_response(cleaned_output_string.strip(), query)
             sources, disclaimer = self._extract_sources_from_response(final_response)
             print("=======SOURCES=======")
-            for s, t, in sources:
-                print(f'Source: {s}, Type: {t}')
+            for source in sources:
+                print(f"Source: {source['title']}, Type: {source['type']}, URL: {source['url']}")
             print(f'Disclaimer found: {disclaimer}')
             return {
                 "response": final_response,
