@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
-// import { InitialLoader } from '../ui/InitialLoader'
+// import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { InitialLoader } from '@/components/ui/InitialLoader';
 
 interface AuthGuardProps {
   children: React.ReactNode
