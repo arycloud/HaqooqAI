@@ -96,7 +96,7 @@ class LegalAssistantAgent:
                     "✅ CORRECT EXAMPLES:\n"
                     "```\n"
                     "Source: Web Search | The Constitution of the Islamic Republic of Pakistan | https://na.gov.pk/uploads/documents/1333523681_951.pdf\n"
-                    "Source: Local Legal Doc | Pakistan Penal Code, 1860 - Section 302 | N/A\n"
+                    "Source: Local Legal Doc | Pakistan Penal Code, 1860 | Section 302 | N/A\n"
                     "```\n\n"
 
                     "❌ NEVER USE THESE FORMATS FOR SOURCES:\n"
@@ -322,18 +322,20 @@ class LegalAssistantAgent:
                                 """
 
             response = await executor_to_use.ainvoke({
-                "question": enhanced_context,
-                "chat_history": chat_history
-            })
+                        "question": enhanced_context,
+                        "chat_history": chat_history
+                    })
 
             output_string = response.get("output", "I was unable to find a relevant answer.")
-
-            # Clean up any tool code artifacts
             cleaned_output_string = re.sub(r"<tool_code>.*?</tool_code>", "", output_string, flags=re.DOTALL)
+            cleaned_output_string = cleaned_output_string.strip()
 
-            # Post-process the response
-            final_response = self._post_process_response(cleaned_output_string.strip(), query)
-            sources, disclaimer = self._extract_sources_from_response(final_response)
+            # Step 1: Extract sources and disclaimer
+            sources, disclaimer = self._extract_sources_from_response(cleaned_output_string)
+
+            # Step 2: Now post-process to get clean content (with sources/disclaimer removed)
+            final_response = self._post_process_response(cleaned_output_string, query)
+
             print("=======SOURCES=======")
             for source in sources:
                 print(f"Source: {source['title']}, Type: {source['type']}, URL: {source['url']}")
@@ -387,26 +389,68 @@ class LegalAssistantAgent:
         # Trim trailing/leading whitespace
         return response.strip()
 
+    # def _post_process_response(self, response: str, original_query: str) -> str:
+    #     """Post-process the response for quality and consistency."""
+
+    #     response = self._sanitize_llm_response(response)
+
+    #     # Check if response seems incomplete or irrelevant
+    #     if len(response) < 50:
+    #         response = f"{response}\n\nNote: This response seems brief. If you need more detailed information, please rephrase your question or provide more specific details."
+
+    #     # Ensure disclaimer is present for legal queries
+    #     query_lower = original_query.lower()
+    #     is_legal_query = any(term in query_lower for term in [
+    #         'constitution', 'amendment', 'law', 'act', 'ordinance', 'legal',
+    #         'court', 'judge', 'justice', 'parliament'
+    #     ])
+
+    #     if is_legal_query and "substitute for formal legal advice" not in response:
+    #         response += "\n\n**Disclaimer:** This information is for general guidance only and is not a substitute for formal legal advice. For specific legal matters, please consult a qualified legal professional."
+
+    #     return response
+
     def _post_process_response(self, response: str, original_query: str) -> str:
         """Post-process the response for quality and consistency."""
 
+        # Sanitize first (removes JSON, etc.)
         response = self._sanitize_llm_response(response)
 
-        # Check if response seems incomplete or irrelevant
-        if len(response) < 50:
-            response = f"{response}\n\nNote: This response seems brief. If you need more detailed information, please rephrase your question or provide more specific details."
+        # Extract and remove sources/disclaimer
+        sources, disclaimer = self._extract_sources_from_response(response)
 
-        # Ensure disclaimer is present for legal queries
-        query_lower = original_query.lower()
-        is_legal_query = any(term in query_lower for term in [
-            'constitution', 'amendment', 'law', 'act', 'ordinance', 'legal',
-            'court', 'judge', 'justice', 'parliament'
-        ])
+        # Start with full response and remove extracted parts
+        clean_content = response
 
-        if is_legal_query and "substitute for formal legal advice" not in response:
-            response += "\n\n**Disclaimer:** This information is for general guidance only and is not a substitute for formal legal advice. For specific legal matters, please consult a qualified legal professional."
+        # Remove each source line
+        for source in sources:
+            # Reconstruct the exact source line as it appeared
+            # Use the original format: "Source: Type | Title | URL"
+            # But since LLM may use `|` or `-`, we use a flexible pattern
+            pass  # We'll handle this via regex below
 
-        return response
+        # Instead: Use the same regex to remove source lines
+        source_pattern = re.compile(r"^Source:\s*(.*?)\s*[\|\-\u2013]\s*(.+?)\s*[\-\u2013]\s*(https?://[^\s]+|N/A|n/a)$", re.MULTILINE | re.IGNORECASE)
+        clean_content = source_pattern.sub("", clean_content)
+
+        # Remove disclaimer
+        if disclaimer:
+            # Normalize spacing
+            disclaimer_clean = re.escape("**Disclaimer**: This is informational and not a substitute for formal legal advice. Consult a qualified Pakistani lawyer for specific cases.")
+            clean_content = re.sub(disclaimer_clean, "", clean_content, flags=re.IGNORECASE)
+
+        # Final cleanup
+        clean_content = re.sub(r'\n{3,}', '\n\n', clean_content.strip())
+        clean_content = clean_content.strip()
+
+        # Optional: Add back disclaimer at the end, if needed
+        # But frontend will render it separately, so skip here
+
+        # Quality check
+        if len(clean_content) < 50:
+            clean_content += "\n\nNote: This response seems brief. If you need more detailed information, please rephrase your question or provide more specific details."
+
+        return clean_content
 
     # def _extract_sources_from_response(self, response: str) -> tuple[list[dict], str | None]:
     #     """Extract sources and disclaimer from LLM response text."""
