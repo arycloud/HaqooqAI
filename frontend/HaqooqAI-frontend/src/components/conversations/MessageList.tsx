@@ -10,7 +10,7 @@ interface MessageListProps {
   loading: boolean
   conversationId?: string
   sidebarOpen?: boolean
-  loadingType?: 'messages' | 'analyzing'
+  loadingType?: 'messages' | 'analyzing' | 'setup'
 }
 
 export function MessageList({ messages, loading, conversationId, sidebarOpen = true, loadingType = 'messages' }: MessageListProps) {
