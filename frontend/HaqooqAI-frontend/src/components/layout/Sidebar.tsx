@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { Scale, Plus, MessageSquare, Trash2, MoreHorizontal } from 'lucide-react'
 import { useConversations } from '@/hooks/useConversations'
 import { Button } from '@/components/ui/button'
@@ -79,7 +79,9 @@ export function Sidebar({ isOpen }: SidebarProps) {
       <div className="p-4 border-b border-gray-700">
         <div className="flex items-center space-x-3">
           <Scale className="w-8 h-8 text-purple-400" />
+          <Link to="/" className="text-xl font-bold hidden md:block">
           <h1 className="text-xl font-bold">HaqooqAI</h1>
+          </Link>
         </div>
       </div>
 

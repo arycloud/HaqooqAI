@@ -243,3 +243,24 @@
 .dark .gradient-border::before {
   background: #1e293b;
 }
+
+
+/* css for spinner with messeges */
+@keyframes moveUpFade {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  20% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  80% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}

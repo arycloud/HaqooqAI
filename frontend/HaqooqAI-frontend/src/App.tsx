@@ -5,7 +5,8 @@ import { Login } from '@/pages/Login'
 import { Dashboard } from '@/pages/Dashboard'
 import { Chat } from '@/pages/Chat'
 import { Settings } from '@/pages/Settings'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+// import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { InitialLoader } from '@/components/ui/InitialLoader';
 import { MainLayout } from '@/components/layout/MainLayout'
 
 function App() {
@@ -14,7 +15,8 @@ function App() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
+        {/* <LoadingSpinner size="lg" /> */}
+        <InitialLoader />
       </div>
     )
   }
