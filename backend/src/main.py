@@ -353,20 +353,20 @@ async def process_query(
 ):
     """Process AI query and return response with sources"""
     try:
+        quota = tracker.check_quota(request.user_id)
+        groq_key_to_use = request.groq_api_key or (tracker.get_api_key(request.user_id) if quota.has_api_key else None)
         # Check quota if no API key provided
-        if not request.groq_api_key:
-            quota = tracker.check_quota(request.user_id)
+        if not groq_key_to_use:
             if quota.remaining <= 0:
                 raise HTTPException(
                     status_code=429,
                     detail="Query quota exceeded. Please wait for reset or provide your own API key."
                 )
-
             # Increment usage
             tracker.increment_usage(request.user_id)
 
         # Process query through RAG engine
-        result = await rag.process_query(request.query, request.groq_api_key,
+        result = await rag.process_query(request.query, groq_key_to_use,
                                          conversation_id=request.conversation_id,
                                          user_id=request.user_id)
 
