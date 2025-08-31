@@ -264,3 +264,14 @@
     opacity: 0;
   }
 }
+
+
+/* css for spinner for conversations   */
+
+@keyframes fade-in {
+   0% { opacity: 0; } 
+   100% { opacity: 1; } } 
+   and animate-fade-in { 
+    animation: fade-in 0.5s 
+    ease-in; 
+  }

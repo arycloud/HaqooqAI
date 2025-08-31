@@ -4,7 +4,7 @@ import { MessageList } from './MessageList'
 import { MessageInput } from './MessageInput'
 import { useMessages } from '@/hooks/useMessages'
 import { useConversations } from '@/hooks/useConversations'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { CyclingLoader } from '@/components/ui/CyclingLoader'
 
 interface ChatInterfaceProps {
   conversationId?: string
@@ -15,13 +15,16 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
   const navigate = useNavigate()
   const location = useLocation()
   const { createConversation } = useConversations()
-  const { messages, sendMessage, loading: messagesLoading } = useMessages(conversationId)
+  const { messages, sendMessage, fetchingLoading, analyzingLoading } = useMessages(conversationId)
   const [currentConversationId, setCurrentConversationId] = useState(conversationId)
   const [isCreatingConversation, setIsCreatingConversation] = useState(false)
 
   // Detect if sidebar should be collapsed (for chat routes, sidebar is auto-collapsed)
   const isChatRoute = location.pathname.startsWith('/chat/')
   const sidebarOpen = !isChatRoute
+
+  // Compute combined loading
+  const messagesLoading = fetchingLoading || analyzingLoading
 
   // Update current conversation ID when the prop changes
   useEffect(() => {
@@ -84,9 +87,8 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
     return (
       <div className="h-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 p-8 lg:p-12">
         <div className="text-center p-12 lg:p-16 rounded-3xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-2xl border border-gray-200/50 dark:border-slate-700/50 max-w-2xl">
-          <LoadingSpinner size="lg" className="mx-auto mb-8 lg:mb-10" />
-          <p className="text-2xl lg:text-3xl font-medium text-gray-700 dark:text-gray-300 mb-4">Creating conversation...</p>
-          <p className="text-lg lg:text-xl text-gray-500 dark:text-gray-400">Setting up your legal consultation</p>
+          <CyclingLoader type="messages" className="justify-center" />
+          <p className="text-lg lg:text-xl text-gray-500 dark:text-gray-400 mt-4">Setting up your legal consultation</p>
         </div>
       </div>
     )
@@ -104,6 +106,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
           loading={messagesLoading}
           conversationId={currentConversationId}
           sidebarOpen={sidebarOpen}
+          loadingType={analyzingLoading ? 'analyzing' : 'messages'}
         />
       </div>
 

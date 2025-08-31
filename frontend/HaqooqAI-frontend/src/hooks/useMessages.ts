@@ -11,8 +11,8 @@ export const useMessages = (conversationId?: string) => {
   const { user } = useAuth()
   const { updateConversationTitle } = useConversations()
   const [messages, setMessages] = useState<Record<string, Message[]>>({})
-  const [loading, setLoading] = useState(false)
-  const [sendingMessage, setSendingMessage] = useState(false)
+  const [fetchingLoading, setFetchingLoading] = useState(false)
+  const [analyzingLoading, setAnalyzingLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // To prevent race conditions when conversation changes
@@ -32,7 +32,7 @@ export const useMessages = (conversationId?: string) => {
     if (!convId) return
     
     try {
-      setLoading(true)
+      setFetchingLoading(true)
       setError(null)
       
       const { messages: conversationMessages } =
@@ -47,7 +47,7 @@ export const useMessages = (conversationId?: string) => {
       setError(errorMessage)
       console.error('Failed to load messages:', err)
     } finally {
-      setLoading(false)
+      setFetchingLoading(false)
     }
   }
 
@@ -55,7 +55,7 @@ export const useMessages = (conversationId?: string) => {
     try {
       if (!convId) throw new Error('No conversation selected')
 
-      setSendingMessage(true)
+      setAnalyzingLoading(true)
       setError(null)
 
       // Ensure user is authenticated
@@ -146,7 +146,7 @@ export const useMessages = (conversationId?: string) => {
 
       throw err
     } finally {
-      setSendingMessage(false)
+      setAnalyzingLoading(false)
     }
   }
 
@@ -175,8 +175,8 @@ export const useMessages = (conversationId?: string) => {
 
   return {
     messages,
-    loading: loading || sendingMessage,
-    sendingMessage,
+    fetchingLoading,
+    analyzingLoading,
     error,
     sendMessage,
     deleteMessage,

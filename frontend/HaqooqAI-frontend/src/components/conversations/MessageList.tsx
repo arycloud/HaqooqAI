@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Message } from '@/types/message'
 import { MessageBubble } from './MessageBubble'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { CyclingLoader } from '@/components/ui/CyclingLoader'
 import { Scale } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -13,7 +13,7 @@ interface MessageListProps {
   loadingType?: 'messages' | 'analyzing'
 }
 
-export function MessageList({ messages, loading, conversationId, sidebarOpen = true, loadingType = 'analyzing' }: MessageListProps) {
+export function MessageList({ messages, loading, conversationId, sidebarOpen = true, loadingType = 'messages' }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Ensure messages is always an array to prevent map errors
@@ -83,15 +83,7 @@ export function MessageList({ messages, loading, conversationId, sidebarOpen = t
             {loading && (
               <div className="flex justify-start mb-6 lg:mb-8">
                 <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 lg:p-8 shadow-xl border-2 border-gray-200 dark:border-slate-600 max-w-md">
-                  <div className="flex items-center space-x-4">
-                    <LoadingSpinner size="sm" />
-                    <span className="text-lg lg:text-xl text-gray-600 dark:text-gray-300 font-medium">
-                      {loadingType === 'messages'
-                        ? 'Loading conversation...'
-                        : 'HaqooqAI is analyzing your question...'
-                      }
-                    </span>
-                  </div>
+                  <CyclingLoader type={loadingType} />
                 </div>
               </div>
             )}
