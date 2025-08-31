@@ -9,13 +9,11 @@ interface CyclingLoaderProps {
 
 const messageSets = {
   messages: [
-    'Loading your conversation history...',
-    'Retrieving past legal discussions...',
     'Preparing your HaqooqAI session faster than a court adjournment!',
     'Fetching messages quicker than a lawyer files a petition...'
   ],
   analyzing: [
-    'Analyzing your legal query...',
+    'HaqooqAI is analyzing your legal query...',
     'Scanning Pakistani statutes and case laws...',
     'Cross-referencing relevant provisions like a seasoned advocate...',
     'Formulating an accurate response with citations...',
