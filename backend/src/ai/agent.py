@@ -439,7 +439,6 @@ class LegalAssistantAgent:
         """
         sources = []
         disclaimer = None
-        clean_response = response  # Start with the full response
 
         # 1. Regex for the new, structured source format
         # This pattern captures three groups separated by pipes.
@@ -463,16 +462,12 @@ class LegalAssistantAgent:
                 "url": url if url.lower() != 'n/a' else None, # Store None if URL is 'N/A'
             })
         
-        # Remove source lines from the response to clean it up for display
-        # clean_response = source_pattern.sub("", clean_response).strip()
 
         # 2. Regex for disclaimer (can remain the same, but let's make it robust)
         disclaimer_pattern = re.compile(r"(\*\*Disclaimer\*\*:.+)", re.IGNORECASE | re.DOTALL)
-        disclaimer_match = disclaimer_pattern.search(clean_response)
+        disclaimer_match = disclaimer_pattern.search(response)
         if disclaimer_match:
             disclaimer = disclaimer_match.group(1).strip()
-            # Remove the disclaimer from the clean response
-            clean_response = disclaimer_pattern.sub("", clean_response).strip()
 
         # 3. Deduplicate sources based on a combination of title and URL
         # This prevents identical sources from appearing twice
@@ -489,4 +484,3 @@ class LegalAssistantAgent:
         # You may need to adjust your RAG engine to handle this third return value.
         # For now, let's stick to the original function signature.
         return unique_sources, disclaimer
-
