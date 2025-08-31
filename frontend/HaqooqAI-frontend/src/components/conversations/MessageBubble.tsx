@@ -27,51 +27,74 @@ interface MessageBubbleProps {
   message: Message;
 }
 
-
+// Updated and more robust extraction function
 // const extractStructuredContent = (content: string, existingSources?: Source[]) => {
 //   if (!content || typeof content !== 'string') {
 //     return { cleanContent: '', sources: existingSources || [], notes: [] };
 //   }
 
 //   let cleanContent = content;
-//   const extractedSources: Source[] = [...(existingSources || [])];
-//   const notes: string[] = [];
+//   let extractedSources: Source[] = [...(existingSources || [])];
+//   let notes: string[] = [];
 
-//   // 1. Regex for the NEW, robust pipe-separated format.
-//   // This is the key change.
-//   const sourcePattern = /^Source:\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*(.+?)$/gm;
+//   // Extract sources with more flexible patterns
+//   const sourcePatterns = [
+//     // Pattern: "Source: Web Search – Government of Pakistan Official Portal, Supreme Court of Pakistan Rulings"
+//     /Source:\s*([^–\n]+)(?:\s*–\s*([^\n]+))?/g,
+//     // Pattern: "Source: Local Legal Docs – Muslim Personal Law (Shariat) Application Act, 1937"
+//     /Source:\s*([^–\n]+)(?:\s*–\s*([^\n]+))?/g,
+//   ];
 
-//   let match;
-//   while ((match = sourcePattern.exec(content)) !== null) {
-//     const fullMatchText = match[0];
-//     const sourceType = match[1]?.trim() || '';
-//     const title = match[2]?.trim() || '';
-//     const url = match[3]?.trim() || '';
+//   sourcePatterns.forEach(pattern => {
+//     let match;
+//     while ((match = pattern.exec(content)) !== null) {
+//       const fullMatch = match[0].trim();
+//       const sourceType = match[1]?.trim() || '';
+//       const sourceDetails = match[2]?.trim() || '';
 
-//     const type = sourceType.toLowerCase().includes('web') ? 'web_search' : 'legal_doc';
+//       if (sourceType && sourceDetails) {
+//         const type = sourceType.toLowerCase().includes('web search') ? 'web_search' : 'local_docs';
+//         extractedSources.push({
+//           type: type,
+//           title: sourceDetails,
+//           reference: sourceType,
+//           url: type === 'web_search' && sourceDetails.includes('http') ? sourceDetails : undefined,
+//         });
+//         cleanContent = cleanContent.replace(fullMatch, '').trim();
+//       }
+//     }
+//   });
 
-//     extractedSources.push({
-//       type: type,
-//       title: title,
-//       url: url.toLowerCase() !== 'n/a' ? url : undefined, // Set URL to undefined if 'N/A'
-//       reference: sourceType, // The original type can serve as the reference
-//     });
+//   // Extract disclaimers and notes with flexible patterns (avoid duplicates)
+//   const disclaimerPatterns = [
+//     /This is informational and not a substitute for formal legal advice\. Consult a qualified Pakistani lawyer for specific cases\./g,
+//     /This is informational and not a substitute for formal legal advice\. Consult[^.]*\./g,
+//     /\*\*Disclaimer\*\*:?\s*([^\n]+)/g,
+//     /Disclaimer:\s*([^\n]+)/g,
+//   ];
 
-//     // Remove the matched source line from the main content
-//     cleanContent = cleanContent.replace(fullMatchText, '');
-//   }
+//   const foundDisclaimers = new Set<string>(); // Use Set to avoid duplicates
 
-//   // 2. Extract the standard disclaimer
-//   const disclaimerPattern = /\*\*Disclaimer\*\*:\s*This is informational and not a substitute for formal legal advice\. Consult a qualified Pakistani lawyer for specific cases\./gi;
+//   disclaimerPatterns.forEach(pattern => {
+//     const matches = content.match(pattern);
+//     if (matches) {
+//       matches.forEach(match => {
+//         const cleanedDisclaimer = match.replace(/\*\*Disclaimer\*\*:?\s*/, '').trim();
+//         if (!foundDisclaimers.has(cleanedDisclaimer)) {
+//           foundDisclaimers.add(cleanedDisclaimer);
+//           notes.push(cleanedDisclaimer);
+//         }
+//         cleanContent = cleanContent.replace(match, '').trim();
+//       });
+//     }
+//   });
 
-//   const disclaimerMatch = cleanContent.match(disclaimerPattern);
-//   if (disclaimerMatch) {
-//     notes.push(disclaimerMatch[0].replace(/\*\*Disclaimer\*\*:\s*/, ''));
-//     cleanContent = cleanContent.replace(disclaimerPattern, '');
-//   }
-
-//   // 3. Final cleanup
-//   cleanContent = cleanContent.trim();
+//   // Clean up the content for better markdown rendering
+//   cleanContent = cleanContent
+//     .replace(/\n\n+/g, '\n\n') // Normalize multiple newlines
+//     .replace(/^\s*\n+/g, '') // Remove leading newlines
+//     .replace(/\n+\s*$/g, '') // Remove trailing newlines
+//     .trim();
 
 //   return { cleanContent, sources: extractedSources, notes };
 // };
@@ -85,9 +108,9 @@ const extractStructuredContent = (content: string, existingSources?: Source[]) =
   const extractedSources: Source[] = [...(existingSources || [])];
   const notes: string[] = [];
 
-  // 1. Flexible regex to match both | and - (including em dash \u2013) as separators
-  // Captures: Source: [Type] |or- [Title] |or- [URL]
-  const sourcePattern = /^Source:\s*(.*?)\s*[\|\-\u2013]\s*(.+?)\s*[\-\u2013]\s*(https?:\/\/[^\s]+|N\/A|n\/a)$/gm;
+  // 1. Regex for the NEW, robust pipe-separated format.
+  // This is the key change.
+  const sourcePattern = /^Source:\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*(.+?)$/gm;
 
   let match;
   while ((match = sourcePattern.exec(content)) !== null) {
@@ -96,37 +119,34 @@ const extractStructuredContent = (content: string, existingSources?: Source[]) =
     const title = match[2]?.trim() || '';
     const url = match[3]?.trim() || '';
 
-    // Infer type based on sourceType
     const type = sourceType.toLowerCase().includes('web') ? 'web_search' : 'legal_doc';
 
     extractedSources.push({
-      type,
-      title,
-      url: url.toLowerCase() === 'n/a' ? undefined : url,
-      reference: sourceType, // Optional: keep original label as reference
+      type: type,
+      title: title,
+      url: url.toLowerCase() !== 'n/a' ? url : undefined, // Set URL to undefined if 'N/A'
+      reference: sourceType, // The original type can serve as the reference
     });
 
-    // Remove the matched source line from cleanContent
+    // Remove the matched source line from the main content
     cleanContent = cleanContent.replace(fullMatchText, '');
   }
 
-  // 2. Extract disclaimer (exact match expected)
+  // 2. Extract the standard disclaimer
   const disclaimerPattern = /\*\*Disclaimer\*\*:\s*This is informational and not a substitute for formal legal advice\. Consult a qualified Pakistani lawyer for specific cases\./gi;
+
   const disclaimerMatch = cleanContent.match(disclaimerPattern);
   if (disclaimerMatch) {
-    notes.push(
-      disclaimerMatch[0].replace(/\*\*Disclaimer\*\*:\s*/, '').trim()
-    );
+    notes.push(disclaimerMatch[0].replace(/\*\*Disclaimer\*\*:\s*/, ''));
     cleanContent = cleanContent.replace(disclaimerPattern, '');
   }
 
-  // 3. Final cleanup: normalize whitespace
-  cleanContent = cleanContent
-    .replace(/\n{3,}/g, '\n\n') // Collapse excessive newlines
-    .trim();
+  // 3. Final cleanup
+  cleanContent = cleanContent.trim();
 
   return { cleanContent, sources: extractedSources, notes };
 };
+
 
 
 // Main React Component (Mostly unchanged, with minor tweaks for rendering logic)
