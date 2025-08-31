@@ -438,55 +438,97 @@ class LegalAssistantAgent:
     
 
 
+    # def _extract_sources_from_response(self, response: str) -> tuple[list[dict], str | None]:
+    #     """
+    #     Extracts structured sources and a disclaimer from the LLM response text.
+    #     Assumes sources are in the format: 'Source: [Type] | [Title] | [URL]'
+    #     """
+    #     sources = []
+    #     disclaimer = None
+
+    #     # 1. Regex for the new, structured source format
+    #     # This pattern captures three groups separated by pipes.
+    #     source_pattern = re.compile(
+    #         r"^Source:\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*(.+?)$", 
+    #         re.MULTILINE | re.IGNORECASE
+    #     )
+        
+    #     for match in source_pattern.finditer(response):
+    #         source_type = match.group(1).strip()
+    #         title = match.group(2).strip()
+    #         url = match.group(3).strip()
+
+    #         # The frontend expects a 'type' field, as seen in its documentation
+    #         # Let's map it to a more structured format
+    #         source_doc_type = 'web_search' if 'web' in source_type.lower() else 'legal_doc'
+
+    #         sources.append({
+    #             "type": source_doc_type,
+    #             "title": title,
+    #             "url": url if url.lower() != 'n/a' else None, # Store None if URL is 'N/A'
+    #         })
+        
+
+    #     # 2. Regex for disclaimer (can remain the same, but let's make it robust)
+    #     disclaimer_pattern = re.compile(r"(\*\*Disclaimer\*\*:.+)", re.IGNORECASE | re.DOTALL)
+    #     disclaimer_match = disclaimer_pattern.search(response)
+    #     if disclaimer_match:
+    #         disclaimer = disclaimer_match.group(1).strip()
+
+    #     # 3. Deduplicate sources based on a combination of title and URL
+    #     # This prevents identical sources from appearing twice
+    #     seen = set()
+    #     unique_sources = []
+    #     for s in sources:
+    #         # Create a unique identifier for each source
+    #         identifier = (s["title"], s["url"])
+    #         if identifier not in seen:
+    #             seen.add(identifier)
+    #             unique_sources.append(s)
+
+    #     # The function now returns unique_sources, disclaimer, and the cleaned response
+    #     # You may need to adjust your RAG engine to handle this third return value.
+    #     # For now, let's stick to the original function signature.
+    #     return unique_sources, disclaimer
+
+
+    # Grabbing both "-" and "|" format for sources
     def _extract_sources_from_response(self, response: str) -> tuple[list[dict], str | None]:
-        """
-        Extracts structured sources and a disclaimer from the LLM response text.
-        Assumes sources are in the format: 'Source: [Type] | [Title] | [URL]'
-        """
         sources = []
         disclaimer = None
 
-        # 1. Regex for the new, structured source format
-        # This pattern captures three groups separated by pipes.
+        # Flexible regex: accepts | or - or – as separators
         source_pattern = re.compile(
-            r"^Source:\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*(.+?)$", 
+            r"^Source:\s*(.*?)\s*[\|\-\u2013]\s*(.+?)\s*[\-\u2013]\s*(https?://[^\s]+|N/A|n/a)\s*$",
             re.MULTILINE | re.IGNORECASE
         )
-        
+
         for match in source_pattern.finditer(response):
-            source_type = match.group(1).strip()
+            raw_type = match.group(1).strip()
             title = match.group(2).strip()
             url = match.group(3).strip()
 
-            # The frontend expects a 'type' field, as seen in its documentation
-            # Let's map it to a more structured format
-            source_doc_type = 'web_search' if 'web' in source_type.lower() else 'legal_doc'
+            doc_type = "web_search" if "web" in raw_type.lower() else "legal_doc"
+            url_value = None if url.lower() == "n/a" else url
 
             sources.append({
-                "type": source_doc_type,
+                "type": doc_type,
                 "title": title,
-                "url": url if url.lower() != 'n/a' else None, # Store None if URL is 'N/A'
+                "url": url_value
             })
-        
 
-        # 2. Regex for disclaimer (can remain the same, but let's make it robust)
-        disclaimer_pattern = re.compile(r"(\*\*Disclaimer\*\*:.+)", re.IGNORECASE | re.DOTALL)
-        disclaimer_match = disclaimer_pattern.search(response)
+        # Extract disclaimer
+        disclaimer_match = re.search(r"(\*\*Disclaimer\*\*:.+)", response, re.IGNORECASE | re.DOTALL)
         if disclaimer_match:
             disclaimer = disclaimer_match.group(1).strip()
 
-        # 3. Deduplicate sources based on a combination of title and URL
-        # This prevents identical sources from appearing twice
+        # Deduplicate
         seen = set()
         unique_sources = []
         for s in sources:
-            # Create a unique identifier for each source
-            identifier = (s["title"], s["url"])
-            if identifier not in seen:
-                seen.add(identifier)
+            key = (s["title"], s["url"])
+            if key not in seen:
+                seen.add(key)
                 unique_sources.append(s)
 
-        # The function now returns unique_sources, disclaimer, and the cleaned response
-        # You may need to adjust your RAG engine to handle this third return value.
-        # For now, let's stick to the original function signature.
         return unique_sources, disclaimer
