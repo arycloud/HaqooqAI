@@ -1,6 +1,3 @@
-// This is the complete and corrected code for the MessageBubble.tsx component.
-// It includes a new, robust parsing function and refactors the component to use it correctly.
-
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -28,36 +25,6 @@ interface MessageBubbleProps {
   message: Message;
 }
 
-
-// const extractStructuredContent = (content: string, existingSources?: Source[]) => {
-//   if (!content || typeof content !== 'string') {
-//     return { cleanContent: '', sources: existingSources || [], notes: [] };
-//   }
-
-//   let cleanContent = content;
-//   const extractedSources: Source[] = [...(existingSources || [])];
-//   const notes: string[] = [];
-
-//   // 🚨 Remove fenced code blocks entirely
-//   cleanContent = cleanContent.replace(/```[\s\S]*?```/g, "").trim();
-//   // 🚨 Remove stray "Sources:" headings (case-insensitive, multiline safe)
-//   cleanContent = cleanContent.replace(/^\s*Sources?:\s*$/gim, "").trim();
-//   // 🚨 Remove markdown "Sources:" headings (### Sources:, ## Sources, etc.)
-//   cleanContent = cleanContent.replace(/^#{1,6}\s*\**Sources?\**:?\s*$/gim, "").trim();
-
-//   // Disclaimer extraction (same as before)
-//   const disclaimerPattern = /\*\*Disclaimer\*\*:\s*This is informational and not a substitute for formal legal advice\. Consult a qualified Pakistani lawyer for specific cases\./gi;
-//   const disclaimerMatch = cleanContent.match(disclaimerPattern);
-//   if (disclaimerMatch) {
-//     notes.push(disclaimerMatch[0].replace(/\*\*Disclaimer\*\*:\s*/, ''));
-//     cleanContent = cleanContent.replace(disclaimerPattern, '');
-//   }
-
-//   cleanContent = cleanContent.trim();
-
-//   return { cleanContent, sources: extractedSources, notes };
-// };
-
 export const extractStructuredContent = (
   content: string,
   existingSources?: Source[],
@@ -74,8 +41,11 @@ export const extractStructuredContent = (
   };
 };
 
+// Helper: strip any leftover inline "Source:" lines
+function sanitizeContent(text: string): string {
+  return text.replace(/^Source:.*(?:\nSource:.*)*/gmi, "").trim();
+}
 
-// Main React Component (Mostly unchanged, with minor tweaks for rendering logic)
 export function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const extractionResult = isUser
@@ -84,7 +54,10 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
   const { cleanContent, sources: extractedSources, disclaimer } = extractionResult;
 
-  // Filter out invalid sources and duplicates
+  // ✅ Sanitize content before rendering
+  const sanitizedContent = sanitizeContent(cleanContent);
+
+  // Filter out invalid sources
   const filteredSources = extractedSources?.filter((source) => {
     const title = source.title?.trim().toLowerCase() || "";
     return (
@@ -97,16 +70,15 @@ export function MessageBubble({ message }: MessageBubbleProps) {
     );
   });
 
-  // Deduplicate sources by a unique key (title + reference)
+  // Deduplicate sources
   const uniqueSources = Array.from(
-    // new Map(filteredSources?.map((src) => [src.title + src.reference, src])).values()
     new Map(filteredSources?.map((src) => [src.title + src.url, src])).values()
   );
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-6 lg:mb-8`}>
       <div className={`max-w-4xl lg:max-w-5xl ${isUser ? "order-2" : "order-1"}`}>
-        {/* Header (unchanged) */}
+        {/* Header */}
         <div className={`flex items-center space-x-3 mb-3 lg:mb-4 ${isUser ? "justify-end" : "justify-start"}`}>
           <div className={`flex items-center space-x-3 ${isUser ? "flex-row-reverse space-x-reverse" : ""}`}>
             <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center shadow-md ${
@@ -139,31 +111,24 @@ export function MessageBubble({ message }: MessageBubbleProps) {
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
-                  // Ensure proper spacing for paragraphs
                   p: ({ children }) => <p className="mb-4 last:mb-0">{children}</p>,
-                  // Style unordered lists properly
                   ul: ({ children }) => <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>,
-                  // Style ordered lists properly
                   ol: ({ children }) => <ol className="list-decimal pl-6 mb-4 space-y-2">{children}</ol>,
-                  // Style list items
                   li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-                  // Style headings
                   h1: ({ children }) => <h1 className="text-2xl font-bold mb-4 mt-6 first:mt-0">{children}</h1>,
                   h2: ({ children }) => <h2 className="text-xl font-bold mb-3 mt-5 first:mt-0">{children}</h2>,
                   h3: ({ children }) => <h3 className="text-lg font-bold mb-2 mt-4 first:mt-0">{children}</h3>,
-                  // Style strong/bold text
                   strong: ({ children }) => <strong className="font-bold text-gray-900 dark:text-gray-100">{children}</strong>,
-                  // Style emphasis/italic text
                   em: ({ children }) => <em className="italic">{children}</em>,
                 }}
               >
-                {cleanContent}
+                {sanitizedContent}
               </ReactMarkdown>
             </div>
           )}
 
-          {/* Sources + Notes */}
-          {!isUser && (uniqueSources.length > 0) && (
+          {/* Sources + Disclaimer */}
+          {!isUser && (uniqueSources.length > 0 || disclaimer) && (
             <div className="mt-6 lg:mt-8">
               <div className="bg-gray-100/60 dark:bg-slate-700/40 rounded-2xl p-6 lg:p-8 border border-gray-200/40 dark:border-slate-600/40 shadow-sm">
                 
@@ -211,22 +176,22 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                 
                 {/* Disclaimer Box */}
                 {disclaimer && (
-                <div className="bg-amber-50 dark:bg-amber-900/30 rounded-xl p-4 lg:p-5 border border-amber-200 dark:border-amber-700/50 shadow-sm">
-                  <div className="flex items-start space-x-3">
-                    <div className="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-white text-sm font-bold">!</span>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-2">
-                        Important Notice
-                      </h4>
-                      <p className="text-sm text-amber-700 dark:text-amber-300 leading-relaxed">
-                        {disclaimer}
-                      </p>
+                  <div className="bg-amber-50 dark:bg-amber-900/30 rounded-xl p-4 lg:p-5 border border-amber-200 dark:border-amber-700/50 shadow-sm">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-white text-sm font-bold">!</span>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-2">
+                          Important Notice
+                        </h4>
+                        <p className="text-sm text-amber-700 dark:text-amber-300 leading-relaxed">
+                          {disclaimer}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
               </div>
             </div>
