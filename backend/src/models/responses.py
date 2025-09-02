@@ -54,6 +54,7 @@ class AIResponse(BaseModel):
     status: str = Field(..., description="Response status")
     response: str = Field(..., description="AI-generated response")
     sources: List[SourceInfo] = Field(default_factory=list, description="Sources used in the response")
+    disclaimer: Optional[str] = Field(None, description="Disclaimer message")
     usage: QuotaInfo = Field(..., description="Updated quota information")
     processing_time: Optional[float] = Field(None, description="Processing time in seconds")
     query_id: Optional[str] = Field(None, description="Unique query identifier")

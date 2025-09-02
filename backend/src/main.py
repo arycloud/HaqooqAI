@@ -382,6 +382,7 @@ async def process_query(
             status="success",
             response=result["response"],
             sources=result.get("sources", []),
+            disclaimer=result.get("disclaimer", ''),
             usage=updated_quota,
             processing_time=result.get("processing_time"),
             query_id=query_id
