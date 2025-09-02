@@ -389,26 +389,6 @@ class LegalAssistantAgent:
         # Trim trailing/leading whitespace
         return response.strip()
 
-    # def _post_process_response(self, response: str, original_query: str) -> str:
-    #     """Post-process the response for quality and consistency."""
-
-    #     response = self._sanitize_llm_response(response)
-
-    #     # Check if response seems incomplete or irrelevant
-    #     if len(response) < 50:
-    #         response = f"{response}\n\nNote: This response seems brief. If you need more detailed information, please rephrase your question or provide more specific details."
-
-    #     # Ensure disclaimer is present for legal queries
-    #     query_lower = original_query.lower()
-    #     is_legal_query = any(term in query_lower for term in [
-    #         'constitution', 'amendment', 'law', 'act', 'ordinance', 'legal',
-    #         'court', 'judge', 'justice', 'parliament'
-    #     ])
-
-    #     if is_legal_query and "substitute for formal legal advice" not in response:
-    #         response += "\n\n**Disclaimer:** This information is for general guidance only and is not a substitute for formal legal advice. For specific legal matters, please consult a qualified legal professional."
-
-    #     return response
 
     def _post_process_response(self, response: str, original_query: str) -> str:
         """Post-process the response for quality and consistency."""
@@ -449,7 +429,8 @@ class LegalAssistantAgent:
         # Quality check
         if len(clean_content) < 50:
             clean_content += "\n\nNote: This response seems brief. If you need more detailed information, please rephrase your question or provide more specific details."
-
+        print("=======CLEANED RESPONSE=======")
+        print(clean_content)
         return clean_content
 
     # def _extract_sources_from_response(self, response: str) -> tuple[list[dict], str | None]:
@@ -574,5 +555,6 @@ class LegalAssistantAgent:
             if key not in seen:
                 seen.add(key)
                 unique_sources.append(s)
-
+        print("=======Unique extracted sources from source extracting function=====")
+        print(unique_sources)
         return unique_sources, disclaimer
