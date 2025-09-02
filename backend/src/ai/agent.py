@@ -330,16 +330,22 @@ class LegalAssistantAgent:
             cleaned_output_string = re.sub(r"<tool_code>.*?</tool_code>", "", output_string, flags=re.DOTALL)
             cleaned_output_string = cleaned_output_string.strip()
 
+            print("============== RESPONSE before post processing ==============\n")
+            print(cleaned_output_string)
+
             # Step 1: Extract sources and disclaimer
             sources, disclaimer = self._extract_sources_from_response(cleaned_output_string)
 
-            # Step 2: Now post-process to get clean content (with sources/disclaimer removed)
-            final_response = self._post_process_response(cleaned_output_string, query)
-
-            print("=======SOURCES=======")
+            print("\n\n=======SOURCES=======")
             for source in sources:
                 print(f"Source: {source['title']}, Type: {source['type']}, URL: {source['url']}")
             print(f'Disclaimer found: {disclaimer}')
+
+            # Step 2: Post-process response (without re-extraction)
+            final_response = self._post_process_response(cleaned_output_string)
+            print("============== RESPONSE after post processing ==============\n")
+            print(final_response)
+            
 
             return {
                 "response": final_response,
@@ -391,41 +397,75 @@ class LegalAssistantAgent:
         return response.strip()
 
 
-    def _post_process_response(self, response: str, original_query: str) -> str:
-        """Post-process the response for quality and consistency."""
+    def _post_process_response(self, response: str) -> str:
+        """Post-process the response for quality and consistency.
+        Removes fenced source blocks, inline sources, and disclaimers so they don’t appear in the final response.
+        """
 
-        # Sanitize first (removes JSON, etc.)
+        # Sanitize first (removes JSON artifacts, etc.)
         response = self._sanitize_llm_response(response)
-
-        # Extract and remove sources/disclaimer
-        sources, disclaimer = self._extract_sources_from_response(response)
-
-        # Start with full response and remove extracted parts
         clean_content = response
 
-        # Instead: Use the same regex to remove source lines
-        source_pattern = re.compile(r"^Source:\s*(.*?)\s*[\|\-\u2013]\s*(.+?)\s*[\-\u2013]\s*(https?://[^\s]+|N/A|n/a)$", re.MULTILINE | re.IGNORECASE)
-        clean_content = source_pattern.sub("", clean_content)
+        # 🚨 Remove fenced blocks that contain "Source:"
+        clean_content = re.sub(
+            r"```[\s\S]*?Source:.*?```",
+            "",
+            clean_content,
+            flags=re.MULTILINE | re.IGNORECASE
+        )
 
-        # Remove disclaimer
-        if disclaimer:
-            # Normalize spacing
-            disclaimer_clean = re.escape("**Disclaimer**: This is informational and not a substitute for formal legal advice. Consult a qualified Pakistani lawyer for specific cases.")
-            clean_content = re.sub(disclaimer_clean, "", clean_content, flags=re.IGNORECASE)
+        # 🚨 Remove any standalone "Source:" lines (pipe or dash separated)
+        clean_content = re.sub(
+            r"^Source:\s*.+$",
+            "",
+            clean_content,
+            flags=re.MULTILINE | re.IGNORECASE
+        )
 
-        # Final cleanup
+        # 🚨 Remove markdown headings like "### Sources:" or "## **Sources:**"
+        clean_content = re.sub(
+            r"^#{1,6}\s*\**Sources?\**:?\s*$",
+            "",
+            clean_content,
+            flags=re.MULTILINE | re.IGNORECASE
+        )
+
+        # 🚨 Remove bare "Sources:" lines (just in case)
+        clean_content = re.sub(
+            r"^\s*Sources?:\s*$",
+            "",
+            clean_content,
+            flags=re.MULTILINE | re.IGNORECASE
+        )
+
+        # 🚨 Remove disclaimer if present
+        disclaimer_pattern = re.compile(
+            r"\*\*Disclaimer\*\*:.+",
+            re.IGNORECASE | re.DOTALL
+        )
+        clean_content = disclaimer_pattern.sub("", clean_content)
+
+        # 🚨 Remove any stray code fences (``` or ~~~)
+        clean_content = re.sub(r"```+", "", clean_content)
+        clean_content = re.sub(r"~~~+", "", clean_content)
+
+        # 🚨 Remove trailing horizontal rules (--- or *** at the end)
+        clean_content = re.sub(r'(\n*[-*_]{3,}\s*)+$', '', clean_content, flags=re.MULTILINE)
+
+        # Final cleanup of spacing
         clean_content = re.sub(r'\n{3,}', '\n\n', clean_content.strip())
         clean_content = clean_content.strip()
 
-        # Optional: Add back disclaimer at the end, if needed
-        # But frontend will render it separately, so skip here
-
-        # Quality check
+        # Quality check for too-short answers
         if len(clean_content) < 50:
-            clean_content += "\n\nNote: This response seems brief. If you need more detailed information, please rephrase your question or provide more specific details."
+            clean_content += (
+                "\n\nNote: This response seems brief. "
+                "If you need more detailed information, please rephrase your question or provide more specific details."
+            )
+
         return clean_content
-   
-    # Grabbing both "-" and "|" format for sources
+
+    
     def _extract_sources_from_response(self, response: str) -> tuple[list[dict], Optional[str]]:
         """Extract structured sources and disclaimer from the LLM response text."""
         sources = []
