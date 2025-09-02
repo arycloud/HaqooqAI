@@ -340,6 +340,7 @@ class LegalAssistantAgent:
             for source in sources:
                 print(f"Source: {source['title']}, Type: {source['type']}, URL: {source['url']}")
             print(f'Disclaimer found: {disclaimer}')
+
             return {
                 "response": final_response,
                 "sources": sources,
@@ -402,13 +403,6 @@ class LegalAssistantAgent:
         # Start with full response and remove extracted parts
         clean_content = response
 
-        # Remove each source line
-        for source in sources:
-            # Reconstruct the exact source line as it appeared
-            # Use the original format: "Source: Type | Title | URL"
-            # But since LLM may use `|` or `-`, we use a flexible pattern
-            pass  # We'll handle this via regex below
-
         # Instead: Use the same regex to remove source lines
         source_pattern = re.compile(r"^Source:\s*(.*?)\s*[\|\-\u2013]\s*(.+?)\s*[\-\u2013]\s*(https?://[^\s]+|N/A|n/a)$", re.MULTILINE | re.IGNORECASE)
         clean_content = source_pattern.sub("", clean_content)
@@ -429,125 +423,46 @@ class LegalAssistantAgent:
         # Quality check
         if len(clean_content) < 50:
             clean_content += "\n\nNote: This response seems brief. If you need more detailed information, please rephrase your question or provide more specific details."
-        print("=======CLEANED RESPONSE=======")
-        print(clean_content)
         return clean_content
-
-    # def _extract_sources_from_response(self, response: str) -> tuple[list[dict], str | None]:
-    #     """Extract sources and disclaimer from LLM response text."""
-    #     sources = []
-    #     disclaimer = None
-
-    #     # Regex for sources
-    #     source_pattern = r"Source:\s*(?:Web Search\s*[-–]\s*)?(.+)"
-    #     for match in re.finditer(source_pattern, response, re.IGNORECASE):
-    #         source_text = match.group(1).strip()
-    #         if source_text and len(source_text) > 3:
-    #             sources.append({"title": source_text})
-
-    #     # Regex for disclaimer
-    #     disclaimer_pattern = r"\*\*Disclaimer\*\*:?(.+)"
-    #     m = re.search(disclaimer_pattern, response, re.IGNORECASE | re.DOTALL)
-    #     if m:
-    #         disclaimer = "**Disclaimer**:" + m.group(1).strip()
-
-    #     # Deduplicate sources by title
-    #     seen = set()
-    #     unique_sources = []
-    #     for s in sources:
-    #         if s["title"] not in seen:
-    #             seen.add(s["title"])
-    #             unique_sources.append(s)
-
-    #     return unique_sources, disclaimer
-    
-
-
-    # def _extract_sources_from_response(self, response: str) -> tuple[list[dict], str | None]:
-    #     """
-    #     Extracts structured sources and a disclaimer from the LLM response text.
-    #     Assumes sources are in the format: 'Source: [Type] | [Title] | [URL]'
-    #     """
-    #     sources = []
-    #     disclaimer = None
-
-    #     # 1. Regex for the new, structured source format
-    #     # This pattern captures three groups separated by pipes.
-    #     source_pattern = re.compile(
-    #         r"^Source:\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*(.+?)$", 
-    #         re.MULTILINE | re.IGNORECASE
-    #     )
-        
-    #     for match in source_pattern.finditer(response):
-    #         source_type = match.group(1).strip()
-    #         title = match.group(2).strip()
-    #         url = match.group(3).strip()
-
-    #         # The frontend expects a 'type' field, as seen in its documentation
-    #         # Let's map it to a more structured format
-    #         source_doc_type = 'web_search' if 'web' in source_type.lower() else 'legal_doc'
-
-    #         sources.append({
-    #             "type": source_doc_type,
-    #             "title": title,
-    #             "url": url if url.lower() != 'n/a' else None, # Store None if URL is 'N/A'
-    #         })
-        
-
-    #     # 2. Regex for disclaimer (can remain the same, but let's make it robust)
-    #     disclaimer_pattern = re.compile(r"(\*\*Disclaimer\*\*:.+)", re.IGNORECASE | re.DOTALL)
-    #     disclaimer_match = disclaimer_pattern.search(response)
-    #     if disclaimer_match:
-    #         disclaimer = disclaimer_match.group(1).strip()
-
-    #     # 3. Deduplicate sources based on a combination of title and URL
-    #     # This prevents identical sources from appearing twice
-    #     seen = set()
-    #     unique_sources = []
-    #     for s in sources:
-    #         # Create a unique identifier for each source
-    #         identifier = (s["title"], s["url"])
-    #         if identifier not in seen:
-    #             seen.add(identifier)
-    #             unique_sources.append(s)
-
-    #     # The function now returns unique_sources, disclaimer, and the cleaned response
-    #     # You may need to adjust your RAG engine to handle this third return value.
-    #     # For now, let's stick to the original function signature.
-    #     return unique_sources, disclaimer
-
-
+   
     # Grabbing both "-" and "|" format for sources
-    def _extract_sources_from_response(self, response: str) -> tuple[list[dict], str | None]:
+    def _extract_sources_from_response(self, response: str) -> tuple[list[dict], Optional[str]]:
+        """Extract structured sources and disclaimer from the LLM response text."""
         sources = []
         disclaimer = None
 
-        # Flexible regex: accepts | or - or – as separators
-        source_pattern = re.compile(
-            r"^Source:\s*(.*?)\s*[\|\-\u2013]\s*(.+?)\s*[\-\u2013]\s*(https?://[^\s]+|N/A|n/a)\s*$",
+        if not response:
+            return sources, disclaimer
+
+        # 1. Extract code block contents (if present)
+        code_block_pattern = re.compile(r"```([\s\S]*?)```", re.MULTILINE)
+        blocks = code_block_pattern.findall(response)
+
+        # If no fenced block, fall back to full response
+        text_to_parse = "\n".join(blocks) if blocks else response
+
+        # 2. Regex for pipe-separated sources
+        pipe_pattern = re.compile(
+            r"^Source:\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*(.+?)$",
             re.MULTILINE | re.IGNORECASE
         )
 
-        for match in source_pattern.finditer(response):
-            raw_type = match.group(1).strip()
-            title = match.group(2).strip()
-            url = match.group(3).strip()
-
-            doc_type = "web_search" if "web" in raw_type.lower() else "legal_doc"
-            url_value = None if url.lower() == "n/a" else url
-
+        for match in pipe_pattern.finditer(text_to_parse):
+            source_type, title, url = match.groups()
             sources.append({
-                "type": doc_type,
-                "title": title,
-                "url": url_value
+                "type": "web_search" if "web" in source_type.lower() else "legal_doc",
+                "title": title.strip(),
+                "reference": source_type.strip(),
+                "url": None if url.strip().lower() in ["n/a", "na"] else url.strip().rstrip("`"),
             })
 
-        # Extract disclaimer
-        disclaimer_match = re.search(r"(\*\*Disclaimer\*\*:.+)", response, re.IGNORECASE | re.DOTALL)
+        # 3. Regex for disclaimer
+        disclaimer_pattern = re.compile(r"(\*\*Disclaimer\*\*:.+)", re.IGNORECASE | re.DOTALL)
+        disclaimer_match = disclaimer_pattern.search(response)
         if disclaimer_match:
             disclaimer = disclaimer_match.group(1).strip()
 
-        # Deduplicate
+        # 4. Deduplicate by (title, url)
         seen = set()
         unique_sources = []
         for s in sources:
@@ -555,6 +470,5 @@ class LegalAssistantAgent:
             if key not in seen:
                 seen.add(key)
                 unique_sources.append(s)
-        print("=======Unique extracted sources from source extracting function=====")
-        print(unique_sources)
+
         return unique_sources, disclaimer
