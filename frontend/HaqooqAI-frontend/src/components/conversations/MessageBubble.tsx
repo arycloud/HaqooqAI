@@ -89,7 +89,9 @@ const extractStructuredContent = (content: string, existingSources?: Source[]) =
   cleanContent = cleanContent.replace(/```[\s\S]*?```/g, "").trim();
   // 🚨 Remove stray "Sources:" headings (case-insensitive, multiline safe)
   cleanContent = cleanContent.replace(/^\s*Sources?:\s*$/gim, "").trim();
-  
+  // 🚨 Remove markdown "Sources:" headings (### Sources:, ## Sources, etc.)
+  cleanContent = cleanContent.replace(/^#{1,6}\s*\**Sources?\**:?\s*$/gim, "").trim();
+
   // Disclaimer extraction (same as before)
   const disclaimerPattern = /\*\*Disclaimer\*\*:\s*This is informational and not a substitute for formal legal advice\. Consult a qualified Pakistani lawyer for specific cases\./gi;
   const disclaimerMatch = cleanContent.match(disclaimerPattern);
