@@ -21,6 +21,7 @@ interface Message {
   role: 'user' | 'assistant';
   created_at: string;
   sources?: Source[];
+  disclaimer?: string;
 }
 
 interface MessageBubbleProps {
@@ -37,72 +38,40 @@ interface MessageBubbleProps {
 //   const extractedSources: Source[] = [...(existingSources || [])];
 //   const notes: string[] = [];
 
-//   // 1. Regex for the NEW, robust pipe-separated format.
-//   // This is the key change.
-//   const sourcePattern = /^Source:\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*(.+?)$/gm;
+//   // 🚨 Remove fenced code blocks entirely
+//   cleanContent = cleanContent.replace(/```[\s\S]*?```/g, "").trim();
+//   // 🚨 Remove stray "Sources:" headings (case-insensitive, multiline safe)
+//   cleanContent = cleanContent.replace(/^\s*Sources?:\s*$/gim, "").trim();
+//   // 🚨 Remove markdown "Sources:" headings (### Sources:, ## Sources, etc.)
+//   cleanContent = cleanContent.replace(/^#{1,6}\s*\**Sources?\**:?\s*$/gim, "").trim();
 
-//   let match;
-//   while ((match = sourcePattern.exec(content)) !== null) {
-//     const fullMatchText = match[0];
-//     const sourceType = match[1]?.trim() || '';
-//     const title = match[2]?.trim() || '';
-//     const url = match[3]?.trim() || '';
-
-//     const type = sourceType.toLowerCase().includes('web') ? 'web_search' : 'legal_doc';
-
-//     extractedSources.push({
-//       type: type,
-//       title: title,
-//       url: url.toLowerCase() !== 'n/a' ? url : undefined, // Set URL to undefined if 'N/A'
-//       reference: sourceType, // The original type can serve as the reference
-//     });
-
-//     // Remove the matched source line from the main content
-//     cleanContent = cleanContent.replace(fullMatchText, '');
-//   }
-
-//   // 2. Extract the standard disclaimer
+//   // Disclaimer extraction (same as before)
 //   const disclaimerPattern = /\*\*Disclaimer\*\*:\s*This is informational and not a substitute for formal legal advice\. Consult a qualified Pakistani lawyer for specific cases\./gi;
-
 //   const disclaimerMatch = cleanContent.match(disclaimerPattern);
 //   if (disclaimerMatch) {
 //     notes.push(disclaimerMatch[0].replace(/\*\*Disclaimer\*\*:\s*/, ''));
 //     cleanContent = cleanContent.replace(disclaimerPattern, '');
 //   }
 
-//   // 3. Final cleanup
 //   cleanContent = cleanContent.trim();
 
 //   return { cleanContent, sources: extractedSources, notes };
 // };
 
-const extractStructuredContent = (content: string, existingSources?: Source[]) => {
-  if (!content || typeof content !== 'string') {
-    return { cleanContent: '', sources: existingSources || [], notes: [] };
+export const extractStructuredContent = (
+  content: string,
+  existingSources?: Source[],
+  disclaimer?: string
+) => {
+  if (!content || typeof content !== "string") {
+    return { cleanContent: "", sources: existingSources || [], disclaimer: disclaimer || "" };
   }
 
-  let cleanContent = content;
-  const extractedSources: Source[] = [...(existingSources || [])];
-  const notes: string[] = [];
-
-  // 🚨 Remove fenced code blocks entirely
-  cleanContent = cleanContent.replace(/```[\s\S]*?```/g, "").trim();
-  // 🚨 Remove stray "Sources:" headings (case-insensitive, multiline safe)
-  cleanContent = cleanContent.replace(/^\s*Sources?:\s*$/gim, "").trim();
-  // 🚨 Remove markdown "Sources:" headings (### Sources:, ## Sources, etc.)
-  cleanContent = cleanContent.replace(/^#{1,6}\s*\**Sources?\**:?\s*$/gim, "").trim();
-
-  // Disclaimer extraction (same as before)
-  const disclaimerPattern = /\*\*Disclaimer\*\*:\s*This is informational and not a substitute for formal legal advice\. Consult a qualified Pakistani lawyer for specific cases\./gi;
-  const disclaimerMatch = cleanContent.match(disclaimerPattern);
-  if (disclaimerMatch) {
-    notes.push(disclaimerMatch[0].replace(/\*\*Disclaimer\*\*:\s*/, ''));
-    cleanContent = cleanContent.replace(disclaimerPattern, '');
-  }
-
-  cleanContent = cleanContent.trim();
-
-  return { cleanContent, sources: extractedSources, notes };
+  return {
+    cleanContent: content.trim(),
+    sources: existingSources || [],
+    disclaimer: disclaimer || ""
+  };
 };
 
 
@@ -110,10 +79,10 @@ const extractStructuredContent = (content: string, existingSources?: Source[]) =
 export function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const extractionResult = isUser
-    ? { cleanContent: message.content, sources: undefined, notes: [] }
-    : extractStructuredContent(message.content, message.sources);
+    ? { cleanContent: message.content, sources: [], disclaimer: "" }
+    : extractStructuredContent(message.content, message.sources, message.disclaimer);
 
-  const { cleanContent, sources: extractedSources, notes } = extractionResult;
+  const { cleanContent, sources: extractedSources, disclaimer } = extractionResult;
 
   // Filter out invalid sources and duplicates
   const filteredSources = extractedSources?.filter((source) => {
@@ -194,7 +163,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           )}
 
           {/* Sources + Notes */}
-          {!isUser && (uniqueSources.length > 0 || notes.length > 0) && (
+          {!isUser && (uniqueSources.length > 0) && (
             <div className="mt-6 lg:mt-8">
               <div className="bg-gray-100/60 dark:bg-slate-700/40 rounded-2xl p-6 lg:p-8 border border-gray-200/40 dark:border-slate-600/40 shadow-sm">
                 
@@ -241,27 +210,23 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                 )}
                 
                 {/* Disclaimer Box */}
-                {notes.length > 0 && (
-                  <div className="bg-amber-50 dark:bg-amber-900/30 rounded-xl p-4 lg:p-5 border border-amber-200 dark:border-amber-700/50 shadow-sm">
-                    <div className="flex items-start space-x-3">
-                      <div className="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span className="text-white text-sm font-bold">!</span>
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-2">
-                          Important Notice
-                        </h4>
-                        <div className="text-sm text-amber-700 dark:text-amber-300 leading-relaxed">
-                          {notes.map((note, index) => (
-                            <p key={index} className="mb-2 last:mb-0">
-                              {note}
-                            </p>
-                          ))}
-                        </div>
-                      </div>
+                {disclaimer && (
+                <div className="bg-amber-50 dark:bg-amber-900/30 rounded-xl p-4 lg:p-5 border border-amber-200 dark:border-amber-700/50 shadow-sm">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-white text-sm font-bold">!</span>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-2">
+                        Important Notice
+                      </h4>
+                      <p className="text-sm text-amber-700 dark:text-amber-300 leading-relaxed">
+                        {disclaimer}
+                      </p>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
               </div>
             </div>
