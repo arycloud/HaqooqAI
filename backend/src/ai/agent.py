@@ -1,15 +1,14 @@
 """
 Legal Assistant Agent for HaqooqAI Backend
-Adapted from existing agent.py with improved integration
 """
 from datetime import datetime
-import os
 import logging
+import re
 from typing import List, Optional, Dict, Any, Tuple
+
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
-import re
 
 from .tools import legal_document_search, web_search_tool
 from ..config import GROQ_API_BASE, GROQ_MODEL, DEFAULT_GROQ_KEY
@@ -20,19 +19,68 @@ logger = logging.getLogger(__name__)
 class LegalAssistantAgent:
     """Enhanced Legal Assistant Agent for Pakistani law queries"""
 
-    def __init__(self):
+    # --- Constants ---
+    PAKISTAN_TERMS: List[str] = [
+        "pakistan", "pakistani", "pak", "pakistān", "pakis", "pakisani",
+        "islamic republic of pakistan", "republic of pakistan",
+        # Provinces & regions
+        "punjab", "sindh", "khyber pakhtunkhwa", "kp", "kpk", "balochistan",
+        "gilgit", "baltistan", "fata", "azad kashmir", "ajk",
+        "islamabad capital territory", "ict",
+        # Major cities
+        "karachi", "lahore", "islamabad", "rawalpindi", "faisalabad", "multan",
+        "quetta", "peshawar", "mardan", "abbottabad",
+        # Key legislation & acts
+        "pakistan penal code", "ppc", "criminal procedure code", "crpc",
+        "civil procedure code", "cpc", "qanun-e-shahadat", "evidence act",
+        "contract act 1872", "sale of goods act 1930", "partnership act 1932",
+        "limitation act 1908", "specific relief act 1877",
+        "property act 1882", "registration act 1908",
+        "transfer of property act 1882", "guardians and wards act 1890",
+        "child marriage restraint act 1929", "peca",
+        "prevention of electronic crimes act 2016",
+        # Institutions
+        "supreme court", "national assembly", "senate", "nab", "fia",
+        "attorney general", "solicitor general", "ombudsman", "mohtasib",
+        # Religious/cultural
+        "nikah", "khula", "talaq", "iddat", "inheritance", "sharia inheritance",
+        "hijab", "blasphemy", "section 295c"
+    ]
+
+    FOLLOW_UP_INDICATORS: List[str] = [
+        "previous", "last", "that", "the person", "he", "she", "it", "expand",
+        "more on", "follow up", "clarify", "elaborate", "what about",
+        "tell me more", "mentioned", "earlier", "before", "just asked"
+    ]
+
+    # Precompiled regex patterns
+    _structured_patterns = [
+        re.compile(r'"type":\s*"container"'),
+        re.compile(r'"type":\s*"card"'),
+        re.compile(r'"type":\s*"infoBlock"'),
+        re.compile(r'"type":\s*"paragraph"'),
+        re.compile(r'"type":\s*"metadata"'),
+        re.compile(r'"type":\s*"disclaimerCard"'),
+        re.compile(r'"style":\s*{[^}]*}')
+    ]
+    _json_like_pattern = re.compile(r"\{[^}]*\"(type|children)\"[^}]*\}")
+    _code_block_pattern = re.compile(r"```[\s\S]*?Source:.*?```", re.MULTILINE | re.IGNORECASE)
+    _source_line_pattern = re.compile(r"^Source:\s*.+$", re.MULTILINE | re.IGNORECASE)
+    _disclaimer_text = "This is informational and not a substitute for formal legal advice. Consult a qualified Pakistani lawyer for specific cases."
+    _pipe_pattern = re.compile(
+        r"^Source:\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*(.+?)$",
+        re.MULTILINE | re.IGNORECASE
+    )
+
+    def __init__(self) -> None:
         """Initializes the enhanced agent and its tools."""
         self.groq_api_base = GROQ_API_BASE
         self.groq_model = GROQ_MODEL
         self.default_groq_key = DEFAULT_GROQ_KEY
 
-        # 2. Define the tools the agent will use
-        self.tools = [
-            legal_document_search,
-            web_search_tool
-        ]
+        self.tools = [legal_document_search, web_search_tool]
+
         current_date = datetime.now().strftime("%B %d, %Y")
-        # 3. Prompt Template
         self.prompt = ChatPromptTemplate.from_messages([
                     ("system",
                     f"CURRENT DATE: {current_date}\n\n"
@@ -85,7 +133,7 @@ class LegalAssistantAgent:
                     "- NEVER include 'type', 'children', 'metadata', or other structural elements.\n\n"
 
                     "## SOURCE FORMAT (MANDATORY) ##\n"
-                    "Sources MUST appear at the very end of the response, one per line, in this **exact format**:\n"
+                    "Sources MUST appear at the very end of the response after the disclaimer, one per line, in this **exact format**:\n"
                     "```\n"
                     "Source: [Type] | [Title] | [URL]\n"
                     "```\n"
@@ -107,7 +155,7 @@ class LegalAssistantAgent:
                     "- Any format using `–`, `-`, `:`, or incorrect field order\n\n"
 
                     "## FINAL DISCLAIMER ##\n"
-                    "After listing all sources, add this exact line:\n"
+                    "Just before listing all sources, add this exact line:\n"
                     "```\n"
                     "**Disclaimer**: This is informational and not a substitute for formal legal advice. Consult a qualified Pakistani lawyer for specific cases.\n"
                     "```\n\n"
@@ -126,20 +174,21 @@ class LegalAssistantAgent:
                     ("human", "{question}"),
                     ("placeholder", "{agent_scratchpad}"),
                 ])
-        # Initialize with default LLM if available
-        self.default_llm = None
+
+        self.default_llm: Optional[ChatOpenAI] = None
         if self.default_groq_key:
             try:
                 self.default_llm = self._create_llm(self.default_groq_key)
                 self.default_agent_executor = self._create_agent_executor(self.default_llm)
                 logger.info("Default LLM initialized successfully")
             except Exception as e:
-                logger.error(f"Error initializing default LLM: {e}")
+                logger.error("Error initializing default LLM: %s", e)
                 self.default_agent_executor = None
         else:
-            self.default_agent_executor = None
             logger.warning("No default Groq API key provided")
+            self.default_agent_executor = None
 
+    # --- LLM Setup ---
     def _create_llm(self, groq_api_key: str) -> ChatOpenAI:
         """Create a ChatOpenAI instance with the provided key"""
         return ChatOpenAI(
@@ -158,194 +207,119 @@ class LegalAssistantAgent:
             agent=agent,
             tools=self.tools,
             verbose=True,
-            max_iterations=5,  # Allow more iterations for better results
+            max_iterations=5,
             early_stopping_method="generate"
         )
 
-    def _preprocess_query(self, query: str, chat_history: list = None) -> dict:
-        """Analyze query and chat history to determine search strategy."""
+    # --- Query Preprocessing ---
+    def _detect_scope(self, query: str, chat_history: List[Tuple[str, str]]) -> bool:
         query_lower = query.lower()
-        
-        # List of Pakistan-related terms
-        pakistan_terms = [
-            # === COUNTRY & NATIONAL TERMS ===
-            'pakistan', 'pakistani', 'pak', 'pakistān', 'pakis', 'pakisani',
-            'islamic republic of pakistan', 'republic of pakistan',
-            
-            # === PROVINCES & ADMINISTRATIVE REGIONS ===
-            'punjab', 'sindh', 'khyber pakhtunkhwa', 'kp', 'kpk', 'balochistan', 'gilgit', 'baltistan',
-            'federally administered tribal areas', 'fata', 'azad kashmir', 'ajk', 'islamabad capital territory', 'ict',
-            'potohar', 'saraiki', 'makran', 'cholistan', 'thar', 'nubra', 'skardu', 'hunza', 'shigar',
-            
-            # === MAJOR CITIES & TOWNS ===
-            'karachi', 'lahore', 'islamabad', 'rawalpindi', 'faisalabad', 'multan', 'hyderabad', 'quetta',
-            'peshawar', 'mardan', 'abbottabad', 'swat', 'mansehra', 'murree', 'gulberg', 'defence', 'dha',
-            'clifton', 'gulshan', 'bahria', 'model town', 'johar town', 'walled city', 'old city',
-            
-            # === LEGISLATION & ACTS ===
-            'pakistan penal code', 'ppc', 'criminal procedure code', 'crpc', 'civil procedure code', 'cpc',
-            'qanun-e-shahadat', 'evidence act', 'contract act 1872', 'sale of goods act 1930',
-            'partnership act 1932', 'limitation act 1908', 'specific relief act 1877',
-            'property act 1882', 'registration act 1908', 'transfer of property act 1882',
-            'guardians and wards act 1890', 'guardianship law', 'custody law',
-            'child marriage restraint act 1929', 'cmra', 'sindh child marriage restraint act 2020',
-            'punjab dowry act 2021', 'dowry prohibition', 'bride price', 'mahr', 'dower',
-            'zakat', 'ushr', 'waqf', 'wakf', 'charity law', 'religious endowment',
-            'defamation law', 'cybercrime law', 'peca', 'prevention of electronic crimes act 2016',
-            'anti-corruption', 'nab', 'national accountability bureau', 'accountability court',
-            'provincial assembly', 'national assembly', 'senate', 'parliament',
-            
-            # === GOVERNMENT & INSTITUTIONS ===
-            'government of pakistan', 'federal government', 'provincial government',
-            'ministry of law', 'law and justice division', 'attorney general', 'solicitor general',
-            'district commissioner', 'dc', 'deputy commissioner', 'assistant commissioner', 'ac',
-            'police', 'ppc', 'punjab police', 'sindh police', 'kpk police', 'balochistan police',
-            'fia', 'federal investigation agency', 'nhsrc', 'national human rights commission',
-            'lc', 'local commission', 'ombudsman', 'mohtasib', 'wafaqi mohtasib',
-            'land revenue', 'revenue department', 'patwari', 'mutation', 'fard', 'intiqal',
-            'stamp duty', 'registration fee', 'property tax', 'municipal tax',
-            # === RELIGIOUS & CULTURAL CONTEXT (Legal Relevance) ===
-            'sunni', 'shiite', 'ahmadi', 'qadiani', 'blasphemy', '295c', 'section 295c',
-            'islamic ideology', 'niqab', 'hijab', 'burqa', 'purdah',
-            'interest', 'usury', 'zina', 
-            'nikah', 'nikkah','nikah nama', 'dissolution of muslim marriages act 1939',
-            'khula', 'talaq', 'divorce', 'iddat', 'iddah', 'maintenance', 'muta',
-            'wali', 'guardian', 'consent', 'minor marriage', 'child marriage',
-            'inheritance', 'sharia inheritance', 'faraid', 'ulama', 'mufti',
-
-            'christian marriage act 1872', 'hindu marriage act 2017',
-            'sikh gurdwara act 1925', 'special marriage act 1872',
-        ]
-        
-        follow_up_indicators = [
-        'previous', 'last', 'that', 'the person', 'he', 'she', 'it', 'expand', 'more on',
-        'follow up', 'clarify', 'elaborate', 'expand', 'what about', 'tell me more', 'who was',
-        'the one', 'mentioned', 'earlier', 'before', 'just asked', 'in my last'
-        ]
-        is_follow_up = any(indicator in query_lower for indicator in follow_up_indicators)
-        
-        # Check if the query itself has Pakistan terms
-        is_pakistan_in_query = any(term in query_lower for term in pakistan_terms)
-        
-        # Check chat history for Pakistan context if available
-        is_pakistan_in_history = False
+        in_query = any(term in query_lower for term in self.PAKISTAN_TERMS)
+        follow_up = any(ind in query_lower for ind in self.FOLLOW_UP_INDICATORS)
+        in_history = False
         if chat_history:
-            # Limit to recent history (last 4 messages: ~2 user-assistant pairs) for relevance
             recent_history = chat_history[-4:]
-            # Extract content from tuples (role, content)
-            history_text = ' '.join([content for role, content in recent_history])
-            history_lower = history_text.lower()
-            is_pakistan_in_history = any(term in history_lower for term in pakistan_terms)
-        
-        # Refined: Related if query has terms OR (it's a follow-up AND history has terms)
-        is_pakistan_related = is_pakistan_in_query or (is_follow_up and is_pakistan_in_history)
-        
-        # New: Debug logging
-        logger.debug(f"Scope Check - Query: '{query}' | In Query: {is_pakistan_in_query} | Follow-up: {is_follow_up} | In History: {is_pakistan_in_history} | Overall Related: {is_pakistan_related}")
-        
-        # Analyze time sensitivity and legal nature (no changes needed)
-        is_time_sensitive = any(term in query_lower for term in [
-            'recent', 'latest', 'current', 'new', 'update', 'today', 'now',
-            '2024', '2023', 'this year', 'last year', 'currently'
-        ])
-        
-        is_legal_query = any(term in query_lower for term in [
-            # ... (keep your list as-is) ...
-        ])
-        
-        # Determine suggested strategy (no changes needed)
-        if not is_pakistan_related:
-            suggested_strategy = 'scope_check'
+            history_text = " ".join([c for _, c in recent_history]).lower()
+            in_history = any(term in history_text for term in self.PAKISTAN_TERMS)
+        return in_query or (follow_up and in_history)
+
+    def _detect_time_sensitivity(self, query: str) -> bool:
+        time_terms = ["recent", "latest", "current", "new", "update", "today", "now", "2024", "2023"]
+        return any(t in query.lower() for t in time_terms)
+
+    def _detect_legal_query(self, query: str) -> bool:
+        legal_terms = ["act", "section", "law", "code", "ordinance", "regulation", "constitution"]
+        return any(t in query.lower() for t in legal_terms)
+
+    def _preprocess_query(self, query: str, chat_history: List[Tuple[str, str]]) -> Dict[str, Any]:
+        """Analyze query and chat history to determine search strategy."""
+        is_related = self._detect_scope(query, chat_history)
+        is_time_sensitive = self._detect_time_sensitivity(query)
+        is_legal_query = self._detect_legal_query(query)
+
+        if not is_related:
+            strategy = "scope_check"
         elif is_time_sensitive:
-            suggested_strategy = 'web_first'
+            strategy = "web_first"
         elif is_legal_query:
-            suggested_strategy = 'local_first'
+            strategy = "local_first"
         else:
-            suggested_strategy = 'web_first'
-        
+            strategy = "web_first"
+
+        logger.debug(
+            "Scope Check - Query: %s | Related: %s | Time-sensitive: %s | Legal: %s | Strategy: %s",
+            query, is_related, is_time_sensitive, is_legal_query, strategy
+        )
+
         return {
-            'is_pakistan_related': is_pakistan_related,
-            'is_time_sensitive': is_time_sensitive,
-            'is_legal_query': is_legal_query,
-            'suggested_strategy': suggested_strategy
+            "is_pakistan_related": is_related,
+            "is_time_sensitive": is_time_sensitive,
+            "is_legal_query": is_legal_query,
+            "suggested_strategy": strategy
         }
 
-    async def run(self, query: str, groq_api_key: Optional[str] = None,
-                  chat_history: List[Tuple[str, str]] = []) -> Dict[str, Any]:
-        """
-        Enhanced run method with preprocessing and better error handling.
-
-        Args:
-            query: User query
-            groq_api_key: Optional user's Groq API key
-
-        Returns:
-            Dict containing response and metadata
-        """
+    # --- Run Agent ---
+    async def run(
+        self,
+        query: str,
+        groq_api_key: Optional[str] = None,
+        chat_history: List[Tuple[str, str]] = []
+    ) -> Dict[str, Any]:
         try:
-            # Determine which executor to use
-            executor_to_use = self.default_agent_executor
-
+            executor = self.default_agent_executor
             if groq_api_key:
-                # Create a temporary ChatOpenAI instance with the provided key
-                temp_llm = self._create_llm(groq_api_key)
-                executor_to_use = self._create_agent_executor(temp_llm)
-            elif not self.default_agent_executor:
+                executor = self._create_agent_executor(self._create_llm(groq_api_key))
+            elif not executor:
                 return {
                     "response": "Service temporarily unavailable. Please provide your own Groq API key or try again later.",
                     "error": "No API key available",
                     "sources": []
                 }
 
-            # Preprocess the query for insights
             query_analysis = self._preprocess_query(query, chat_history)
+            if query_analysis["suggested_strategy"] == "scope_check":
+                return {
+                    "response": (
+                        "This seems unrelated to Pakistan.\n"
+                        "If it's a follow-up, please reference it clearly "
+                        "(e.g., 'the previous Pakistan PM'). "
+                        "Otherwise, rephrase with Pakistan context."
+                    ),
+                    "sources": [],
+                    "query_analysis": query_analysis
+                }
 
-            # Handle obvious scope issues early
-            if query_analysis['suggested_strategy'] == 'scope_check':
-                if not query_analysis['is_pakistan_related']:
-                    return {
-                        "response": "This seems unrelated to Pakistan.\n"
-                        "If it's a follow-up, please reference it clearly (e.g., 'the previous Pakistan PM')."
-                        " Otherwise, rephrase with Pakistan context.",
-                        "sources": [],
-                        "query_analysis": query_analysis
-                    }
+            enhanced_context = (
+                f"Query Analysis:\n"
+                f"- Pakistan-related: {query_analysis['is_pakistan_related']}\n"
+                f"- Time-sensitive: {query_analysis['is_time_sensitive']}\n"
+                f"- Legal query: {query_analysis['is_legal_query']}\n"
+                f"- Suggested strategy: {query_analysis['suggested_strategy']}\n"
+                f"Original Question: {query}"
+            )
 
-            # Add preprocessing context to the query
-            enhanced_context = f"""
-                                Query Analysis:
-                                    - Pakistan-related: {query_analysis['is_pakistan_related']}
-                                    - Time-sensitive: {query_analysis['is_time_sensitive']}
-                                    - Legal query: {query_analysis['is_legal_query']}
-                                    - Suggested strategy: {query_analysis['suggested_strategy']}
-                                    Original Question: {query}
-                                """
+            # Invoke model
+            response = await executor.ainvoke(
+                {"question": enhanced_context, "chat_history": chat_history}
+            )
+            raw_output = response.get("output", "")
 
-            response = await executor_to_use.ainvoke({
-                        "question": enhanced_context,
-                        "chat_history": chat_history
-                    })
+            if not raw_output:
+                return {
+                    "response": "I was unable to find a relevant answer.",
+                    "sources": [],
+                    "disclaimer": None
+                }
 
-            output_string = response.get("output", "I was unable to find a relevant answer.")
-            cleaned_output_string = re.sub(r"<tool_code>.*?</tool_code>", "", output_string, flags=re.DOTALL)
-            cleaned_output_string = cleaned_output_string.strip()
+            # Extract disclaimer + sources from RAW output
+            sources, disclaimer = self._extract_sources_from_response(raw_output)
 
-            print("============== RESPONSE before post processing ==============\n")
-            print(cleaned_output_string)
+            # Sanitize & post-process for final frontend response
+            cleaned = self._sanitize_llm_response(raw_output)
+            final_response = self._post_process_response(cleaned)
 
-            # Step 1: Extract sources and disclaimer
-            sources, disclaimer = self._extract_sources_from_response(cleaned_output_string)
-
-            print("\n\n=======SOURCES=======")
-            for source in sources:
-                print(f"Source: {source['title']}, Type: {source['type']}, URL: {source['url']}")
-            print(f'Disclaimer found: {disclaimer}')
-
-            # Step 2: Post-process response (without re-extraction)
-            final_response = self._post_process_response(cleaned_output_string)
-            print("============== RESPONSE after post processing ==============\n")
-            print(final_response)
-            
+            logger.debug("Response after post-processing:\n%s", final_response)
+            logger.debug("Sources extracted: %s | Disclaimer found: %s", sources, disclaimer)
 
             return {
                 "response": final_response,
@@ -354,140 +328,59 @@ class LegalAssistantAgent:
             }
 
         except Exception as e:
-            logger.error(f"Error in agent run: {e}")
+            logger.error("Error in agent run: %s", e)
             return {
-                "response": f"I encountered an error while processing your question: {str(e)}. Please try rephrasing your question or try again later.",
+                "response": f"I encountered an error while processing your question: {e}",
                 "error": str(e),
                 "sources": []
             }
 
+    # --- Response Processing ---
     def _sanitize_llm_response(self, response: str) -> str:
-        """Ensure response is plain text and remove any structured formats but keep markdown structure."""
-
-        # Remove JSON-like structures that might have been generated
-        response = re.sub(r'\{[^}]*"type"[^}]*\}', '', response)
-        response = re.sub(r'\{[^}]*"children"[^}]*\}', '', response)
-
-        # Remove specific structured patterns
-        structured_patterns = [
-            r'"type":\s*"container"',
-            r'"type":\s*"card"',
-            r'"type":\s*"infoBlock"',
-            r'"type":\s*"paragraph"',
-            r'"type":\s*"metadata"',
-            r'"type":\s*"disclaimerCard"',
-            r'"style":\s*{[^}]*}'
-        ]
-        for pattern in structured_patterns:
-            response = re.sub(pattern, '', response)
-
-        # Remove JSON wrapping if present
-        response = re.sub(r'^\s*{.*?}\s*$', '', response, flags=re.DOTALL)
-
-        # Convert escaped newlines
-        response = response.replace("\\n", "\n")
-
-        # 🚨 Keep multiple newlines (section spacing), only collapse >3 into 2
-        response = re.sub(r'\n{3,}', '\n\n', response)
-
-        # Remove leftover backslashes
-        response = response.replace("\\", "")
-
-        # Trim trailing/leading whitespace
+        """Ensure response is plain text and remove structured formats but keep markdown."""
+        response = self._json_like_pattern.sub("", response)
+        for pattern in self._structured_patterns:
+            response = pattern.sub("", response)
+        response = re.sub(r"^\s*{.*?}\s*$", "", response, flags=re.DOTALL)
+        response = response.replace("\\n", "\n").replace("\\", "")
+        response = re.sub(r"\n{3,}", "\n\n", response)
         return response.strip()
 
-
     def _post_process_response(self, response: str) -> str:
-        """Post-process the response for quality and consistency.
-        Removes fenced source blocks, inline sources, and disclaimers so they don’t appear in the final response.
-        """
+        """Remove sources and disclaimer from final user-facing text."""
+        clean = self._sanitize_llm_response(response)
+        clean = self._code_block_pattern.sub("", clean)
+        clean = self._source_line_pattern.sub("", clean)
 
-        # Sanitize first (removes JSON artifacts, etc.)
-        response = self._sanitize_llm_response(response)
-        clean_content = response
+        clean = re.sub(r"^\s*\*\*Disclaimer\*\*:.*$", "", clean, flags=re.MULTILINE | re.IGNORECASE)
+        clean = re.sub(r"^\s*Disclaimer:.*$", "", clean, flags=re.MULTILINE | re.IGNORECASE)
 
-        # 🚨 Remove fenced blocks that contain "Source:"
-        clean_content = re.sub(
-            r"```[\s\S]*?Source:.*?```",
-            "",
-            clean_content,
-            flags=re.MULTILINE | re.IGNORECASE
-        )
+        clean = re.sub(r"```+|~~~+", "", clean)
+        clean = re.sub(r"(\n*[-*_]{3,}\s*)+$", "", clean)
+        clean = re.sub(r"\n{3,}", "\n\n", clean).strip()
 
-        # 🚨 Remove any standalone "Source:" lines (pipe or dash separated)
-        clean_content = re.sub(
-            r"^Source:\s*.+$",
-            "",
-            clean_content,
-            flags=re.MULTILINE | re.IGNORECASE
-        )
-
-        # 🚨 Remove markdown headings like "### Sources:" or "## **Sources:**"
-        clean_content = re.sub(
-            r"^#{1,6}\s*\**Sources?\**:?\s*$",
-            "",
-            clean_content,
-            flags=re.MULTILINE | re.IGNORECASE
-        )
-
-        # 🚨 Remove bare "Sources:" lines (just in case)
-        clean_content = re.sub(
-            r"^\s*Sources?:\s*$",
-            "",
-            clean_content,
-            flags=re.MULTILINE | re.IGNORECASE
-        )
-
-        # 🚨 Remove disclaimer if present
-        disclaimer_pattern = re.compile(
-            r"\*\*Disclaimer\*\*:.+",
-            re.IGNORECASE | re.DOTALL
-        )
-        clean_content = disclaimer_pattern.sub("", clean_content)
-
-        # 🚨 Remove any stray code fences (``` or ~~~)
-        clean_content = re.sub(r"```+", "", clean_content)
-        clean_content = re.sub(r"~~~+", "", clean_content)
-
-        # 🚨 Remove trailing horizontal rules (--- or *** at the end)
-        clean_content = re.sub(r'(\n*[-*_]{3,}\s*)+$', '', clean_content, flags=re.MULTILINE)
-
-        # Final cleanup of spacing
-        clean_content = re.sub(r'\n{3,}', '\n\n', clean_content.strip())
-        clean_content = clean_content.strip()
-
-        # Quality check for too-short answers
-        if len(clean_content) < 50:
-            clean_content += (
+        if len(clean) < 50:
+            clean += (
                 "\n\nNote: This response seems brief. "
-                "If you need more detailed information, please rephrase your question or provide more specific details."
+                "If you need more detailed information, please rephrase your question."
             )
+        return clean
 
-        return clean_content
-
-    
-    def _extract_sources_from_response(self, response: str) -> tuple[list[dict], Optional[str]]:
+    def _extract_sources_from_response(self, response: str) -> Tuple[List[Dict[str, Any]], Optional[str]]:
         """Extract structured sources and disclaimer from the LLM response text."""
-        sources = []
-        disclaimer = None
+        sources: List[Dict[str, Any]] = []
+        disclaimer: Optional[str] = None
 
-        if not response:
-            return sources, disclaimer
+        # Check for disclaimer in the original response before any processing
+        if "**Disclaimer**" in response:
+            disclaimer = self._disclaimer_text
+            logger.debug("Found **Disclaimer** in response, setting disclaimer text")
+        else:
+            disclaimer = None
+            logger.debug("No **Disclaimer** found in response")
 
-        # 1. Extract code block contents (if present)
-        code_block_pattern = re.compile(r"```([\s\S]*?)```", re.MULTILINE)
-        blocks = code_block_pattern.findall(response)
-
-        # If no fenced block, fall back to full response
-        text_to_parse = "\n".join(blocks) if blocks else response
-
-        # 2. Regex for pipe-separated sources
-        pipe_pattern = re.compile(
-            r"^Source:\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*(.+?)$",
-            re.MULTILINE | re.IGNORECASE
-        )
-
-        for match in pipe_pattern.finditer(text_to_parse):
+        text_to_parse = "\n".join(re.findall(r"```([\s\S]*?)```", response)) or response
+        for match in self._pipe_pattern.finditer(text_to_parse):
             source_type, title, url = match.groups()
             sources.append({
                 "type": "web_search" if "web" in source_type.lower() else "legal_doc",
@@ -496,19 +389,15 @@ class LegalAssistantAgent:
                 "url": None if url.strip().lower() in ["n/a", "na"] else url.strip().rstrip("`"),
             })
 
-        # 3. Regex for disclaimer
-        disclaimer_pattern = re.compile(r"(\*\*Disclaimer\*\*:.+)", re.IGNORECASE | re.DOTALL)
-        disclaimer_match = disclaimer_pattern.search(response)
-        if disclaimer_match:
-            disclaimer = disclaimer_match.group(1).strip()
-
-        # 4. Deduplicate by (title, url)
-        seen = set()
         unique_sources = []
+        seen = set()
         for s in sources:
             key = (s["title"], s["url"])
             if key not in seen:
                 seen.add(key)
                 unique_sources.append(s)
+
+        logger.debug("=== DEBUG: Raw Response for Disclaimer Extraction ===\n%s", repr(response))
+        logger.debug("Code blocks found:\n%s", repr(re.findall(r"```(?:[\s\S]*?)```", response)))
 
         return unique_sources, disclaimer
