@@ -9,9 +9,49 @@ export interface AuthRequest {
 export interface QueryRequest {
   query: string;
   user_id: number;  // GitHub user ID
-  groq_api_key?: string;  // Optional, backend uses default key if not provided
+  groq_api_key?: string;  // Optional, backend uses default key otherwise
+  gemini_api_key?: string;  // Optional Gemini API key
+  openai_api_key?: string;  // Optional OpenAI API key
   conversation_id?: string;
 }
+
+
+export interface MultiProviderApiKeyRequest {
+  provider: 'groq' | 'gemini' | 'openai';
+  api_key: string;
+  github_token: string;
+  user_id: number;
+}
+
+export interface MultiProviderApiKeyResponse {
+  status: string;
+  message: string;
+  provider: string;
+  configured: boolean;
+}
+
+export interface ProviderStatus {
+  provider: 'groq' | 'gemini' | 'openai';
+  configured: boolean;
+  valid: boolean;
+  last_validated: string | null;
+}
+
+export interface AllProvidersResponse {
+  status: string;
+  providers: ProviderStatus[];
+  total_configured: number;
+}
+
+export interface RoutingInfo {
+  provider: string;
+  reason: string;
+  message_count: number;
+  query_tokens: number;
+  using_user_key: boolean;
+  estimated_cost?: number;
+}
+
 
 export interface ApiKeyRequest {
   user_id: number;
@@ -45,6 +85,9 @@ export interface AIResponse {
   response: string;
   sources: Source[];
   usage: QuotaInfo;
+  routing_info?: RoutingInfo;  // New field for routing information
+  processing_time?: number;
+  query_id?: string;
 }
 
 export interface ApiKeyResponse {

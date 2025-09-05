@@ -2,7 +2,8 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ExternalLink, Scale, User } from 'lucide-react';
-import { formatMessageTime } from '@/utils/formatters'
+import { formatMessageTime } from '@/utils/formatters';
+import { Badge } from '@/components/ui/badge';
 
 interface Source {
   title: string;

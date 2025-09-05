@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useParams, useLocation, useNavigate } from 'react-router-dom'
+import { Scale } from 'lucide-react'
+// import { MainLayout } from '@/components/layout/MainLayout'
 import { MessageList } from './MessageList'
 import { MessageInput } from './MessageInput'
+import { CyclingLoader } from '@/components/ui/CyclingLoader'
+import { ErrorDisplay } from '@/components/ui/ErrorDisplay'
 import { useMessages } from '@/hooks/useMessages'
 import { useConversations } from '@/hooks/useConversations'
-import { CyclingLoader } from '@/components/ui/CyclingLoader'
 
 interface ChatInterfaceProps {
   conversationId?: string
@@ -13,52 +16,33 @@ interface ChatInterfaceProps {
 
 export function ChatInterface({ conversationId, initialPrompt }: ChatInterfaceProps) {
   const navigate = useNavigate()
-  const location = useLocation()
   const { createConversation } = useConversations()
-  const [currentConversationId, setCurrentConversationId] = useState(conversationId)
+  const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(conversationId)
+  const [isNewConversation, setIsNewConversation] = useState(!conversationId)
   const [isCreatingConversation, setIsCreatingConversation] = useState(false)
-  const [isNewConversation, setIsNewConversation] = useState(false)
 
-  // Detect if sidebar should be collapsed (for chat routes, sidebar is auto-collapsed)
-  const isChatRoute = location.pathname.startsWith('/chat/')
-  const sidebarOpen = !isChatRoute
-
-  const { messages, sendMessage, fetchingLoading, setupLoading, analyzingLoading } = useMessages(currentConversationId, isNewConversation)
-
-  // Compute combined loading
-  const messagesLoading = fetchingLoading || setupLoading || analyzingLoading
-
-  // Update current conversation ID when the prop changes
-  useEffect(() => {
-    setCurrentConversationId(conversationId)
-  }, [conversationId])
+  const {
+    messages,
+    fetchingLoading,
+    setupLoading,
+    analyzingLoading,
+    error,
+    sendMessage,
+    refreshMessages,
+  } = useMessages(currentConversationId, isNewConversation)
 
   useEffect(() => {
-    if (initialPrompt && !conversationId) {
-      handleInitialPrompt()
+    if (conversationId && conversationId !== currentConversationId) {
+      setCurrentConversationId(conversationId)
+      setIsNewConversation(false)
     }
-  }, [initialPrompt, conversationId])
+  }, [conversationId, currentConversationId])
 
-  const handleInitialPrompt = async () => {
-    if (!initialPrompt) return
-
-    try {
-      setIsCreatingConversation(true)
-      const conversation = await createConversation('New Conversation')
-      setCurrentConversationId(conversation.id)
-      setIsNewConversation(true)
-      navigate(`/chat/${conversation.id}`, { replace: true })
-      
-      // Send the initial prompt
-      setTimeout(() => {
-        handleSendMessage(initialPrompt)
-      }, 100)
-    } catch (error) {
-      console.error('Failed to create conversation for initial prompt:', error)
-    } finally {
-      setIsCreatingConversation(false)
+  useEffect(() => {
+    if (initialPrompt && currentConversationId) {
+      handleSendMessage(initialPrompt)
     }
-  }
+  }, [initialPrompt, currentConversationId])
 
   const handleSendMessage = async (content: string) => {
     let targetConversationId = currentConversationId
@@ -87,39 +71,65 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
 
   const conversationMessages = currentConversationId ? messages[currentConversationId] || [] : []
 
-  if (isCreatingConversation) {
-    return (
-      <div className="h-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 p-8 lg:p-12">
-        <div className="text-center p-12 lg:p-16 rounded-3xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-2xl border border-gray-200/50 dark:border-slate-700/50 max-w-2xl">
-          <CyclingLoader type="setup" className="justify-center" />
-          <p className="text-lg lg:text-xl text-gray-500 dark:text-gray-400 mt-4">Setting up your legal consultation</p>
-        </div>
-      </div>
-    )
+  const handleRetryMessage = () => {
+    if (refreshMessages) {
+      refreshMessages()
+    }
   }
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-      {/* Enhanced Messages Area with better spacing */}
-      <div className="flex-1 overflow-hidden relative">
-        {/* Enhanced background pattern */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(139,92,246,0.03)_1px,transparent_0)] [background-size:48px_48px] pointer-events-none" />
-
-        <MessageList
-          messages={conversationMessages}
-          loading={messagesLoading}
-          conversationId={currentConversationId}
-          sidebarOpen={sidebarOpen}
-          loadingType={analyzingLoading ? 'analyzing' : (setupLoading ? 'setup' : 'messages')}
-        />
+    <div className="flex flex-col h-full">
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {setupLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <CyclingLoader type="setup" />
+          </div>
+        ) : fetchingLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <CyclingLoader type="fetching" />
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center h-64">
+            <ErrorDisplay 
+              error={error} 
+              onRetry={handleRetryMessage}
+              showSettingsButton={true}
+            />
+          </div>
+        ) : conversationMessages.length === 0 ? (
+          <div className="flex items-center justify-center h-64 text-gray-500">
+            <div className="text-center space-y-2">
+              <Scale className="w-12 h-12 mx-auto text-purple-400" />
+              <p className="text-lg font-medium">Start a conversation</p>
+              <p className="text-sm">Ask any question about Pakistani law</p>
+            </div>
+          </div>
+        ) : (
+          <MessageList 
+            messages={conversationMessages} 
+            loading={analyzingLoading}
+            conversationId={currentConversationId}
+            loadingType="analyzing"
+          />
+        )}
+        
+        {/* AI Thinking Indicator */}
+        {analyzingLoading && (
+          <div className="flex justify-start">
+            <div className="max-w-[80%] bg-gray-100 rounded-lg p-4">
+              <CyclingLoader type="analyzing" />
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Enhanced Input Area with better spacing */}
-      <div className="border-t border-gray-200/50 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
+      {/* Message Input */}
+      <div className="border-t bg-white p-4">
         <MessageInput
           onSendMessage={handleSendMessage}
-          disabled={messagesLoading || isCreatingConversation}
-          sidebarOpen={sidebarOpen}
+          disabled={analyzingLoading || isCreatingConversation || setupLoading}
+          placeholder="Ask about Pakistani law..."
         />
       </div>
     </div>

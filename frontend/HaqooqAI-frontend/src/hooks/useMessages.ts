@@ -131,6 +131,10 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
         aiResponse.response,
         aiResponse.sources
       )
+      // Add routing information to the message if available
+      if (aiResponse.routing_info) {
+        (assistantMessage as any).routing_info = aiResponse.routing_info
+      }
 
       setMessages(prev => ({
         ...prev,
@@ -141,14 +145,23 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
       console.error('Message sending error:', err)
       setError(errorMessage)
 
+      // Enhanced error handling for multi-provider system
       if (errorMessage.includes('Invalid Groq API key')) {
-        toast.error('Issue with API key. Please check your settings or try without an API key.')
+        toast.error('Issue with Groq API key. Please check your settings or try another provider.')
+      } else if (errorMessage.includes('Invalid Gemini API key')) {
+        toast.error('Issue with Gemini API key. Please check your settings.')
+      } else if (errorMessage.includes('Invalid OpenAI API key')) {
+        toast.error('Issue with OpenAI API key. Please check your settings.')
       } else if (errorMessage.includes('authenticated')) {
         toast.error('Session expired. Please log in again.')
       } else if (errorMessage.includes('Service temporarily unavailable')) {
-        toast.error('The AI service is temporarily unavailable. Try again later or use your own Groq API key.')
+        toast.error('The AI service is temporarily unavailable. Try again later or use your own API key.')
       } else if (errorMessage.includes('quota exceeded')) {
-        toast.error('Daily quota exceeded. Please add your own Groq API key for unlimited queries.')
+        toast.error('Daily quota exceeded. Please add your own API key for unlimited queries.')
+      } else if (errorMessage.includes('All providers unavailable')) {
+        toast.error('All AI providers are currently unavailable. Please try again later.')
+      } else if (errorMessage.includes('Provider routing failed')) {
+        toast.error('Unable to route your query to an available provider. Please try again.')
       } else {
         toast.error(errorMessage)
       }

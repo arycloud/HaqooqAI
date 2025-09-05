@@ -17,13 +17,16 @@ export const API_ENDPOINTS = {
   AUTH_VALIDATE: '/auth/validate',
   AUTH_EXCHANGE: '/auth/exchange', // New: for mobile token exchange
   GITHUB_LOGIN: '/login/github',
-  GITHUB_LOGIN_MOBILE: '/login/github/start', // New: for mobile OAuth flow
   GITHUB_CALLBACK: '/HaqooqAI/callback',
 
   // AI and user endpoints
   ASK_QUESTION: '/ask/',
-  SAVE_API_KEY: '/user/groq-key',
-  DELETE_API_KEY: '/user/groq-key',
+
+
+  USER_API_KEYS: '/user/api-keys',  // New: Multi-provider API key management
+  USER_API_KEY_PROVIDER: '/user/api-keys',  // Base path for provider-specific operations
+  SAVE_API_KEY: '/user/groq-key',  // Legacy: kept for backward compatibility
+  DELETE_API_KEY: '/user/groq-key',  // Legacy: kept for backward compatibility
   GET_QUOTA: '/user/quota',
 
   // Conversation endpoints
@@ -33,6 +36,9 @@ export const API_ENDPOINTS = {
   // System endpoints
   HEALTH: '/health',
   STATS: '/stats',
+  STATS_ROUTING: '/stats/routing',  // New: Routing statistics
+  STATS_CONVERSATIONS: '/stats/conversations',  // New: Conversation statistics
+  HEALTH_DETAILED: '/health/detailed',  // New: Detailed health check
 } as const;
 
 // App Configuration
@@ -60,4 +66,36 @@ export const UI_CONSTANTS = {
   HEADER_HEIGHT: 64,
   MESSAGE_MAX_WIDTH: 768,
   TOAST_DURATION: 4000,
+} as const;
+
+
+// LLM Provider Configuration
+export const LLM_PROVIDERS = {
+  GROQ: 'groq',
+  GEMINI: 'gemini',
+  OPENAI: 'openai',
+} as const;
+
+export const PROVIDER_DISPLAY_NAMES = {
+  [LLM_PROVIDERS.GROQ]: 'Groq',
+  [LLM_PROVIDERS.GEMINI]: 'Google Gemini',
+  [LLM_PROVIDERS.OPENAI]: 'OpenAI',
+} as const;
+
+export const PROVIDER_KEY_FORMATS = {
+  [LLM_PROVIDERS.GROQ]: {
+    prefix: 'gsk_',
+    minLength: 20,
+    placeholder: 'gsk_...',
+  },
+  [LLM_PROVIDERS.GEMINI]: {
+    prefix: '',
+    minLength: 20,
+    placeholder: 'Your Gemini API key',
+  },
+  [LLM_PROVIDERS.OPENAI]: {
+    prefix: 'sk-',
+    minLength: 20,
+    placeholder: 'sk-...',
+  },
 } as const;

@@ -1,54 +1,86 @@
-import { useState, useEffect } from 'react';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { cn } from '@/lib/utils';
+import { useState, useEffect } from 'react'
+import { Scale } from 'lucide-react'
+
+type LoaderType = 'analyzing' | 'setup' | 'fetching' | 'general'
 
 interface CyclingLoaderProps {
-  type: 'messages' | 'analyzing' | 'setup';
-  className?: string;
+  type?: LoaderType
 }
 
-const messageSets = {
-  messages: [
-    'Loading your conversation history...',
-    'Retrieving past legal discussions...',
-    'Preparing your HaqooqAI session faster than a court adjournment!',
-    'Fetching messages quicker than a lawyer files a petition...'
-  ],
+const LOADING_MESSAGES = {
   analyzing: [
-    'Analyzing your legal query...',
-    'Scanning Pakistani statutes and case laws...',
-    'Cross-referencing relevant provisions like a seasoned advocate...',
-    'Formulating an accurate response with citations...',
-    'Ensuring compliance insights faster than resolving a tehsil dispute!'
+    "Analyzing your legal query...",
+    "Routing to best AI provider...",
+    "Selecting optimal model...",
+    "Processing with legal expertise...",
+    "Searching legal documents...",
+    "Consulting Pakistani law database...",
+    "Gathering relevant sources...",
+    "Formatting comprehensive response..."
   ],
   setup: [
-    'Setting up the chat for you...',
-    'Initializing your new HaqooqAI conversation...',
-    'Preparing legal AI assistance faster than drafting a FIR!',
-    'Getting ready quicker than a bail hearing...'
+    "Setting up new conversation...",
+    "Initializing chat session...",
+    "Preparing legal assistant...",
+    "Ready to help with Pakistani law..."
+  ],
+  fetching: [
+    "Loading conversation history...",
+    "Retrieving messages...",
+    "Fetching previous discussions...",
+    "Loading chat data..."
+  ],
+  general: [
+    "Processing request...",
+    "Please wait...",
+    "Loading...",
+    "Working on it..."
   ]
-};
+}
 
-export function CyclingLoader({ type, className }: CyclingLoaderProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const messages = messageSets[type];
+export function CyclingLoader({ type = 'general' }: CyclingLoaderProps) {
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
+  const messages = LOADING_MESSAGES[type]
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % messages.length);
-    }, 2500); // Cycle every 2.5 seconds
-    return () => clearInterval(interval);
-  }, [messages.length]);
+      setCurrentMessageIndex((prev) => (prev + 1) % messages.length)
+    }, 2000)
+
+    return () => clearInterval(interval)
+  }, [messages.length])
+
+  const getLoaderTitle = (type: LoaderType) => {
+    switch (type) {
+      case 'analyzing':
+        return 'AI is thinking...'
+      case 'setup':
+        return 'Setting up conversation...'
+      case 'fetching':
+        return 'Loading conversation...'
+      default:
+        return 'Processing...'
+    }
+  }
 
   return (
-    <div className={cn('flex items-center space-x-4', className)}>
-      <LoadingSpinner size="sm" />
-      <span
-        key={currentIndex} // Remount for animation if desired
-        className="text-lg lg:text-xl text-gray-600 dark:text-gray-300 font-medium animate-fade-in"
-      >
-        {messages[currentIndex]}
-      </span>
+    <div className="flex flex-col items-center justify-center space-y-4 p-8">
+      <div className="relative">
+        <Scale className="w-12 h-12 text-purple-400 animate-pulse" />
+        <div className="absolute inset-0 w-12 h-12 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+      </div>
+      
+      <div className="text-center space-y-2">
+        <p className="text-lg font-medium text-gray-800">
+          {getLoaderTitle(type)}
+        </p>
+        <p className="text-sm text-gray-600">
+          {messages[currentMessageIndex]}
+        </p>
+        <p className="text-xs text-gray-500">
+          Powered by AI legal expertise
+        </p>
+      </div>
     </div>
-  );
+  )
 }
