@@ -1,5 +1,5 @@
 ---
-title: HaqooqAI Backend
+title: HaqooqAI Backend - Stagging
 emoji: ⚖️
 colorFrom: indigo
 colorTo: blue

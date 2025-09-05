@@ -22,6 +22,29 @@ class QuotaInfo(BaseModel):
     unlimited: bool = Field(False, description="Whether user has unlimited access")
 
 
+class ProviderStatus(BaseModel):
+    """Status information for a specific LLM provider"""
+    provider: str = Field(..., description="Provider name (groq, gemini, openai)")
+    configured: bool = Field(..., description="Whether user has configured an API key")
+    valid: bool = Field(..., description="Whether the configured key is valid")
+    last_validated: Optional[datetime] = Field(None, description="When the key was last validated")
+
+
+class ApiKeyResponse(BaseModel):
+    """Response for API key operations"""
+    status: str = Field(..., description="Operation status (success, error)")
+    message: str = Field(..., description="Human-readable message")
+    provider: str = Field(..., description="Provider name")
+    configured: bool = Field(..., description="Whether the key is now configured")
+
+
+class ApiKeyListResponse(BaseModel):
+    """Response for listing user's API key providers"""
+    status: str = Field(..., description="Operation status")
+    providers: List[ProviderStatus] = Field(..., description="List of provider statuses")
+    total_configured: int = Field(..., description="Total number of configured providers")
+
+
 class SourceInfo(BaseModel):
     """Information about a source used in the response"""
     type: str = Field(..., description="Type of source: 'legal_doc' or 'web_search'")
@@ -49,6 +72,16 @@ class TokenExchangeResponse(BaseModel):
     message: Optional[str] = Field(None, description="Additional message")
 
 
+class RoutingInfo(BaseModel):
+    """Information about LLM provider routing decision"""
+    provider: str = Field(..., description="Selected LLM provider")
+    reason: str = Field(..., description="Reason for provider selection")
+    message_count: int = Field(..., description="Number of messages in conversation")
+    query_tokens: int = Field(..., description="Number of tokens in query")
+    using_user_key: bool = Field(..., description="Whether user's API key was used")
+    estimated_cost: str = Field(..., description="Estimated cost information")
+
+
 class AIResponse(BaseModel):
     """Response for AI query processing"""
     status: str = Field(..., description="Response status")
@@ -58,6 +91,7 @@ class AIResponse(BaseModel):
     usage: QuotaInfo = Field(..., description="Updated quota information")
     processing_time: Optional[float] = Field(None, description="Processing time in seconds")
     query_id: Optional[str] = Field(None, description="Unique query identifier")
+    routing_info: Optional[RoutingInfo] = Field(None, description="LLM routing information")
 
 
 class ApiKeyResponse(BaseModel):

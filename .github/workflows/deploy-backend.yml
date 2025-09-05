@@ -18,7 +18,7 @@ jobs:
       - name: Deploy backend to Hugging Face
         env:
           HF_USERNAME: ary91
-          HF_SPACE_NAME: haqooqai-backend
+          HF_SPACE_NAME: haqooqai-backend-stagging
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           SPACE_REPO="https://user:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME}"

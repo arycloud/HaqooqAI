@@ -6,6 +6,8 @@ import chromadb
 from chromadb.utils import embedding_functions
 from sentence_transformers import SentenceTransformer
 from langchain.tools import Tool
+import asyncio
+from inspect import iscoroutinefunction
 import torch
 import re
 import logging
@@ -180,35 +182,6 @@ def _legal_document_search_func(query: str) -> str:
     return "\n\n---\n\n".join(formatted_context)
 
 
-async def _searxng_web_search_func(query: str) -> str:
-    """
-    Enhanced SearxNG web search with intelligent query processing.
-    """
-    logger.info(f"Using SearxNG web search tool for query: '{query}'")
-
-    # Process and enhance the query
-    enhanced_query = QueryProcessor.enhance_search_query(query)
-    logger.info(f"Enhanced query: '{enhanced_query}'")
-
-    # Log health status
-    health_status = await searxng_client.get_health_status()
-    logger.info(f"SearxNG Status: {health_status['healthy']}/{health_status['total_instances']} instances healthy")
-
-    # Perform the search
-    result = await searxng_client.search(enhanced_query)
-
-    # Post-process results for relevance
-    if "No search results found" in result or not _is_result_relevant_to_query(result, query):
-        logger.info("First search attempt yielded poor results, trying alternative approach...")
-
-        # Try with a simpler, more direct query
-        simple_query = QueryProcessor.clean_query(query)
-        if simple_query != enhanced_query:
-            result = await searxng_client.search(simple_query)
-
-    return result
-
-
 def _is_result_relevant_to_query(result: str, original_query: str) -> bool:
     """Check if search results contain relevant information."""
     if not result or "No search results found" in result:
@@ -242,18 +215,79 @@ legal_document_search = Tool(
     )
 )
 
-web_search_tool = Tool(
-    name="web_search",
-    func=_searxng_web_search_func,
-    description=(
-        "Search the web using production-grade SearxNG instances with intelligent query processing and health monitoring. "
-        "Use for: general knowledge questions, current events, recent Pakistani legal developments, government updates, "
-        "or when information is not found in local legal documents. "
-        "The tool automatically enhances queries for better results and includes Pakistan context when relevant. "
-        "Input should be a clear, concise search query. "
-        "Examples: 'recent constitutional amendments 2024', 'current Chief Justice Pakistan', 'latest Supreme Court decisions'"
+async def _searxng_web_search_func(query: str) -> str:
+    """
+    Enhanced SearxNG web search with intelligent query processing.
+    """
+    logger.info(f"Using SearxNG web search tool for query: '{query}'")
+
+    # Process and enhance the query
+    enhanced_query = QueryProcessor.enhance_search_query(query)
+    logger.info(f"Enhanced query: '{enhanced_query}'")
+
+    # Log health status
+    health_status = await searxng_client.get_health_status()
+    logger.info(f"SearxNG Status: {health_status['healthy']}/{health_status['total_instances']} instances healthy")
+
+    # Perform the search
+    result = await searxng_client.search(enhanced_query)
+
+    # Post-process results for relevance
+    if "No search results found" in result or not _is_result_relevant_to_query(result, query):
+        logger.info("First search attempt yielded poor results, trying alternative approach...")
+
+        # Try with a simpler, more direct query
+        simple_query = QueryProcessor.clean_query(query)
+        if simple_query != enhanced_query:
+            result = await searxng_client.search(simple_query)
+
+    return result
+
+
+# web search tool with AsyncTool
+# If your langchain has AsyncTool, prefer that (cleanest)
+try:
+    from langchain.tools import AsyncTool  # newer versions may expose this
+    web_search_tool = AsyncTool(
+        name="web_search",
+        func=_searxng_web_search_func,
+        description=(
+            "Async web search via SearxNG. Use for current events, gov sites, etc."
+        )
     )
-)
+    logger.info("Using AsyncTool for web_search.")
+except Exception:
+    # Fallback: create a sync wrapper that runs the async coroutine safely
+    def _web_search_sync_wrapper(query: str) -> str:
+        """
+        Synchronously run the async searxng function in the running loop
+        via run_coroutine_threadsafe. This avoids returning an un-awaited coroutine.
+        """
+        loop = None
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            # run_coroutine_threadsafe returns a concurrent.futures.Future
+            fut = asyncio.run_coroutine_threadsafe(_searxng_web_search_func(query), loop)
+            return fut.result(timeout=30)  # timeout to avoid stuck threads
+        else:
+            # no running loop: safe to run directly
+            return asyncio.run(_searxng_web_search_func(query))
+
+    web_search_tool = Tool(
+        name="web_search",
+        func=_web_search_sync_wrapper,
+        description=(
+            "Search the web using production-grade SearxNG instances (sync wrapper). "
+            "Use for general knowledge or current Pakistani legal developments."
+        )
+    )
+    logger.info("Using sync wrapper for web_search (run_coroutine_threadsafe fallback).")
+
+
 
 # Collect all tools in a list
 tools = [legal_document_search, web_search_tool]

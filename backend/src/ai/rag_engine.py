@@ -70,6 +70,8 @@ class LegalRAGEngine:
         return response
 
     async def process_query(self, query: str, groq_key: Optional[str] = None,
+                            gemini_key: Optional[str] = None,
+                            openai_key: Optional[str] = None,
                             conversation_id: Optional[str] = None,
                             user_id: Optional[int] = None) -> Dict[str, Any]:
         """
@@ -78,6 +80,8 @@ class LegalRAGEngine:
         Args:
             query: User's legal query
             groq_key: Optional user's Groq API key
+            gemini_key: Optional user's Gemini API key
+            openai_key: Optional user's OpenAI API key
 
         Returns:
             Dict containing response, sources, and metadata
@@ -97,7 +101,14 @@ class LegalRAGEngine:
             if conversation_id and user_id:
                 chat_history = await self.context_manager.get_chat_history(conversation_id, user_id)
             # Process query through the agent
-            agent_result = await self.agent.run(query, groq_key, chat_history=chat_history)
+            agent_result = await self.agent.run(
+                query=query,
+                groq_api_key=groq_key,
+                gemini_api_key=gemini_key,
+                openai_api_key=openai_key,
+                conversation_id=conversation_id,
+                user_id=user_id
+            )
 
             # Get query analysis from agent result
             query_analysis = agent_result.get("query_analysis", {})

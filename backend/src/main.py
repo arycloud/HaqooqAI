@@ -17,6 +17,8 @@ from fastapi import FastAPI, HTTPException, Depends, status, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.encoders import jsonable_encoder
+import json
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -26,7 +28,8 @@ load_dotenv()
 from .config import (
     API_TITLE, API_VERSION, API_DESCRIPTION, ALLOWED_ORIGINS,
     LOG_LEVEL, LOG_FORMAT, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_REDIRECT_URI,
-    CORS_ALLOW_CREDENTIALS, CORS_ALLOW_METHODS, CORS_ALLOW_HEADERS
+    CORS_ALLOW_CREDENTIALS, CORS_ALLOW_METHODS, CORS_ALLOW_HEADERS,
+    ROUTING_MESSAGE_THRESHOLD, ROUTING_TOKEN_THRESHOLD, MAX_QUERY_TOKENS, MAX_CONVERSATION_MESSAGES
 )
 from .models.requests import (
     AuthRequest, DeleteApiKeyRequest, QueryRequest, ApiKeyRequest,
@@ -40,8 +43,11 @@ from .models.responses import (
 )
 from .auth.github_auth import GitHubAuthService
 from .quota.usage_tracker import UsageTracker
+from .quota.tiered_usage_tracker import TieredUsageTracker, LLMProvider
 from .ai.rag_engine import LegalRAGEngine
-from .database.supabase_client import supabase_client
+from .services.conversation_manager import ConversationManager
+from .routes.api_key_management import router as api_key_router
+
 
 # ============================================================================
 # OAuth State Management (for mobile/web flow coordination)
@@ -87,6 +93,9 @@ app.add_middleware(
     allow_origin_regex=r"^https?://localhost(:\d+)?$|^capacitor://localhost$|^ionic://localhost$|^haqooqai://.*$",
 )
 
+# Include API routers
+app.include_router(api_key_router, prefix="/user", tags=["API Key Management"])
+
 # ============================================================================
 # Global Service Instances
 # ============================================================================
@@ -94,20 +103,28 @@ app.add_middleware(
 # Global instances (initialized on startup)
 auth_service: Optional[GitHubAuthService] = None
 usage_tracker: Optional[UsageTracker] = None
+tiered_tracker: Optional[TieredUsageTracker] = None
 rag_engine: Optional[LegalRAGEngine] = None
+conversation_manager: Optional[ConversationManager] = None
+
+# Make supabase_client accessible globally (will be replaced with mock in testing mode)
+from .database.supabase_client import supabase_client
 
 
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup"""
-    global auth_service, usage_tracker, rag_engine
+    global auth_service, usage_tracker, rag_engine, conversation_manager, tiered_tracker
 
     try:
+        logger.info("🚀 Initializing services")
         auth_service = GitHubAuthService()
-        usage_tracker = UsageTracker()
+        usage_tracker = UsageTracker()  # Legacy tracker for compatibility
+        tiered_tracker = TieredUsageTracker()  # New tiered quota system
         rag_engine = LegalRAGEngine()
+        conversation_manager = ConversationManager()
 
-        logger.info("All services initialized successfully")
+        logger.info("✅ All services initialized successfully (including tiered quota system)")
 
         # Log health status
         if rag_engine:
@@ -119,29 +136,34 @@ async def startup_event():
 
 
 @app.exception_handler(HTTPException)
-async def http_exception_handler(request, exc):
-    """Custom HTTP exception handler"""
+async def http_exception_handler(request, exc: HTTPException):
+    """Custom HTTP exception handler with safe frontend output"""
+    logger.warning(f"HTTP error {exc.status_code}: {exc.detail}")
+    error_response = ErrorResponse(
+        status="error",
+        error="HTTP_ERROR",
+        message=str(exc.detail),
+        details=None
+    )
     return JSONResponse(
         status_code=exc.status_code,
-        content=jsonable_encoder(
-            error="HTTP_ERROR",
-            message=exc.detail,
-            details={"status_code": exc.status_code}
-        )
+        content=jsonable_encoder(error_response.dict())
     )
 
 
 @app.exception_handler(Exception)
-async def general_exception_handler(request, exc):
-    """General exception handler"""
-    logger.error(f"Unhandled exception: {exc}")
+async def general_exception_handler(request, exc: Exception):
+    """General exception handler (catches everything else)"""
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    error_response = ErrorResponse(
+        status="error",
+        error="INTERNAL_ERROR",
+        message="An internal server error occurred",  # safe frontend message
+        details=None  # backend logs contain actual stacktrace
+    )
     return JSONResponse(
         status_code=500,
-        content=jsonable_encoder(
-            error="INTERNAL_ERROR",
-            message="An internal server error occurred",
-            details= str(exc)
-        ).dict()
+        content=jsonable_encoder(error_response.dict())
     )
 
 
@@ -174,6 +196,16 @@ async def get_rag_engine() -> LegalRAGEngine:
             detail="AI service not available"
         )
     return rag_engine
+
+
+async def get_conversation_manager() -> ConversationManager:
+    """Get conversation manager service"""
+    if not conversation_manager:
+        raise HTTPException(
+            status_code=503,
+            detail="Conversation management service not available"
+        )
+    return conversation_manager
 
 
 # ============================================================================
@@ -349,32 +381,199 @@ async def exchange_token(
 async def process_query(
     request: QueryRequest,
     rag: LegalRAGEngine = Depends(get_rag_engine),
-    tracker: UsageTracker = Depends(get_usage_tracker)
+    tracker: UsageTracker = Depends(get_usage_tracker),
+    conv_manager: ConversationManager = Depends(get_conversation_manager)
 ):
-    """Process AI query and return response with sources"""
+    """Process AI query and return response with tiered quota system"""
     try:
-        quota = tracker.check_quota(request.user_id)
-        groq_key_to_use = request.groq_api_key or (tracker.get_api_key(request.user_id) if quota.has_api_key else None)
-        # Check quota if no API key provided
-        if not groq_key_to_use:
-            if quota.remaining <= 0:
+        # ============================================================================
+        # 1. GLOBAL LIMITS ENFORCEMENT (Applied to all users regardless of API keys)
+        # ============================================================================
+
+        # Check query token limit (MAX_QUERY_TOKENS=4000)
+        from .ai.llm_providers import LLMProviderManager
+        provider_manager = LLMProviderManager()
+
+        is_valid, token_count, error_msg = provider_manager.validate_query_length(request.query)
+        if not is_valid:
+            raise HTTPException(
+                status_code=429,
+                detail=error_msg
+            )
+
+        # Check conversation message limit (MAX_CONVERSATION_MESSAGES=50)
+        can_continue, limit_message = conv_manager.check_conversation_limit(
+            request.conversation_id, request.user_id
+        )
+        if not can_continue:
+            raise HTTPException(
+                status_code=429,
+                detail=limit_message
+            )
+
+        # ============================================================================
+        # 2. RETRIEVE STORED API KEYS AND MERGE WITH REQUEST KEYS
+        # ============================================================================
+
+        # Get stored API keys for the user
+        from .database.api_key_manager import api_key_manager
+        stored_keys = await api_key_manager.get_all_user_keys(request.user_id)
+
+        # Merge request keys with stored keys (request keys take priority)
+        effective_groq_key = request.groq_api_key or stored_keys.get("groq")
+        effective_gemini_key = request.gemini_api_key or stored_keys.get("gemini")
+        effective_openai_key = request.openai_api_key or stored_keys.get("openai")
+
+        logger.info(f"API keys for user {request.user_id}: "
+                   f"groq={'provided' if effective_groq_key else 'none'}, "
+                   f"gemini={'provided' if effective_gemini_key else 'none'}, "
+                   f"openai={'provided' if effective_openai_key else 'none'}")
+
+        # ============================================================================
+        # 3. PROVIDER SELECTION AND QUOTA CHECKING
+        # ============================================================================
+
+        # Determine which provider to use based on routing logic
+        conv_stats = conv_manager.get_conversation_stats(request.conversation_id, request.user_id)
+        routing_decision = provider_manager.determine_provider(
+            query=request.query,
+            message_count=conv_stats.message_count,
+            user_groq_key=effective_groq_key,
+            user_gemini_key=effective_gemini_key,
+            user_openai_key=effective_openai_key
+        )
+
+        # Check provider-specific quota using tiered tracker
+        global tiered_tracker
+        if tiered_tracker:
+            provider_enum = LLMProvider(routing_decision.provider.value)
+            can_proceed, quota_message = tiered_tracker.check_provider_quota(
+                user_id=request.user_id,
+                provider=provider_enum,
+                has_user_key=routing_decision.using_user_key
+            )
+
+            if not can_proceed:
+                raise HTTPException(
+                    status_code=429,
+                    detail=quota_message
+                )
+
+            # Increment provider-specific usage
+            tiered_tracker.increment_provider_usage(
+                user_id=request.user_id,
+                provider=provider_enum,
+                has_user_key=routing_decision.using_user_key
+            )
+        else:
+            # Fallback to legacy quota checking
+            quota = tracker.check_quota(request.user_id)
+            if not routing_decision.using_user_key and quota.remaining <= 0:
                 raise HTTPException(
                     status_code=429,
                     detail="Query quota exceeded. Please wait for reset or provide your own API key."
                 )
-            # Increment usage
-            tracker.increment_usage(request.user_id)
+            if not routing_decision.using_user_key:
+                tracker.increment_usage(request.user_id)
 
-        # Process query through RAG engine
-        result = await rag.process_query(request.query, groq_key_to_use,
-                                         conversation_id=request.conversation_id,
-                                         user_id=request.user_id)
+        # ============================================================================
+        # 3. PROCESS QUERY WITH SELECTED PROVIDER
+        # ============================================================================
 
-        # Get updated quota
-        updated_quota = tracker.check_quota(request.user_id)
+        # Log routing decision for monitoring
+        logger.info(f"Routing decision: {routing_decision.provider.value} - {routing_decision.reason}")
+        logger.info(f"Using user key: {routing_decision.using_user_key}")
+        logger.info(f"Conversation stats: {conv_stats.message_count} messages, tokens: {conv_stats.total_tokens}")
+
+        # Process query through RAG engine with effective API keys
+        result = await rag.process_query(
+            query=request.query,
+            groq_key=effective_groq_key,
+            gemini_key=effective_gemini_key,
+            openai_key=effective_openai_key,
+            conversation_id=request.conversation_id,
+            user_id=request.user_id
+        )
+
+
+        # -------------------------
+        # LOCAL-ONLY: persist assistant reply for immediate follow-ups, remove this when in production
+        # -------------------------
+        try:
+            # import local DB client (already used in other routes)
+            from .database.supabase_client import supabase_client  # adjust relative import to your file's path
+
+            # Resolve internal user id (same helper your create_message route uses)
+            user_internal_id = supabase_client.get_user_internal_id(request.user_id)
+            if user_internal_id and request.conversation_id:
+                # Use thread-run to avoid blocking the event loop
+                import anyio
+
+                def _insert_msg():
+                    # create_message returns inserted row dict
+                    return supabase_client.create_message(
+                        conversation_id=request.conversation_id,
+                        role="assistant",
+                        content=result.get("response", "") or "",
+                        # sources=result.get("sources") or None
+                    )
+
+                try:
+                    inserted_row = await anyio.to_thread.run_sync(_insert_msg)
+                    logger.info(
+                        "LOCAL-PERSIST: inserted assistant message id=%s conversation=%s user_internal_id=%s",
+                        inserted_row.get("id"),
+                        request.conversation_id,
+                        user_internal_id
+                    )
+                except Exception as _e:
+                    logger.error("LOCAL-PERSIST: failed to persist assistant message (will continue): %s", _e)
+            else:
+                logger.debug("LOCAL-PERSIST: no user_internal_id or conversation_id; skipping local persistence")
+        except Exception as e:
+            logger.error("LOCAL-PERSIST: unexpected error while persisting assistant message: %s", e)
+        # -------------------------
+        # end local-only persistence
+        # -------------------------
+
+        # ============================================================================
+        # 4. GENERATE RESPONSE WITH QUOTA AND ROUTING INFORMATION
+        # ============================================================================
+
+        # Get updated quota information
+        if tiered_tracker:
+            # Use tiered quota system
+            quota_summary = tiered_tracker.get_user_quota_summary(request.user_id)
+            provider_quota = tiered_tracker.get_provider_quota(
+                user_id=request.user_id,
+                provider=LLMProvider(routing_decision.provider.value),
+                has_user_key=routing_decision.using_user_key
+            )
+
+            from .models.responses import QuotaInfo
+            updated_quota = QuotaInfo(
+                remaining=provider_quota.remaining if not provider_quota.unlimited else 999999,
+                limit=provider_quota.daily_limit,
+                reset_at=provider_quota.reset_at,
+                has_api_key=provider_quota.has_user_key,
+                unlimited=provider_quota.unlimited
+            )
+        else:
+            updated_quota = tracker.get_usage(request.user_id)
 
         # Generate query ID for tracking
         query_id = str(uuid.uuid4())
+
+        # Create routing information for response
+        from .models.responses import RoutingInfo
+        routing_info = RoutingInfo(
+            provider=routing_decision.provider.value,
+            reason=routing_decision.reason,
+            message_count=routing_decision.message_count,
+            query_tokens=routing_decision.query_tokens,
+            using_user_key=routing_decision.using_user_key,
+            estimated_cost=routing_decision.estimated_cost
+        )
 
         logger.info(f"Processed query for user {request.user_id}, query_id: {query_id}")
 
@@ -385,7 +584,8 @@ async def process_query(
             disclaimer=result.get("disclaimer", ''),
             usage=updated_quota,
             processing_time=result.get("processing_time"),
-            query_id=query_id
+            query_id=query_id,
+            routing_info=routing_info
         )
 
     except HTTPException:
@@ -1036,6 +1236,111 @@ async def get_stats(
             status_code=500,
             detail="Failed to get statistics"
         )
+
+
+@app.get("/stats/routing", response_model=dict)
+async def get_routing_stats():
+    """Get LLM routing statistics and provider information"""
+    try:
+        # Import here to avoid circular imports
+        from .ai.llm_providers import LLMProviderManager
+
+        provider_manager = LLMProviderManager()
+
+        return {
+            "providers": provider_manager.get_all_providers_info(),
+            "routing_config": {
+                "message_threshold": ROUTING_MESSAGE_THRESHOLD,
+                "token_threshold": ROUTING_TOKEN_THRESHOLD,
+                "max_query_tokens": MAX_QUERY_TOKENS,
+                "max_conversation_messages": MAX_CONVERSATION_MESSAGES
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Routing stats error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to get routing statistics"
+        )
+
+
+@app.get("/stats/conversations", response_model=dict)
+async def get_conversation_stats(
+    conv_manager: ConversationManager = Depends(get_conversation_manager)
+):
+    """Get conversation statistics for monitoring"""
+    try:
+        # This would need to be implemented to get system-wide conversation stats
+        # For now, return basic configuration info
+        return {
+            "max_messages_per_conversation": conv_manager.max_messages,
+            "conversation_health_thresholds": {
+                "warning_percentage": 80,
+                "critical_percentage": 100
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Conversation stats error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to get conversation statistics"
+        )
+
+
+@app.get("/health/detailed", response_model=dict)
+async def get_detailed_health(
+    rag: LegalRAGEngine = Depends(get_rag_engine),
+    tracker: UsageTracker = Depends(get_usage_tracker),
+    conv_manager: ConversationManager = Depends(get_conversation_manager)
+):
+    """Get detailed health information including new components"""
+    try:
+        from .ai.llm_providers import LLMProviderManager
+
+        provider_manager = LLMProviderManager()
+
+        # Check provider availability
+        provider_health = {}
+        for provider in LLMProvider:
+            config = provider_manager.providers[provider]
+            provider_health[provider.value] = {
+                "has_default_key": bool(config.default_key),
+                "model": config.model,
+                "daily_limit": config.daily_limit
+            }
+
+        return {
+            "status": "healthy",
+            "components": {
+                "rag_engine": "healthy" if rag else "unavailable",
+                "usage_tracker": "healthy" if tracker else "unavailable",
+                "conversation_manager": "healthy" if conv_manager else "unavailable",
+                "llm_providers": provider_health
+            },
+            "routing_system": {
+                "enabled": True,
+                "providers_available": len(provider_health),
+                "fallback_configured": bool(provider_manager.providers[LLMProvider.GROQ].default_key)
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Detailed health check error: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
+
+# ============================================================================
+# Production Application - All testing endpoints removed
+# ============================================================================
 
 
 if __name__ == "__main__":
