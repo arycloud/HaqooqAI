@@ -247,7 +247,7 @@ async def _searxng_web_search_func(query: str) -> str:
 # web search tool with AsyncTool
 # If your langchain has AsyncTool, prefer that (cleanest)
 try:
-    from langchain.tools import AsyncTool  # newer versions may expose this
+    from langchain_community.tools import AsyncTool  # Use langchain-community instead of deprecated langchain
     web_search_tool = AsyncTool(
         name="web_search",
         func=_searxng_web_search_func,
