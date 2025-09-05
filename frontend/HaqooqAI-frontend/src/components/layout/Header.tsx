@@ -1,6 +1,7 @@
 import { Menu, Settings, LogOut, User } from 'lucide-react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -9,7 +10,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { QuotaDisplay } from '@/components/settings/QuotaDisplay'
+import { QuotaBadge } from './QuotaBadge'
+import { authService } from '@/services/backend/authService'
 
 interface HeaderProps {
   onMenuClick: () => void
@@ -64,7 +66,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps) {
       <div className="flex items-center space-x-6 relative z-10">
         {/* Enhanced Quota Display */}
         <div className="hidden sm:block">
-          <QuotaDisplay />
+          <QuotaBadge />
         </div>
 
         {/* Enhanced User Menu with larger elements */}

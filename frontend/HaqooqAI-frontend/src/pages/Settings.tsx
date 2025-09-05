@@ -21,6 +21,11 @@ export function Settings() {
       setRoutingStats(stats)
     } catch (error) {
       console.error('Failed to load routing stats:', error)
+      // Set empty stats to prevent crashes
+      setRoutingStats({
+        providers: [],
+        routing_config: null
+      })
     } finally {
       setLoadingStats(false)
     }
@@ -52,7 +57,7 @@ export function Settings() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {routingStats.providers && (
+              {routingStats.providers && Array.isArray(routingStats.providers) && routingStats.providers.length > 0 && (
                 <div>
                   <h4 className="font-medium mb-3">Available Providers</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -66,7 +71,7 @@ export function Settings() {
                         </div>
                         <div className="text-sm text-gray-600 space-y-1">
                           <p>Model: {provider.model}</p>
-                          <p>Daily Limit: {provider.daily_limit.toLocaleString()}</p>
+                          <p>Daily Limit: {provider.daily_limit?.toLocaleString() || 'N/A'}</p>
                         </div>
                       </div>
                     ))}
@@ -80,21 +85,34 @@ export function Settings() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
                       <span className="text-gray-600">Message Threshold:</span>
-                      <p className="font-medium">{routingStats.routing_config.message_threshold}</p>
+                      <p className="font-medium">{routingStats.routing_config.message_threshold || 'N/A'}</p>
                     </div>
                     <div>
                       <span className="text-gray-600">Token Threshold:</span>
-                      <p className="font-medium">{routingStats.routing_config.token_threshold.toLocaleString()}</p>
+                      <p className="font-medium">{routingStats.routing_config.token_threshold?.toLocaleString() || 'N/A'}</p>
                     </div>
                     <div>
                       <span className="text-gray-600">Max Query Tokens:</span>
-                      <p className="font-medium">{routingStats.routing_config.max_query_tokens.toLocaleString()}</p>
+                      <p className="font-medium">{routingStats.routing_config.max_query_tokens?.toLocaleString() || 'N/A'}</p>
                     </div>
                     <div>
                       <span className="text-gray-600">Max Messages:</span>
-                      <p className="font-medium">{routingStats.routing_config.max_conversation_messages}</p>
+                      <p className="font-medium">{routingStats.routing_config.max_conversation_messages || 'N/A'}</p>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {loadingStats && (
+                <div className="flex items-center justify-center py-4">
+                  <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+
+              {!loadingStats && (!routingStats.providers || routingStats.providers.length === 0) && (
+                <div className="text-center py-4 text-gray-500">
+                  <p>System information is currently unavailable.</p>
+                  <p className="text-sm">The routing statistics endpoint may not be responding.</p>
                 </div>
               )}
             </CardContent>
