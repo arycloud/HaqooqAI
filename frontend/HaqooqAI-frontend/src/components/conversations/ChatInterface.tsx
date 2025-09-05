@@ -115,14 +115,14 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
         )}
         
         {/* AI Thinking Indicator */}
-        {analyzingLoading && (
+        {/* {analyzingLoading && (
           <div className="flex justify-start">
             <div className="max-w-[80%] bg-gray-100 rounded-lg p-4">
               <CyclingLoader type="analyzing" />
             </div>
           </div>
         )}
-      </div>
+      </div> */}
 
       {/* Message Input */}
       <div className="border-t bg-white p-4">
@@ -131,6 +131,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
           disabled={analyzingLoading || isCreatingConversation || setupLoading}
           placeholder="Ask about Pakistani law..."
         />
+      </div>
       </div>
     </div>
   )

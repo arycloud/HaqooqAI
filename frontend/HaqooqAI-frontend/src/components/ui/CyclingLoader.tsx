@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Scale } from 'lucide-react'
 
-type LoaderType = 'analyzing' | 'setup' | 'fetching' | 'general'
+export type LoaderType = 'analyzing' | 'setup' | 'fetching' | 'general' | 'messages'
 
 interface CyclingLoaderProps {
   type?: LoaderType
@@ -29,6 +29,12 @@ const LOADING_MESSAGES = {
     "Retrieving messages...",
     "Fetching previous discussions...",
     "Loading chat data..."
+  ],
+  messages: [
+    "Loading messages...",
+    "Retrieving conversation data...",
+    "Fetching chat history...",
+    "Loading previous messages..."
   ],
   general: [
     "Processing request...",
@@ -58,6 +64,8 @@ export function CyclingLoader({ type = 'general' }: CyclingLoaderProps) {
         return 'Setting up conversation...'
       case 'fetching':
         return 'Loading conversation...'
+      case 'messages':
+        return 'Loading messages...'
       default:
         return 'Processing...'
     }

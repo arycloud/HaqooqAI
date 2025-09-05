@@ -17,6 +17,7 @@ export const API_ENDPOINTS = {
   AUTH_VALIDATE: '/auth/validate',
   AUTH_EXCHANGE: '/auth/exchange', // New: for mobile token exchange
   GITHUB_LOGIN: '/login/github',
+  GITHUB_LOGIN_MOBILE: '/login/github/start',
   GITHUB_CALLBACK: '/HaqooqAI/callback',
 
   // AI and user endpoints

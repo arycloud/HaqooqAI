@@ -120,6 +120,13 @@ export interface QuotaResponse {
   reset_at: string;
   has_api_key: boolean;
   unlimited: boolean;
+  provider_quotas?: {
+    [provider: string]: {
+      remaining: number;
+      limit: number;
+      reset_at: string;
+    };
+  };
 }
 
 // Environment Variables

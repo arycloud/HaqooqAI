@@ -108,18 +108,21 @@ export function QuotaDisplay() {
             {quota.provider_quotas && Object.keys(quota.provider_quotas).length > 0 && (
               <div className="space-y-3 pt-4 border-t">
                 <h4 className="font-medium text-sm">Provider-Specific Quotas</h4>
-                {Object.entries(quota.provider_quotas).map(([provider, providerQuota]) => (
-                  <div key={provider} className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>{PROVIDER_DISPLAY_NAMES[provider as keyof typeof PROVIDER_DISPLAY_NAMES] || provider}</span>
-                      <span>{providerQuota.remaining} / {providerQuota.limit} remaining</span>
+                {Object.entries(quota.provider_quotas).map(([provider, providerQuota]) => {
+                  const typedQuota = providerQuota as { remaining: number; limit: number; reset_at: string }
+                  return (
+                    <div key={provider} className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>{PROVIDER_DISPLAY_NAMES[provider as keyof typeof PROVIDER_DISPLAY_NAMES] || provider}</span>
+                        <span>{typedQuota.remaining} / {typedQuota.limit} remaining</span>
+                      </div>
+                      <Progress 
+                        value={((typedQuota.limit - typedQuota.remaining) / typedQuota.limit) * 100} 
+                        className="h-1"
+                      />
                     </div>
-                    <Progress 
-                      value={((providerQuota.limit - providerQuota.remaining) / providerQuota.limit) * 100} 
-                      className="h-1"
-                    />
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
 
