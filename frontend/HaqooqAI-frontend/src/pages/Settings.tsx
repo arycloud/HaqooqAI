@@ -51,7 +51,11 @@ export function Settings() {
     try {
       setLoadingStats(true)
       const stats = await aiService.getRoutingStats()
-      setRoutingStats(stats)
+      // Ensure providers is always an array
+      setRoutingStats({
+        ...stats,
+        providers: Array.isArray(stats?.providers) ? stats.providers : []
+      })
     } catch (error) {
       console.error('Failed to load routing stats:', error)
       setRoutingStats({
@@ -322,9 +326,11 @@ export function Settings() {
                   </TableHeader>
                   <TableBody>
                     {providerInfo.map((provider, index) => {
-                      const configuredProvider = routingStats?.providers?.find((p: any) => 
-                        p.name.toLowerCase() === provider.name.toLowerCase()
-                      )
+                      const configuredProvider = routingStats?.providers && Array.isArray(routingStats.providers) 
+                        ? routingStats.providers.find((p: any) => 
+                            p.name?.toLowerCase() === provider.name.toLowerCase()
+                          )
+                        : null
                       
                       return (
                         <TableRow key={provider.name}>
@@ -570,7 +576,7 @@ export function Settings() {
                           <span className="font-medium">Available Providers</span>
                         </div>
                         <p className="text-2xl font-bold text-blue-600">
-                          {routingStats.providers?.length || 0}
+                          {(routingStats.providers && Array.isArray(routingStats.providers)) ? routingStats.providers.length : 0}
                         </p>
                         <p className="text-xs text-muted-foreground">AI providers configured</p>
                       </div>
