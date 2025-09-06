@@ -186,6 +186,42 @@ export class AIService {
       }
     } catch (error) {
       console.error('Failed to save API key:', error)
+      
+      // Handle specific backend validation errors
+      if (axios.isAxiosError(error) && error.response?.status === 500) {
+        const errorData = error.response?.data
+        
+        // Check if it's a Pydantic validation error but the key was actually saved
+        if (errorData?.detail?.includes?.('validation error') || 
+            (typeof errorData === 'string' && errorData.includes('validation error')) ||
+            errorData?.detail?.includes?.('has_unlimited') ||
+            errorData?.detail?.includes?.('Field required')) {
+          
+          console.warn('Backend validation error detected, verifying if API key was saved...', {
+            provider,
+            errorDetail: errorData?.detail,
+            responseStatus: error.response?.status
+          })
+          
+          // Try to verify if the key was actually saved by checking provider status
+          try {
+            await new Promise(resolve => setTimeout(resolve, 1500)) // Brief delay for database consistency
+            const statuses = await this.getProviderStatuses(userId)
+            const providerStatus = statuses.find(s => s.provider === provider)
+            
+            if (providerStatus?.configured) {
+              console.log(`✅ ${provider} API key was successfully saved despite backend validation error`)
+              return // Success! The key was saved despite the response error
+            } else {
+              console.warn(`❌ ${provider} API key was not found in provider statuses after save attempt`)
+            }
+          } catch (statusError) {
+            console.warn('Could not verify API key status:', statusError)
+            // Continue to throw original error
+          }
+        }
+      }
+      
       throw new Error('Failed to save API key')
     }
   }
@@ -213,9 +249,16 @@ export class AIService {
         }
       )
 
-      return response.data.providers
+      return response.data.providers || []
     } catch (error) {
       console.error('Failed to get provider statuses:', error)
+      
+      // Return empty array instead of throwing to allow graceful degradation
+      if (axios.isAxiosError(error) && error.response?.status === 500) {
+        console.warn('Backend error when fetching provider statuses, returning empty array')
+        return []
+      }
+      
       throw new Error('Failed to get provider statuses')
     }
   }

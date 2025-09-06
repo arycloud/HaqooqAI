@@ -92,11 +92,35 @@ export function MultiProviderApiKeySettings() {
       setApiKeys(prev => ({ ...prev, [provider]: '' }))
       setShowKeys(prev => ({ ...prev, [provider]: false }))
       
-      toast.success(`${PROVIDER_DISPLAY_NAMES[provider]} API key saved successfully`)
+      toast.success(`${PROVIDER_DISPLAY_NAMES[provider]} API key saved successfully`, {
+        duration: 4000,
+        icon: '✅'
+      })
+      
+      // Reload provider statuses to update UI
       await loadProviderStatuses()
     } catch (error) {
       console.error('Failed to save API key:', error)
-      toast.error(`Failed to save ${PROVIDER_DISPLAY_NAMES[provider]} API key`)
+      
+      // More specific error messages
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      
+      if (errorMessage.includes('validation error') || errorMessage.includes('has_unlimited')) {
+        toast.error(`Backend validation issue detected. Please try again or contact support.`, {
+          duration: 6000,
+          icon: '⚠️'
+        })
+      } else if (errorMessage.includes('unauthorized') || errorMessage.includes('401')) {
+        toast.error('Authentication failed. Please refresh and try again.', {
+          duration: 5000,
+          icon: '🔒'
+        })
+      } else {
+        toast.error(`Failed to save ${PROVIDER_DISPLAY_NAMES[provider]} API key: ${errorMessage}`, {
+          duration: 5000,
+          icon: '❌'
+        })
+      }
     } finally {
       setSavingProvider(null)
     }
