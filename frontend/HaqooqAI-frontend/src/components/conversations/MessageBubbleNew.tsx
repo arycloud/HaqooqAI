@@ -14,6 +14,45 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
 
   const isUser = message.role === 'user'
 
+  // Generate user initials for fallback
+  const getUserInitials = (user: any) => {
+    if (user?.username) {
+      return user.username.charAt(0).toUpperCase()
+    }
+    if (user?.email) {
+      return user.email.charAt(0).toUpperCase()
+    }
+    return 'U'
+  }
+
+  const getAvatarStyle = () => {
+    if (isUser) {
+      if (user?.avatar_url) {
+        return { backgroundImage: `url("${user.avatar_url}")` }
+      } else {
+        // Fallback with user initials
+        return {
+          backgroundColor: 'var(--primary-color)',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 'bold',
+          fontSize: '14px'
+        }
+      }
+    } else {
+      // HaqooqAI avatar - using a legal scales icon with gradient
+      return {
+        background: 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))',
+        color: 'white',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }
+    }
+  }
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(message.content)
@@ -29,14 +68,15 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
       {/* Avatar */}
       <div 
         className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex-shrink-0"
-        style={{
-          backgroundImage: isUser 
-            ? (user?.avatar_url 
-                ? `url("${user.avatar_url}")` 
-                : `url("https://lh3.googleusercontent.com/aida-public/AB6AXuCpUGhkvdwtrXrOTqAaaB-58kuaDmMK2lpAXk9rNDhmHZfXdLik1y0lrKXMUY51pVBCDC2-vAAAecAF81UZOf6rgBZmh5lhq6tDxyg1JXTEwygsQDbcC-iiRnPE0FfWPiybJAelyjEa10vwtNpEsGpMkwFnD8DpAIRzclOivxma3NJqugFDv2jkw_gDul1J3mUZ7IPascsoSxIYIMz5HupbZds5Ph8qSotlGKjteOHhhqVI0t5JEiJXv83O_kBu5Sb-Wye2sz2tq2w")`)
-            : `url("https://lh3.googleusercontent.com/aida-public/AB6AXuCVhzVdaXxR_p3E3fMgkBz6ftAWMIQhZhO0eUcPg45HQcdqABNiD5l6e6QsmtMvjc9BB0OvnBD2tGF3S-xwL9gIbPYll5USP6s23Kp2ACsN2pS8-BL7xZuTvsl5GBDScDTeMDzmxcLqQHziqI-MLkoUT2iRVJlLOMarIe7usrFfE8Oajmt1IlKu5v4ugihjYpj3CPmESsk0vDWPxGgE5iZTajLFJF2ShkkHueRk2B1iNOrj3fEjiDXuT7ntwpGvAgSaQ5GOyihkuWw")`
-        }}
-      />
+        style={getAvatarStyle()}
+      >
+        {isUser && !user?.avatar_url && (
+          <span>{getUserInitials(user)}</span>
+        )}
+        {!isUser && (
+          <span className="material-symbols-outlined text-base">balance</span>
+        )}
+      </div>
       
       {/* Message Content */}
       <div className={cn(

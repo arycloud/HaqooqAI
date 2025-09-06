@@ -95,7 +95,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                 damping: 30,
                 opacity: { duration: 0.2 }
               }}
-              className="relative z-30"
+              className="relative z-30 h-full"
             >
               <SidebarNew isOpen={true} />
             </motion.div>
@@ -137,14 +137,47 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
               )}
               
               {conversationMessages.length === 0 && !fetchingLoading && (
-                <div className="flex items-center justify-center h-full min-h-[400px]">
-                  <div className="text-center">
-                    <h3 className="text-[var(--text-primary)] text-xl font-semibold mb-2">
-                      Start a conversation
-                    </h3>
-                    <p className="text-[var(--text-secondary)] text-sm">
-                      Ask me anything about Pakistani law
-                    </p>
+                <div className="flex items-center justify-center h-full min-h-[500px]">
+                  <div className="text-center space-y-8 max-w-md mx-auto px-6">
+                    {/* HaqooqAI Logo with glow effect */}
+                    <div className="relative">
+                      <div className="w-20 h-20 rounded-3xl bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)] flex items-center justify-center mx-auto shadow-2xl">
+                        <span className="material-symbols-outlined text-white text-3xl">balance</span>
+                      </div>
+                      <div className="absolute -inset-4 bg-gradient-to-r from-[var(--primary-color)]/20 to-[var(--secondary-color)]/20 rounded-full blur-xl animate-pulse" />
+                    </div>
+                    
+                    {/* Welcome Content */}
+                    <div className="space-y-3">
+                      <h2 className="text-2xl font-bold text-[var(--text-primary)]">
+                        Welcome to HaqooqAI
+                      </h2>
+                      <p className="text-lg text-[var(--text-secondary)]">
+                        Your intelligent Pakistani legal assistant
+                      </p>
+                      <p className="text-sm text-[var(--text-secondary)] opacity-80">
+                        Ask any question about Pakistani law and get instant, accurate answers with citations
+                      </p>
+                    </div>
+                    
+                    {/* Sample Topics with shimmer effect */}
+                    <div className="grid grid-cols-1 gap-3 mt-8">
+                      <div className="p-4 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 backdrop-blur-sm rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer">
+                        <p className="text-sm text-[var(--text-primary)] animate-shimmer">
+                          💼 Corporate Law Questions
+                        </p>
+                      </div>
+                      <div className="p-4 bg-gradient-to-r from-pink-500/10 to-purple-500/10 backdrop-blur-sm rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer">
+                        <p className="text-sm text-[var(--text-primary)] animate-shimmer" style={{ animationDelay: '0.5s' }}>
+                          🏠 Property & Real Estate
+                        </p>
+                      </div>
+                      <div className="p-4 bg-gradient-to-r from-indigo-500/10 to-blue-500/10 backdrop-blur-sm rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer">
+                        <p className="text-sm text-[var(--text-primary)] animate-shimmer" style={{ animationDelay: '1s' }}>
+                          ⚖️ Constitutional Law
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -162,9 +195,15 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                   <div 
                     className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex-shrink-0"
                     style={{
-                      backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuCVhzVdaXxR_p3E3fMgkBz6ftAWMIQhZhO0eUcPg45HQcdqABNiD5l6e6QsmtMvjc9BB0OvnBD2tGF3S-xwL9gIbPYll5USP6s23Kp2ACsN2pS8-BL7xZuTvsl5GBDScDTeMDzmxcLqQHziqI-MLkoUT2iRVJlLOMarIe7usrFfE8Oajmt1IlKu5v4ugihjYpj3CPmESsk0vDWPxGgE5iZTajLFJF2ShkkHueRk2B1iNOrj3fEjiDXuT7ntwpGvAgSaQ5GOyihkuWw")`
+                      background: 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))',
+                      color: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
                     }}
-                  />
+                  >
+                    <span className="material-symbols-outlined text-base">balance</span>
+                  </div>
                   <div className="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 p-4 rounded-xl flex-1">
                     <p className="text-purple-300 text-sm font-bold leading-tight mb-2">HaqooqAI</p>
                     <CyclingLoader />

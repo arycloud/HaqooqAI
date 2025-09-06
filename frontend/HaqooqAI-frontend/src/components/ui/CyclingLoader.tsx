@@ -76,17 +76,17 @@ export function CyclingLoader({ type = 'general' }: CyclingLoaderProps) {
       {/* Modern spinner with glow effect */}
       <div className="relative flex-shrink-0">
         <div className="relative">
-          <Scale className="w-6 h-6 text-blue-500 animate-pulse" />
-          <div className="absolute inset-0 w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <span className="material-symbols-outlined text-[var(--primary-color)] text-xl animate-pulse">balance</span>
+          <div className="absolute inset-0 w-6 h-6 border-2 border-[var(--primary-color)] border-t-transparent rounded-full animate-spin" />
         </div>
         {/* Glow effect */}
-        <div className="absolute inset-0 w-6 h-6 bg-blue-500/20 rounded-full blur-sm animate-pulse" />
+        <div className="absolute inset-0 w-6 h-6 bg-[var(--primary-color)]/20 rounded-full blur-sm animate-pulse" />
       </div>
       
       {/* Enhanced text with shimmer effect - only dynamic messages */}
       <div className="flex-1">
         <TextShimmer
-          className="text-base text-gray-600 dark:text-gray-400 font-medium"
+          className="text-base text-[var(--text-secondary)] font-medium"
           duration={1.5}
           key={`shimmer-${currentMessageIndex}`}
         >
@@ -96,9 +96,9 @@ export function CyclingLoader({ type = 'general' }: CyclingLoaderProps) {
       
       {/* Animated dots indicator */}
       <div className="flex items-center space-x-1">
-        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-        <div className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+        <div className="w-1.5 h-1.5 bg-[var(--primary-color)] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+        <div className="w-1.5 h-1.5 bg-[var(--secondary-color)] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+        <div className="w-1.5 h-1.5 bg-[var(--primary-color)] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
       </div>
     </div>
   )

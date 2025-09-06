@@ -30,7 +30,7 @@ export function MainLayout() {
   }, [sidebarOpen, location.pathname])
 
   return (
-    <div className="h-screen flex bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+    <div className="h-screen flex bg-[var(--background-color)]">
       {/* Sidebar stays mounted */}
       <SidebarNew isOpen={sidebarOpen} />
 
@@ -41,7 +41,7 @@ export function MainLayout() {
           sidebarOpen ? "flex-1" : "w-full"
         )}
       >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(139,92,246,0.05)_1px,transparent_0)] [background-size:32px_32px] pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(200,80,192,0.05)_1px,transparent_0)] [background-size:32px_32px] pointer-events-none" />
 
         {/* Conditionally render Header - hide for chat routes */}
         {!location.pathname.startsWith('/chat/') && (

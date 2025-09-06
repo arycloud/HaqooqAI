@@ -15,6 +15,32 @@ export function SidebarNew({ isOpen }: SidebarNewProps) {
   const { user } = useAuth()
   const [isCreating, setIsCreating] = useState(false)
 
+  const getUserInitials = () => {
+    if (user?.username) {
+      return user.username.charAt(0).toUpperCase()
+    }
+    if (user?.email) {
+      return user.email.charAt(0).toUpperCase()
+    }
+    return 'U'
+  }
+
+  const getAvatarStyle = () => {
+    if (user?.avatar_url) {
+      return { backgroundImage: `url("${user.avatar_url}")` }
+    } else {
+      return {
+        backgroundColor: 'var(--primary-color)',
+        color: 'white',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: 'bold',
+        fontSize: '14px'
+      }
+    }
+  }
+
   const handleNewChat = async () => {
     if (isCreating) return
     
@@ -47,17 +73,17 @@ export function SidebarNew({ isOpen }: SidebarNewProps) {
   if (!isOpen) return null
 
   return (
-    <aside className="flex flex-col w-80 bg-[var(--sidebar-color)] border-r border-[var(--border-color)] p-4">
+    <aside className="flex flex-col w-80 h-full bg-[var(--sidebar-color)] border-r border-[var(--border-color)] p-4">
       {/* User Profile Section */}
       <div className="flex items-center gap-3 mb-6">
         <div 
           className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
-          style={{
-            backgroundImage: user?.avatar_url 
-              ? `url("${user.avatar_url}")` 
-              : `url("https://lh3.googleusercontent.com/aida-public/AB6AXuCpUGhkvdwtrXrOTqAaaB-58kuaDmMK2lpAXk9rNDhmHZfXdLik1y0lrKXMUY51pVBCDC2-vAAAecAF81UZOf6rgBZmh5lhq6tDxyg1JXTEwygsQDbcC-iiRnPE0FfWPiybJAelyjEa10vwtNpEsGpMkwFnD8DpAIRzclOivxma3NJqugFDv2jkw_gDul1J3mUZ7IPascsoSxIYIMz5HupbZds5Ph8qSotlGKjteOHhhqVI0t5JEiJXv83O_kBu5Sb-Wye2sz2tq2w")`
-          }}
-        />
+          style={getAvatarStyle()}
+        >
+          {!user?.avatar_url && (
+            <span>{getUserInitials()}</span>
+          )}
+        </div>
         <h1 className="text-[var(--text-primary)] text-base font-medium leading-normal">
           {user?.username || user?.email || 'User'}
         </h1>

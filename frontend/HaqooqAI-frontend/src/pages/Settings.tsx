@@ -9,26 +9,6 @@ import { MultiProviderApiKeySettings } from '@/components/settings/MultiProvider
 import { aiService } from '@/services/backend/aiService'
 import { useAuth } from '@/hooks/useAuth'
 
-import { 
-  Settings as SettingsIcon, 
-  Key, 
-  BarChart3, 
-  Zap, 
-  Shield, 
-  Globe, 
-  Clock, 
-  Activity,
-  AlertCircle,
-  CheckCircle,
-  Cpu,
-  Database,
-  ExternalLink,
-  HelpCircle,
-  Info,
-  TrendingUp,
-  DollarSign
-} from 'lucide-react'
-
 export function Settings() {
   const { user } = useAuth()
   const [routingStats, setRoutingStats] = useState<any>(null)
@@ -123,12 +103,12 @@ export function Settings() {
   ]
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-[var(--background-color)]">
       {/* Header Section - Fixed at top */}
       <div className="container mx-auto px-6 py-6 max-w-5xl flex-shrink-0">
         <div className="text-center">
-          <h1 className="text-3xl font-bold mb-2">Settings</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold mb-2 text-[var(--text-primary)]">Settings</h1>
+          <p className="text-[var(--text-secondary)]">
             Manage your API keys, monitor usage, and configure AI providers
           </p>
         </div>
@@ -137,21 +117,21 @@ export function Settings() {
       {/* Main Tabs Layout - Scrollable content */}
       <Tabs defaultValue="api-keys" className="flex flex-col flex-1 min-h-0">
         <div className="container mx-auto px-6 max-w-5xl flex-shrink-0">
-          <TabsList className="grid w-full grid-cols-4 max-w-2xl mx-auto">
-            <TabsTrigger value="api-keys" className="flex items-center gap-2">
-              <Key className="h-4 w-4" />
+          <TabsList className="grid w-full grid-cols-4 max-w-2xl mx-auto bg-[var(--input-color)] border-[var(--border-color)]">
+            <TabsTrigger value="api-keys" className="flex items-center gap-2 text-[var(--text-secondary)] data-[state=active]:text-[var(--text-primary)] data-[state=active]:bg-[var(--hover-color)]">
+              <span className="material-symbols-outlined text-base">vpn_key</span>
               API Keys
             </TabsTrigger>
-            <TabsTrigger value="quota" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
+            <TabsTrigger value="quota" className="flex items-center gap-2 text-[var(--text-secondary)] data-[state=active]:text-[var(--text-primary)] data-[state=active]:bg-[var(--hover-color)]">
+              <span className="material-symbols-outlined text-base">bar_chart</span>
               Usage & Quota
             </TabsTrigger>
-            <TabsTrigger value="providers" className="flex items-center gap-2">
-              <Cpu className="h-4 w-4" />
+            <TabsTrigger value="providers" className="flex items-center gap-2 text-[var(--text-secondary)] data-[state=active]:text-[var(--text-primary)] data-[state=active]:bg-[var(--hover-color)]">
+              <span className="material-symbols-outlined text-base">memory</span>
               AI Providers
             </TabsTrigger>
-            <TabsTrigger value="system" className="flex items-center gap-2">
-              <Activity className="h-4 w-4" />
+            <TabsTrigger value="system" className="flex items-center gap-2 text-[var(--text-secondary)] data-[state=active]:text-[var(--text-primary)] data-[state=active]:bg-[var(--hover-color)]">
+              <span className="material-symbols-outlined text-base">monitoring</span>
               System Info
             </TabsTrigger>
           </TabsList>
@@ -177,8 +157,8 @@ export function Settings() {
         <TabsContent value="providers" className="flex-1 overflow-y-auto">
           <div className="container mx-auto px-6 max-w-5xl py-8">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-2">AI Provider Information</h2>
-              <p className="text-muted-foreground">
+              <h2 className="text-2xl font-bold mb-2 text-[var(--text-primary)]">AI Provider Information</h2>
+              <p className="text-[var(--text-secondary)]">
                 Compare features, performance, and capabilities of supported AI providers
               </p>
             </div>
@@ -196,18 +176,18 @@ export function Settings() {
                 return (
                   <Card
                     key={provider.name}
-                    className={`relative transition-all duration-300 hover:shadow-lg ${
+                    className={`relative transition-all duration-300 hover:shadow-lg bg-[var(--sidebar-color)] border-[var(--border-color)] ${
                       provider.name === 'Groq'
-                        ? 'ring-2 ring-purple-500/20 bg-gradient-to-br from-purple-50 to-purple-100'
+                        ? 'ring-2 ring-[var(--primary-color)]/20 bg-gradient-to-br from-[var(--primary-color)]/10 to-[var(--secondary-color)]/10'
                         : isConfigured
-                        ? 'ring-2 ring-green-500/20 bg-gradient-to-br from-green-50/50 to-emerald-50/50'
+                        ? 'ring-2 ring-green-500/20 bg-gradient-to-br from-green-500/10 to-emerald-500/10'
                         : 'hover:shadow-md'
                     }`}
                   >
                     {/* Status Badge */}
                     {provider.name === 'Groq' && !isConfigured ? (
                       <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
-                        <Badge className="bg-purple-600 text-white text-xs px-3 py-1">
+                        <Badge className="bg-[var(--primary-color)] text-white text-xs px-3 py-1">
                           Most Popular
                         </Badge>
                       </div>
@@ -227,11 +207,11 @@ export function Settings() {
                     
                     <CardHeader className="text-center pb-2">
                       <div className="flex items-center justify-between mb-2">
-                        <CardTitle className="text-base">{provider.name}</CardTitle>
+                        <CardTitle className="text-base text-[var(--text-primary)]">{provider.name}</CardTitle>
                         <div className={`h-3 w-3 rounded-full ${provider.color}`} />
                       </div>
                       
-                      <CardDescription className="text-xs mb-3">
+                      <CardDescription className="text-xs mb-3 text-[var(--text-secondary)]">
                         {provider.description}
                       </CardDescription>
                     </CardHeader>
@@ -241,8 +221,8 @@ export function Settings() {
                       <ul className="space-y-2 mb-4">
                         {provider.features.map((feature, featureIndex) => (
                           <li key={featureIndex} className="flex items-start gap-2 text-xs">
-                            <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 flex-shrink-0" />
-                            <span>{feature}</span>
+                            <span className="material-symbols-outlined text-green-500 text-sm mt-0.5 flex-shrink-0">check_circle</span>
+                            <span className="text-[var(--text-secondary)]">{feature}</span>
                           </li>
                         ))}
                       </ul>
@@ -250,23 +230,23 @@ export function Settings() {
                       {/* Specifications */}
                       <div className="space-y-2 mb-4">
                         <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Model:</span>
-                          <span className="font-mono">{provider.model}</span>
+                          <span className="text-[var(--text-secondary)]">Model:</span>
+                          <span className="font-mono text-[var(--text-primary)]">{provider.model}</span>
                         </div>
                         <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Context:</span>
-                          <span className="font-mono">{provider.contextLength} tokens</span>
+                          <span className="text-[var(--text-secondary)]">Context:</span>
+                          <span className="font-mono text-[var(--text-primary)]">{provider.contextLength} tokens</span>
                         </div>
                         <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Daily Limit:</span>
-                          <span>{provider.dailyLimit}</span>
+                          <span className="text-[var(--text-secondary)]">Daily Limit:</span>
+                          <span className="text-[var(--text-primary)]">{provider.dailyLimit}</span>
                         </div>
                         <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Cost:</span>
-                          <span className="font-mono">{provider.costPer1kTokens}</span>
+                          <span className="text-[var(--text-secondary)]">Cost:</span>
+                          <span className="font-mono text-[var(--text-primary)]">{provider.costPer1kTokens}</span>
                         </div>
                         <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Speed:</span>
+                          <span className="text-[var(--text-secondary)]">Speed:</span>
                           <div className="flex items-center gap-1">
                             <div className="flex">
                               {[...Array(5)].map((_, i) => (
@@ -278,17 +258,17 @@ export function Settings() {
                                 />
                               ))}
                             </div>
-                            <span className="text-xs text-muted-foreground">{provider.speed}</span>
+                            <span className="text-xs text-[var(--text-secondary)]">{provider.speed}</span>
                           </div>
                         </div>
                       </div>
                       
                       {/* Use Cases */}
-                      <div className="border-t pt-3">
-                        <h4 className="text-xs font-medium mb-2">Best Use Cases</h4>
+                      <div className="border-t border-[var(--border-color)] pt-3">
+                        <h4 className="text-xs font-medium mb-2 text-[var(--text-primary)]">Best Use Cases</h4>
                         <div className="flex flex-wrap gap-1">
                           {provider.useCases.map((useCase, i) => (
-                            <Badge key={i} variant="secondary" className="text-xs px-1 py-0">
+                            <Badge key={i} variant="secondary" className="text-xs px-1 py-0 bg-[var(--input-color)] text-[var(--text-secondary)] border-[var(--border-color)]">
                               {useCase}
                             </Badge>
                           ))}
@@ -306,92 +286,92 @@ export function Settings() {
         <TabsContent value="system" className="flex-1 overflow-y-auto">
           <div className="container mx-auto px-6 max-w-7xl space-y-6 pb-8">
             {/* System Status Overview */}
-            <Card>
+            <Card className="bg-[var(--sidebar-color)] border-[var(--border-color)]">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-[var(--text-primary)]">
+                  <span className="material-symbols-outlined text-xl">monitoring</span>
                   System Status
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-[var(--text-secondary)]">
                   Real-time system health and provider availability
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {loadingStats ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mr-3" />
-                    <span className="text-muted-foreground">Loading system status...</span>
+                    <div className="w-6 h-6 border-2 border-[var(--primary-color)] border-t-transparent rounded-full animate-spin mr-3" />
+                    <span className="text-[var(--text-secondary)]">Loading system status...</span>
                   </div>
                 ) : routingStats ? (
                   <div className="space-y-6">
                     {/* Overall System Health */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="p-4 border rounded-lg">
+                      <div className="p-4 border border-[var(--border-color)] rounded-lg bg-[var(--input-color)]">
                         <div className="flex items-center gap-2 mb-2">
-                          <CheckCircle className="h-5 w-5 text-green-600" />
-                          <span className="font-medium">System Health</span>
+                          <span className="material-symbols-outlined text-green-600 text-xl">check_circle</span>
+                          <span className="font-medium text-[var(--text-primary)]">System Health</span>
                         </div>
                         <p className="text-2xl font-bold text-green-600">Operational</p>
-                        <p className="text-xs text-muted-foreground">All systems functioning normally</p>
+                        <p className="text-xs text-[var(--text-secondary)]">All systems functioning normally</p>
                       </div>
                       
-                      <div className="p-4 border rounded-lg">
+                      <div className="p-4 border border-[var(--border-color)] rounded-lg bg-[var(--input-color)]">
                         <div className="flex items-center gap-2 mb-2">
-                          <Globe className="h-5 w-5 text-blue-600" />
-                          <span className="font-medium">Available Providers</span>
+                          <span className="material-symbols-outlined text-blue-600 text-xl">public</span>
+                          <span className="font-medium text-[var(--text-primary)]">Available Providers</span>
                         </div>
                         <p className="text-2xl font-bold text-blue-600">
                           {(routingStats.providers && Array.isArray(routingStats.providers)) ? routingStats.providers.length : 0}
                         </p>
-                        <p className="text-xs text-muted-foreground">AI providers configured</p>
+                        <p className="text-xs text-[var(--text-secondary)]">AI providers configured</p>
                       </div>
                       
-                      <div className="p-4 border rounded-lg">
+                      <div className="p-4 border border-[var(--border-color)] rounded-lg bg-[var(--input-color)]">
                         <div className="flex items-center gap-2 mb-2">
-                          <Zap className="h-5 w-5 text-purple-600" />
-                          <span className="font-medium">Routing Engine</span>
+                          <span className="material-symbols-outlined text-[var(--primary-color)] text-xl">bolt</span>
+                          <span className="font-medium text-[var(--text-primary)]">Routing Engine</span>
                         </div>
-                        <p className="text-2xl font-bold text-purple-600">
+                        <p className="text-2xl font-bold text-[var(--primary-color)]">
                           {routingStats.routing_config ? 'Active' : 'Unavailable'}
                         </p>
-                        <p className="text-xs text-muted-foreground">Smart request routing</p>
+                        <p className="text-xs text-[var(--text-secondary)]">Smart request routing</p>
                       </div>
                     </div>
 
                     {/* Provider Status Table */}
                     {routingStats.providers && Array.isArray(routingStats.providers) && routingStats.providers.length > 0 && (
                       <div>
-                        <h4 className="font-medium mb-3">Provider Status Details</h4>
+                        <h4 className="font-medium mb-3 text-[var(--text-primary)]">Provider Status Details</h4>
                         <Table>
                           <TableHeader>
-                            <TableRow>
-                              <TableHead>Provider</TableHead>
-                              <TableHead>Model</TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead>Daily Limit</TableHead>
-                              <TableHead>Configuration</TableHead>
+                            <TableRow className="border-[var(--border-color)]">
+                              <TableHead className="text-[var(--text-primary)]">Provider</TableHead>
+                              <TableHead className="text-[var(--text-primary)]">Model</TableHead>
+                              <TableHead className="text-[var(--text-primary)]">Status</TableHead>
+                              <TableHead className="text-[var(--text-primary)]">Daily Limit</TableHead>
+                              <TableHead className="text-[var(--text-primary)]">Configuration</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {routingStats.providers.map((provider: any) => (
-                              <TableRow key={provider.name}>
+                              <TableRow key={provider.name} className="border-[var(--border-color)]">
                                 <TableCell>
                                   <div className="flex items-center gap-2">
                                     <div className={`h-2 w-2 rounded-full ${
                                       provider.has_default_key ? 'bg-green-500' : 'bg-yellow-500'
                                     }`} />
-                                    <span className="font-medium">{provider.name}</span>
+                                    <span className="font-medium text-[var(--text-primary)]">{provider.name}</span>
                                   </div>
                                 </TableCell>
-                                <TableCell className="font-mono text-sm">{provider.model}</TableCell>
+                                <TableCell className="font-mono text-sm text-[var(--text-primary)]">{provider.model}</TableCell>
                                 <TableCell>
-                                  <Badge variant={provider.has_default_key ? "default" : "secondary"}>
+                                  <Badge variant={provider.has_default_key ? "default" : "secondary"} className="bg-[var(--input-color)] text-[var(--text-secondary)] border-[var(--border-color)]">
                                     {provider.has_default_key ? "Operational" : "BYOK Required"}
                                   </Badge>
                                 </TableCell>
-                                <TableCell>{provider.daily_limit?.toLocaleString() || 'Unlimited'}</TableCell>
+                                <TableCell className="text-[var(--text-primary)]">{provider.daily_limit?.toLocaleString() || 'Unlimited'}</TableCell>
                                 <TableCell>
-                                  <span className="text-xs text-muted-foreground">
+                                  <span className="text-xs text-[var(--text-secondary)]">
                                     {provider.has_default_key ? 'System configured' : 'User keys only'}
                                   </span>
                                 </TableCell>
@@ -405,48 +385,48 @@ export function Settings() {
                     {/* Routing Configuration */}
                     {routingStats.routing_config && (
                       <div>
-                        <h4 className="text-sm font-medium mb-3">Smart Routing Configuration</h4>
+                        <h4 className="text-sm font-medium mb-3 text-[var(--text-primary)]">Smart Routing Configuration</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                          <div className="p-4 border rounded-lg">
+                          <div className="p-4 border border-[var(--border-color)] rounded-lg bg-[var(--input-color)]">
                             <div className="flex items-center gap-2 mb-2">
-                              <Info className="h-4 w-4 text-blue-600" />
-                              <span className="text-sm font-medium">Message Threshold</span>
+                              <span className="material-symbols-outlined text-blue-600 text-lg">info</span>
+                              <span className="text-sm font-medium text-[var(--text-primary)]">Message Threshold</span>
                             </div>
-                            <p className="text-xl font-bold">{routingStats.routing_config.message_threshold || 'N/A'}</p>
-                            <p className="text-xs text-muted-foreground">Messages before provider upgrade</p>
+                            <p className="text-xl font-bold text-[var(--text-primary)]">{routingStats.routing_config.message_threshold || 'N/A'}</p>
+                            <p className="text-xs text-[var(--text-secondary)]">Messages before provider upgrade</p>
                           </div>
                           
-                          <div className="p-4 border rounded-lg">
+                          <div className="p-4 border border-[var(--border-color)] rounded-lg bg-[var(--input-color)]">
                             <div className="flex items-center gap-2 mb-2">
-                              <Database className="h-4 w-4 text-purple-600" />
-                              <span className="text-sm font-medium">Token Threshold</span>
+                              <span className="material-symbols-outlined text-[var(--primary-color)] text-lg">storage</span>
+                              <span className="text-sm font-medium text-[var(--text-primary)]">Token Threshold</span>
                             </div>
-                            <p className="text-xl font-bold">
+                            <p className="text-xl font-bold text-[var(--text-primary)]">
                               {routingStats.routing_config.token_threshold?.toLocaleString() || 'N/A'}
                             </p>
-                            <p className="text-xs text-muted-foreground">Tokens before provider upgrade</p>
+                            <p className="text-xs text-[var(--text-secondary)]">Tokens before provider upgrade</p>
                           </div>
                           
-                          <div className="p-4 border rounded-lg">
+                          <div className="p-4 border border-[var(--border-color)] rounded-lg bg-[var(--input-color)]">
                             <div className="flex items-center gap-2 mb-2">
-                              <Zap className="h-4 w-4 text-orange-600" />
-                              <span className="text-sm font-medium">Max Query Tokens</span>
+                              <span className="material-symbols-outlined text-orange-600 text-lg">bolt</span>
+                              <span className="text-sm font-medium text-[var(--text-primary)]">Max Query Tokens</span>
                             </div>
-                            <p className="text-xl font-bold">
+                            <p className="text-xl font-bold text-[var(--text-primary)]">
                               {routingStats.routing_config.max_query_tokens?.toLocaleString() || 'N/A'}
                             </p>
-                            <p className="text-xs text-muted-foreground">Maximum tokens per request</p>
+                            <p className="text-xs text-[var(--text-secondary)]">Maximum tokens per request</p>
                           </div>
                           
-                          <div className="p-4 border rounded-lg">
+                          <div className="p-4 border border-[var(--border-color)] rounded-lg bg-[var(--input-color)]">
                             <div className="flex items-center gap-2 mb-2">
-                              <Activity className="h-4 w-4 text-green-600" />
-                              <span className="text-sm font-medium">Max Messages</span>
+                              <span className="material-symbols-outlined text-green-600 text-lg">monitoring</span>
+                              <span className="text-sm font-medium text-[var(--text-primary)]">Max Messages</span>
                             </div>
-                            <p className="text-xl font-bold">
+                            <p className="text-xl font-bold text-[var(--text-primary)]">
                               {routingStats.routing_config.max_conversation_messages || 'N/A'}
                             </p>
-                            <p className="text-xs text-muted-foreground">Maximum messages per conversation</p>
+                            <p className="text-xs text-[var(--text-secondary)]">Maximum messages per conversation</p>
                           </div>
                         </div>
                       </div>
@@ -454,11 +434,11 @@ export function Settings() {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <AlertCircle className="h-12 w-12 mx-auto mb-4 text-amber-500" />
-                    <h4 className="text-sm font-medium mb-2">System Information Unavailable</h4>
-                    <p className="text-muted-foreground mb-4">Unable to connect to the system monitoring service.</p>
-                    <Button onClick={loadRoutingStats} variant="outline">
-                      <Activity className="h-4 w-4 mr-2" />
+                    <span className="material-symbols-outlined text-amber-500 text-5xl mx-auto mb-4 block">warning</span>
+                    <h4 className="text-sm font-medium mb-2 text-[var(--text-primary)]">System Information Unavailable</h4>
+                    <p className="text-[var(--text-secondary)] mb-4">Unable to connect to the system monitoring service.</p>
+                    <Button onClick={loadRoutingStats} variant="outline" className="border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--hover-color)]">
+                      <span className="material-symbols-outlined text-base mr-2">monitoring</span>
                       Retry Connection
                     </Button>
                   </div>
