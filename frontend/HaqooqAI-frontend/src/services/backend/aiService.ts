@@ -151,7 +151,7 @@ export class AIService {
     }
   }
 
-/**
+  /**
    * Save API key for a specific provider
    */
   async saveProviderApiKey(
