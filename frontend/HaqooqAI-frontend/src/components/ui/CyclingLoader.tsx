@@ -72,28 +72,22 @@ export function CyclingLoader({ type = 'general' }: CyclingLoaderProps) {
   }
 
   return (
-    <div className="flex items-center space-x-3 p-6">
+    <div className="flex items-center space-x-3 py-3 px-4">
       {/* Spinner - Left aligned */}
       <div className="relative flex-shrink-0">
-        <Scale className="w-8 h-8 text-purple-400 animate-pulse" />
-        <div className="absolute inset-0 w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+        <Scale className="w-6 h-6 text-purple-400 animate-pulse" />
+        <div className="absolute inset-0 w-6 h-6 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
       </div>
       
-      {/* Text with shimmer effect */}
-      <div className="flex flex-col space-y-1">
-        <TextEffect 
-          per="char" 
-          preset="scale"
-          className="text-lg font-medium text-gray-800"
-          trigger={true}
-        >
-          {getLoaderTitle(type)}
-        </TextEffect>
+      {/* Dynamic shimmer text only */}
+      <div className="flex-1">
         <TextEffect 
           per="word" 
-          preset="blur"
-          className="text-sm text-gray-600"
+          preset="fade-in-blur"
+          className="text-sm text-gray-600 font-medium"
           trigger={true}
+          key={`shimmer-${currentMessageIndex}`}
+          speedReveal={1.5}
         >
           {messages[currentMessageIndex]}
         </TextEffect>

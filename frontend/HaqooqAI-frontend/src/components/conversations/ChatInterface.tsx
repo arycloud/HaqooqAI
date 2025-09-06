@@ -80,7 +80,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
   return (
     <div className="flex flex-col h-full">
       {/* Messages Area - Fixed height with proper scrolling */}
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 overflow-hidden">
         {setupLoading ? (
           <div className="flex items-center justify-center h-full">
             <CyclingLoader type="setup" />
@@ -115,8 +115,8 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
         )}
       </div>
 
-      {/* Message Input - Fixed at bottom */}
-      <div className="flex-shrink-0 border-t bg-white">
+      {/* Message Input - Always fixed at bottom */}
+      <div className="flex-shrink-0 border-t bg-white sticky bottom-0 z-10">
         <MessageInput
           onSendMessage={handleSendMessage}
           disabled={analyzingLoading || isCreatingConversation || setupLoading}
