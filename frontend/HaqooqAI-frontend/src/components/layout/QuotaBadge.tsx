@@ -45,7 +45,7 @@ export function QuotaBadge() {
 
   if (quota.unlimited) {
     return (
-      <Badge variant="default" className="px-2 py-1 bg-green-600 hover:bg-green-700">
+      <Badge variant="default" className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white border-green-600">
         <Zap className="w-3 h-3 mr-1" />
         <span className="text-xs font-medium">Unlimited</span>
       </Badge>
