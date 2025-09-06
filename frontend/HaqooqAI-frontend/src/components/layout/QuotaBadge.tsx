@@ -32,9 +32,9 @@ export function QuotaBadge() {
 
   if (loading) {
     return (
-      <Badge variant="outline" className="px-2 py-1">
-        <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin mr-1" />
-        <span className="text-xs">Loading...</span>
+      <Badge variant="outline" className="px-3 py-1.5">
+        <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin mr-2" />
+        <span className="text-xs font-medium">Loading...</span>
       </Badge>
     )
   }
@@ -45,8 +45,8 @@ export function QuotaBadge() {
 
   if (quota.unlimited) {
     return (
-      <Badge variant="default" className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white border-green-600">
-        <Zap className="w-3 h-3 mr-1" />
+      <Badge variant="success" className="px-3 py-1.5">
+        <Zap className="w-3 h-3 mr-2" />
         <span className="text-xs font-medium">Unlimited</span>
       </Badge>
     )
@@ -57,12 +57,12 @@ export function QuotaBadge() {
 
   return (
     <Badge 
-      variant={isOutOfQuota ? "destructive" : isLowQuota ? "secondary" : "outline"} 
-      className="px-2 py-1"
+      variant={isOutOfQuota ? "destructive" : isLowQuota ? "warning" : "default"} 
+      className="px-3 py-1.5"
     >
-      {isOutOfQuota && <AlertCircle className="w-3 h-3 mr-1" />}
+      {isOutOfQuota && <AlertCircle className="w-3 h-3 mr-2" />}
       <span className="text-xs font-medium">
-        {quota.remaining}/{quota.limit}
+        {quota.remaining}/{quota.limit} queries
       </span>
     </Badge>
   )

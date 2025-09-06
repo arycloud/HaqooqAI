@@ -2,18 +2,13 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Progress } from '@/components/ui/progress'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { ApiKeySettings } from '@/components/settings/ApiKeySettings'
 import { QuotaDisplay } from '@/components/settings/QuotaDisplay'
 import { MultiProviderApiKeySettings } from '@/components/settings/MultiProviderApiKeySettings'
 import { aiService } from '@/services/backend/aiService'
 import { useAuth } from '@/hooks/useAuth'
-import { InView } from '@/components/motion-primitives/in-view'
-import { TextEffect } from '@/components/motion-primitives/text-effect'
+
 import { 
   Settings as SettingsIcon, 
   Key, 
@@ -85,26 +80,26 @@ export function Settings() {
   const providerInfo = [
     {
       name: 'Groq',
-      model: 'Qwen2.5-7B-Instruct',
+      model: 'Qwen3:32B',
       speed: 'Ultra Fast',
       speedRating: 5,
-      contextLength: '32,768',
-      dailyLimit: '14,400',
+      contextLength: '6k for the default system key',
+      dailyLimit: '5 quries',
       costPer1kTokens: 'Free',
       features: ['Fastest inference', 'Cost effective', 'Default provider'],
       color: 'bg-orange-500',
-      description: 'Lightning-fast inference with Qwen models, perfect for quick responses and high-volume usage.',
+      description: 'Lightning-fast inference with Qwen models, perfect for quick responses.',
       strengths: ['Speed', 'Free tier', 'Reliability'],
       useCases: ['Quick queries', 'High-volume usage', 'Real-time applications']
     },
     {
       name: 'Google Gemini',
-      model: 'Gemini 1.5 Flash',
+      model: 'Gemini 2.0 Flash Lite',
       speed: 'Fast',
       speedRating: 4,
-      contextLength: '1,048,576',
+      contextLength: '50k tokens',
       dailyLimit: 'BYOK dependent',
-      costPer1kTokens: '$0.075 input / $0.30 output',
+      costPer1kTokens: 'Free limitted access',
       features: ['Massive context', 'Complex reasoning', 'Multimodal support'],
       color: 'bg-blue-500',
       description: 'Advanced AI with enormous context windows, ideal for complex documents and long conversations.',
@@ -113,12 +108,12 @@ export function Settings() {
     },
     {
       name: 'OpenAI',
-      model: 'GPT-4 Turbo',
+      model: 'GPT-5',
       speed: 'Moderate',
       speedRating: 3,
       contextLength: '128,000',
       dailyLimit: 'BYOK only',
-      costPer1kTokens: '$10 input / $30 output',
+      costPer1kTokens: 'Price on their Platform',
       features: ['Industry standard', 'High quality', 'Bring your own key'],
       color: 'bg-green-500',
       description: 'Industry-leading AI models with exceptional quality, requires your own API key for access.',

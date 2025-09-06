@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Scale } from 'lucide-react'
+import { TextEffect } from '@/components/motion-primitives/text-effect'
 
 export type LoaderType = 'analyzing' | 'setup' | 'fetching' | 'general' | 'messages'
 
@@ -9,26 +10,25 @@ interface CyclingLoaderProps {
 
 const LOADING_MESSAGES = {
   analyzing: [
+    "HaqooqAI is thinking...",
     "Analyzing your legal query...",
-    "Routing to best AI provider...",
-    "Selecting optimal model...",
-    "Processing with legal expertise...",
-    "Searching legal documents...",
-    "Consulting Pakistani law database...",
+    "Consulting legal database...",
+    "Processing with AI expertise...",
+    "Searching Pakistani law...",
     "Gathering relevant sources...",
-    "Formatting comprehensive response..."
+    "Preparing comprehensive response..."
   ],
   setup: [
-    "Setting up new conversation...",
+    "Setting up conversation...",
     "Initializing chat session...",
     "Preparing legal assistant...",
-    "Ready to help with Pakistani law..."
+    "Ready to help with law..."
   ],
   fetching: [
-    "Loading conversation history...",
+    "Loading conversation...",
     "Retrieving messages...",
-    "Fetching previous discussions...",
-    "Loading chat data..."
+    "Fetching chat history...",
+    "Loading previous discussions..."
   ],
   messages: [
     "Loading messages...",
@@ -72,22 +72,31 @@ export function CyclingLoader({ type = 'general' }: CyclingLoaderProps) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center space-y-4 p-8">
-      <div className="relative">
-        <Scale className="w-12 h-12 text-purple-400 animate-pulse" />
-        <div className="absolute inset-0 w-12 h-12 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+    <div className="flex items-center space-x-3 p-6">
+      {/* Spinner - Left aligned */}
+      <div className="relative flex-shrink-0">
+        <Scale className="w-8 h-8 text-purple-400 animate-pulse" />
+        <div className="absolute inset-0 w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
       </div>
       
-      <div className="text-center space-y-2">
-        <p className="text-lg font-medium text-gray-800">
+      {/* Text with shimmer effect */}
+      <div className="flex flex-col space-y-1">
+        <TextEffect 
+          per="char" 
+          preset="scale"
+          className="text-lg font-medium text-gray-800"
+          trigger={true}
+        >
           {getLoaderTitle(type)}
-        </p>
-        <p className="text-sm text-gray-600">
+        </TextEffect>
+        <TextEffect 
+          per="word" 
+          preset="blur"
+          className="text-sm text-gray-600"
+          trigger={true}
+        >
           {messages[currentMessageIndex]}
-        </p>
-        <p className="text-xs text-gray-500">
-          Powered by AI legal expertise
-        </p>
+        </TextEffect>
       </div>
     </div>
   )

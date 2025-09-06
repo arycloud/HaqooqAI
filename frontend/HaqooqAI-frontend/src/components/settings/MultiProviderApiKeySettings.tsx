@@ -36,11 +36,11 @@ const PROVIDER_PLANS: ProviderPlan[] = [
     provider: 'groq',
     name: 'Groq',
     price: 'Free',
-    description: 'Lightning-fast inference with Qwen models',
+    description: 'Lightning-fast inference with Qwen3 models',
     features: [
-      '14,400 daily requests',
+      'Limitted daily requests',
       'Ultra-fast inference',
-      '32K token context',
+      '6K token context',
       'Cost effective',
       'System default provider'
     ],
@@ -49,9 +49,9 @@ const PROVIDER_PLANS: ProviderPlan[] = [
     documentationUrl: 'https://console.groq.com/keys',
     keyFormat: PROVIDER_KEY_FORMATS.groq,
     quota: {
-      daily: '14,400 requests',
+      daily: 'Limitted requests',
       cost: 'Free',
-      context: '32K tokens'
+      context: '6K tokens'
     }
   },
   {
@@ -61,7 +61,7 @@ const PROVIDER_PLANS: ProviderPlan[] = [
     description: 'Advanced AI with massive context windows',
     features: [
       'Unlimited daily requests*',
-      'Massive 1M context',
+      'Massive 50k context',
       'Multimodal support',
       'Complex reasoning',
       'Advanced capabilities'
@@ -71,8 +71,8 @@ const PROVIDER_PLANS: ProviderPlan[] = [
     keyFormat: PROVIDER_KEY_FORMATS.gemini,
     quota: {
       daily: 'Unlimited*',
-      cost: '$0.075/$0.30 per 1K',
-      context: '1M tokens'
+      cost: 'Free for the upper mentioned limits',
+      context: '50k tokens'
     }
   },
   {
@@ -92,7 +92,7 @@ const PROVIDER_PLANS: ProviderPlan[] = [
     keyFormat: PROVIDER_KEY_FORMATS.openai,
     quota: {
       daily: 'BYOK Only',
-      cost: '$10/$30 per 1K',
+      cost: 'Price on their platform',
       context: '128K tokens'
     }
   }

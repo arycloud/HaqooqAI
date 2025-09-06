@@ -79,18 +79,18 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
 
   return (
     <div className="flex flex-col h-full">
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Messages Area - Fixed height with proper scrolling */}
+      <div className="flex-1 min-h-0">
         {setupLoading ? (
-          <div className="flex items-center justify-center h-64">
+          <div className="flex items-center justify-center h-full">
             <CyclingLoader type="setup" />
           </div>
         ) : fetchingLoading ? (
-          <div className="flex items-center justify-center h-64">
+          <div className="flex items-center justify-center h-full">
             <CyclingLoader type="fetching" />
           </div>
         ) : error ? (
-          <div className="flex items-center justify-center h-64">
+          <div className="flex items-center justify-center h-full">
             <ErrorDisplay 
               error={error} 
               onRetry={handleRetryMessage}
@@ -98,7 +98,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
             />
           </div>
         ) : conversationMessages.length === 0 ? (
-          <div className="flex items-center justify-center h-64 text-gray-500">
+          <div className="flex items-center justify-center h-full text-gray-500">
             <div className="text-center space-y-2">
               <Scale className="w-12 h-12 mx-auto text-purple-400" />
               <p className="text-lg font-medium">Start a conversation</p>
@@ -113,25 +113,15 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
             loadingType="analyzing"
           />
         )}
-        
-        {/* AI Thinking Indicator */}
-        {/* {analyzingLoading && (
-          <div className="flex justify-start">
-            <div className="max-w-[80%] bg-gray-100 rounded-lg p-4">
-              <CyclingLoader type="analyzing" />
-            </div>
-          </div>
-        )}
-      </div> */}
+      </div>
 
-      {/* Message Input */}
-      <div className="border-t bg-white p-4">
+      {/* Message Input - Fixed at bottom */}
+      <div className="flex-shrink-0 border-t bg-white">
         <MessageInput
           onSendMessage={handleSendMessage}
           disabled={analyzingLoading || isCreatingConversation || setupLoading}
           placeholder="Ask about Pakistani law..."
         />
-      </div>
       </div>
     </div>
   )

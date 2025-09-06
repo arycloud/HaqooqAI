@@ -82,7 +82,7 @@ export function MessageList({ messages, loading, conversationId, sidebarOpen = t
 
             {loading && (
               <div className="flex justify-start mb-6 lg:mb-8">
-                <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 lg:p-8 shadow-xl border-2 border-gray-200 dark:border-slate-600 max-w-md">
+                <div className="bg-white dark:bg-slate-800 rounded-2xl px-4 py-3 shadow-md border border-gray-200 dark:border-slate-600 max-w-md">
                   <CyclingLoader type={loadingType} />
                 </div>
               </div>
