@@ -573,7 +573,7 @@ export function Settings() {
                 ) : (
                   <div className="text-center py-8">
                     <AlertCircle className="h-12 w-12 mx-auto mb-4 text-amber-500" />
-                    <h3 className="text-lg font-semibold mb-2">System Information Unavailable</h3>
+                    <h4 className="text-sm font-medium mb-2">System Information Unavailable</h4>
                     <p className="text-muted-foreground mb-4">Unable to connect to the system monitoring service.</p>
                     <Button onClick={loadRoutingStats} variant="outline">
                       <Activity className="h-4 w-4 mr-2" />

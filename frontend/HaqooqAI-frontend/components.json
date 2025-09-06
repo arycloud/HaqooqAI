@@ -14,5 +14,8 @@
     "components": "src/components",
     "utils": "src/lib/utils",
     "ui": "src/components/ui"
+  },
+  "registries": {
+    "@tailark": "https://tailark.com/r/{name}.json"
   }
 }

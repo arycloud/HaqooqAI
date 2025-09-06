@@ -1,4 +1,3 @@
-// NEW FILE: /Users/apple/PycharmProjects/HaqooqAI_2.0/HaqooqAI/frontend/HaqooqAI-frontend/src/components/settings/MultiProviderApiKeySettings.tsx
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -9,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { aiService } from '@/services/backend/aiService'
 import { ProviderStatus } from '@/types/api'
 import { LLM_PROVIDERS, PROVIDER_DISPLAY_NAMES, PROVIDER_KEY_FORMATS } from '@/utils/constants'
+import { TailarkPricingBlock } from '@/components/settings/TailarkPricingBlock'
 import toast from 'react-hot-toast'
 
 interface ProviderConfig {
@@ -419,7 +419,7 @@ export function MultiProviderApiKeySettings() {
               <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
                 <Shield className="w-6 h-6 text-white" />
               </div>
-              <h3 className="font-semibold mb-2">Bank-Grade Security</h3>
+              <h4 className="text-sm font-medium mb-2">Bank-Grade Security</h4>
               <p className="text-sm text-muted-foreground">
                 Your API keys are encrypted with AES-256 encryption before storage. We never see your raw keys.
               </p>
@@ -429,7 +429,7 @@ export function MultiProviderApiKeySettings() {
               <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
                 <Zap className="w-6 h-6 text-white" />
               </div>
-              <h3 className="font-semibold mb-2">Unlimited Usage</h3>
+              <h4 className="text-sm font-medium mb-2">Unlimited Usage</h4>
               <p className="text-sm text-muted-foreground">
                 Your own API keys provide unlimited system quota and bypass all daily limits automatically.
               </p>
@@ -439,7 +439,7 @@ export function MultiProviderApiKeySettings() {
               <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
                 <Activity className="w-6 h-6 text-white" />
               </div>
-              <h3 className="font-semibold mb-2">Smart Routing</h3>
+              <h4 className="text-sm font-medium mb-2">Smart Routing</h4>
               <p className="text-sm text-muted-foreground">
                 Our system automatically selects the best provider based on your query complexity and context.
               </p>
@@ -447,6 +447,9 @@ export function MultiProviderApiKeySettings() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Tailark Components Integration */}
+      <TailarkPricingBlock />
     </div>
   )
 }
