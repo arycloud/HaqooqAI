@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
-import { Scale, Menu, Share } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { SidebarNew } from '@/components/layout/SidebarNew'
-import { MessageList } from './MessageList'
+import { MessageBubbleNew } from './MessageBubbleNew'
 import { MessageInputNew } from './MessageInputNew'
 import { CyclingLoader } from '@/components/ui/CyclingLoader'
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay'
@@ -110,129 +108,79 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
           <header className="flex items-center justify-between p-4 border-b border-[var(--border-color)]">
             <div className="flex items-center gap-3">
               {!sidebarOpen && (
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <button
                   onClick={() => setSidebarOpen(true)}
-                  className="w-8 h-8 hover:bg-[var(--hover-color)] transition-all duration-200 rounded-lg"
+                  className="w-8 h-8 hover:bg-[var(--hover-color)] transition-all duration-200 rounded-lg flex items-center justify-center"
                   title="Open sidebar"
                 >
-                  <Menu className="w-5 h-5 text-[var(--text-primary)]" />
-                </Button>
+                  <span className="material-symbols-outlined text-[var(--text-primary)] text-xl">menu</span>
+                </button>
               )}
               <h2 className="text-[var(--text-primary)] text-xl font-bold leading-tight">
                 HaqooqAI Legal Assistant
               </h2>
             </div>
-            <Button className="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-8 px-4 bg-[var(--hover-color)] text-[var(--text-primary)] text-sm font-medium leading-normal hover:bg-opacity-80">
-              <Share className="w-4 h-4" />
+            <button className="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-8 px-4 bg-[var(--hover-color)] text-[var(--text-primary)] text-sm font-medium leading-normal hover:bg-opacity-80">
+              <span className="material-symbols-outlined text-base">share</span>
               <span className="truncate">Share</span>
-            </Button>
+            </button>
           </header>
 
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-6 scroll-container bg-[var(--background-color)]">
             <div className="flex flex-col gap-8 max-w-4xl mx-auto">
-        
-        {setupLoading ? (
-          <div className="flex items-center justify-center h-full relative z-10">
-            <div className="text-center space-y-6">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mx-auto shadow-xl">
-                <Scale className="w-8 h-8 text-white animate-pulse" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Setting up your session</h3>
-                <CyclingLoader type="setup" />
-              </div>
-            </div>
-          </div>
-        ) : fetchingLoading ? (
-          <div className="flex items-center justify-center h-full relative z-10">
-            <div className="text-center space-y-6">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mx-auto shadow-xl">
-                <Scale className="w-8 h-8 text-white animate-pulse" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Loading conversation</h3>
-                <CyclingLoader type="fetching" />
-              </div>
-            </div>
-          </div>
-        ) : error ? (
-          <div className="flex items-center justify-center h-full relative z-10">
-            <div className="max-w-md mx-auto p-6">
-              <ErrorDisplay 
-                error={error} 
-                onRetry={handleRetryMessage}
-                showSettingsButton={true}
-              />
-            </div>
-          </div>
-        ) : conversationMessages.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-500 relative z-10">
-            <div className="text-center space-y-8 max-w-md mx-auto px-6">
-              <div className="relative">
-                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mx-auto shadow-2xl">
-                  <Scale className="w-10 h-10 text-white" />
+              {error && (
+                <ErrorDisplay 
+                  error={error} 
+                  onRetry={handleRetryMessage}
+                />
+              )}
+              
+              {conversationMessages.length === 0 && !fetchingLoading && (
+                <div className="flex items-center justify-center h-full min-h-[400px]">
+                  <div className="text-center">
+                    <h3 className="text-[var(--text-primary)] text-xl font-semibold mb-2">
+                      Start a conversation
+                    </h3>
+                    <p className="text-[var(--text-secondary)] text-sm">
+                      Ask me anything about Pakistani law
+                    </p>
+                  </div>
                 </div>
-                <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/20 to-purple-600/20 rounded-full blur-xl" />
-              </div>
-              <div className="space-y-3">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome to HaqooqAI</h2>
-                <p className="text-lg text-gray-600 dark:text-gray-300">Your intelligent Pakistani legal assistant</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Ask any question about Pakistani law and get instant, accurate answers with citations</p>
-              </div>
-              <div className="grid grid-cols-1 gap-3 mt-8">
-                <div className="p-4 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50">
-                  <p className="text-sm text-gray-700 dark:text-gray-300">💼 Corporate Law Questions</p>
-                </div>
-                <div className="p-4 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50">
-                  <p className="text-sm text-gray-700 dark:text-gray-300">🏠 Property & Real Estate</p>
-                </div>
-                <div className="p-4 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50">
-                  <p className="text-sm text-gray-700 dark:text-gray-300">⚖️ Constitutional Law</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          ) : (
-            <div className="relative z-10">
-              <MessageList
-                messages={conversationMessages}
-                loading={analyzingLoading}
-                conversationId={currentConversationId}
-                loadingType="analyzing"
-                sidebarOpen={sidebarOpen}
-                onSampleQuery={handleSendMessage}
-              />
-            </div>
-          )}
-        </div>
+              )}
 
-        {/* Enhanced Message Input with modern glass effect */}
-        <div className="flex-shrink-0 backdrop-blur-xl bg-white/90 dark:bg-gray-900/90 border-t border-gray-200/50 dark:border-gray-700/50">
+              {conversationMessages.map((message) => (
+                <MessageBubbleNew
+                  key={message.id}
+                  message={message}
+                  isLoading={false}
+                />
+              ))}
+
+              {fetchingLoading && (
+                <div className="flex items-start gap-4">
+                  <div 
+                    className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex-shrink-0"
+                    style={{
+                      backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuCVhzVdaXxR_p3E3fMgkBz6ftAWMIQhZhO0eUcPg45HQcdqABNiD5l6e6QsmtMvjc9BB0OvnBD2tGF3S-xwL9gIbPYll5USP6s23Kp2ACsN2pS8-BL7xZuTvsl5GBDScDTeMDzmxcLqQHziqI-MLkoUT2iRVJlLOMarIe7usrFfE8Oajmt1IlKu5v4ugihjYpj3CPmESsk0vDWPxGgE5iZTajLFJF2ShkkHueRk2B1iNOrj3fEjiDXuT7ntwpGvAgSaQ5GOyihkuWw")`
+                    }}
+                  />
+                  <div className="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 p-4 rounded-xl flex-1">
+                    <p className="text-purple-300 text-sm font-bold leading-tight mb-2">HaqooqAI</p>
+                    <CyclingLoader />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Message Input */}
           <MessageInputNew
             onSendMessage={handleSendMessage}
-            disabled={analyzingLoading || isCreatingConversation || setupLoading}
-            sidebarOpen={sidebarOpen}
-            placeholder="Message HaqooqAI..."
+            disabled={fetchingLoading || isCreatingConversation}
           />
-        </div>
+        </main>
       </div>
-
-      {/* Overlay for sidebar */}
-      <AnimatePresence>
-        {sidebarOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-20 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-      </AnimatePresence>
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useLocation, Outlet } from 'react-router-dom'
-import { Sidebar } from './Sidebar'
+import { SidebarNew } from './SidebarNew'
 import { Header } from './Header'
 import { cn } from '@/lib/utils'
 
@@ -32,7 +32,7 @@ export function MainLayout() {
   return (
     <div className="h-screen flex bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       {/* Sidebar stays mounted */}
-      <Sidebar isOpen={sidebarOpen} />
+      <SidebarNew isOpen={sidebarOpen} />
 
       {/* Main content area */}
       <div

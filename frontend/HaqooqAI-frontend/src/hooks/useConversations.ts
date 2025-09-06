@@ -6,7 +6,7 @@ import { conversationService } from '@/services/backend/conversationService'
 import { generateConversationTitle } from '@/utils/formatters'
 import toast from 'react-hot-toast'
 import { useConversationStore } from '@/store/conversationStore'
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom'
 
 const QUERY_KEY = (githubId?: number | string) => ['conversations', githubId ?? 'anon']
 
