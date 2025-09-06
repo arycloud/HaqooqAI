@@ -34,9 +34,9 @@ class ApiKeyResponse(BaseModel):
     """Response for API key operations (unified model for all providers)"""
     status: str = Field(..., description="Operation status (success, error)")
     message: str = Field(..., description="Human-readable message")
-    provider: Optional[str] = Field(None, description="Provider name (groq, gemini, openai)")
-    configured: Optional[bool] = Field(None, description="Whether the key is now configured")
-    has_unlimited: Optional[bool] = Field(None, description="Whether user now has unlimited access")
+    provider: Optional[str] = Field(default=None, description="Provider name (groq, gemini, openai)")
+    configured: Optional[bool] = Field(default=None, description="Whether the key is now configured")
+    has_unlimited: Optional[bool] = Field(default=None, description="Whether user now has unlimited access")
 
 
 class ApiKeyListResponse(BaseModel):
