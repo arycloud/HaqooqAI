@@ -10,7 +10,7 @@ function triggerConnectionError(type: 'server' | 'network', message: string) {
 }
 
 // Global axios configuration for better error handling
-axios.defaults.timeout = 10000 // 10 second timeout
+axios.defaults.timeout = 15000 // 15 second timeout (increased from 10s)
 
 // Response interceptor to handle 502 Bad Gateway and other server errors
 axios.interceptors.response.use(

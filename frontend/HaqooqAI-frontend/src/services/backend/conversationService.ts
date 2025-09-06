@@ -16,7 +16,7 @@ export class ConversationService {
       const response = await axios.get(`${BACKEND_URL}/conversations`, {
         params: { user_id: user.github_id },
         headers: { Authorization: `Bearer ${githubToken}` },
-        timeout: 10000, // 10 second timeout
+        timeout: 15000, // 15 second timeout (increased from 10s)
       })
 
       return (response.data.conversations || []).map((conv: any) => ({

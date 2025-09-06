@@ -138,7 +138,7 @@ class AuthService {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
             },
-            timeout: 10000, // 10 second timeout
+            timeout: 15000, // 15 second timeout (increased from 10s)
           }
         );
 

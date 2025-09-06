@@ -34,17 +34,17 @@ export const useConversations = () => {
     queryKey: userQueryKey,
     queryFn: () => conversationService.getConversations(),
     enabled: !!user,
-    staleTime: Infinity,         // NEVER consider data stale - only manual refresh
-    gcTime: 24 * 60 * 60 * 1000, // 24 hours - keep in cache much longer
-    refetchOnMount: false,       // NEVER refetch on mount - use cache only
-    refetchOnWindowFocus: false, // NEVER refetch on window focus
-    refetchOnReconnect: false,   // NEVER refetch on reconnect
-    refetchInterval: false,      // NEVER refetch automatically
-    refetchIntervalInBackground: false, // NEVER refetch in background
+    staleTime: 5 * 60 * 1000,        // 5 minutes - consider data stale after 5 minutes
+    gcTime: 30 * 60 * 1000,          // 30 minutes - keep in cache for 30 minutes
+    refetchOnMount: true,            // Refetch on mount if stale
+    refetchOnWindowFocus: true,      // Refetch on window focus if stale
+    refetchOnReconnect: true,        // Refetch on reconnect if stale
+    refetchInterval: false,          // Don't refetch automatically
+    refetchIntervalInBackground: false, // Don't refetch in background
     placeholderData: (prev) => prev, // keeps old data in UI while refreshing
-    retry: 1,                    // Only retry once on failure
-    retryDelay: 2000,           // 2 second delay between retries
-    networkMode: 'offlineFirst', // Use cache first, network second
+    retry: 2,                        // Retry twice on failure
+    retryDelay: 1000,                // 1 second delay between retries
+    networkMode: 'online',           // Use network first, cache as fallback
   })
 
   // ====== Mutation: create conversation (optimistic add) ======
