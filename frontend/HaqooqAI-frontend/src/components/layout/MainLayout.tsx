@@ -33,14 +33,16 @@ export function MainLayout() {
 
   return (
     <div className="h-screen flex bg-[var(--background-color)]">
-      {/* Sidebar stays mounted */}
-      <SidebarNew isOpen={sidebarOpen} />
+      {/* Sidebar only for non-chat routes */}
+      {!location.pathname.startsWith('/chat/') && (
+        <SidebarNew isOpen={sidebarOpen} />
+      )}
 
       {/* Main content area */}
       <div
         className={cn(
           "flex flex-col min-w-0 relative transition-all duration-500 ease-in-out",
-          sidebarOpen ? "ml-80 w-[calc(100%-320px)]" : "w-full"
+          !location.pathname.startsWith('/chat/') && sidebarOpen ? "ml-80 w-[calc(100%-320px)]" : "w-full"
         )}
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(200,80,192,0.05)_1px,transparent_0)] [background-size:32px_32px] pointer-events-none" />
@@ -65,14 +67,8 @@ export function MainLayout() {
                 : "w-full max-w-none"
             )}
           >
-            {/* Pass sidebar controls as context for chat routes */}
-            {location.pathname.startsWith('/chat/') ? (
-              <div className="h-full" data-sidebar-open={sidebarOpen} data-toggle-sidebar={() => setSidebarOpen(!sidebarOpen)}>
-                <Outlet context={{ sidebarOpen, toggleSidebar: () => setSidebarOpen(!sidebarOpen) }} />
-              </div>
-            ) : (
-              <Outlet />
-            )}
+            {/* Standard outlet for all routes */}
+            <Outlet />
           </div>
         </main>
       </div>

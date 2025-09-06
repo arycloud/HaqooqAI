@@ -1,21 +1,17 @@
 import { useEffect, useState } from 'react'
-import { useParams, useLocation, useNavigate, useOutletContext } from 'react-router-dom'
+import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { MessageBubbleNew } from './MessageBubbleNew'
 import { MessageInputNew } from './MessageInputNew'
 import { CyclingLoader } from '@/components/ui/CyclingLoader'
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay'
 import { useMessages } from '@/hooks/useMessages'
 import { useConversations } from '@/hooks/useConversations'
+import { SidebarNew } from '@/components/layout/SidebarNew'
 import { cn } from '@/lib/utils'
 
 interface ChatInterfaceProps {
   conversationId?: string
   initialPrompt?: string
-}
-
-interface OutletContext {
-  sidebarOpen: boolean
-  toggleSidebar: () => void
 }
 
 export function ChatInterface({ conversationId, initialPrompt }: ChatInterfaceProps) {
@@ -24,10 +20,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(conversationId)
   const [isNewConversation, setIsNewConversation] = useState(!conversationId)
   const [isCreatingConversation, setIsCreatingConversation] = useState(false)
-  
-  // Get sidebar controls from MainLayout context
-  const context = useOutletContext<OutletContext | undefined>()
-  const { sidebarOpen = false, toggleSidebar = () => {} } = context || {}
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const {
     messages,
@@ -86,15 +79,33 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
   }
 
   return (
-    <div className="relative flex size-full min-h-screen flex-col bg-[var(--background-color)] group/design-root overflow-x-hidden">
-      {/* Main Chat Area - Full width since sidebar is handled by MainLayout */}
-      <main className="flex-1 flex flex-col h-full">
+    <div className="relative flex size-full min-h-screen bg-[var(--background-color)] group/design-root overflow-x-hidden">
+      {/* Sidebar with overlay */}
+      {sidebarOpen && (
+        <>
+          {/* Overlay for mobile */}
+          <div 
+            className="fixed inset-0 bg-black/50 z-30 lg:hidden" 
+            onClick={() => setSidebarOpen(false)}
+          />
+          {/* Sidebar */}
+          <div className="relative z-40">
+            <SidebarNew isOpen={true} />
+          </div>
+        </>
+      )}
+
+      {/* Main Chat Area */}
+      <main className={cn(
+        "flex-1 flex flex-col h-full transition-all duration-500 ease-in-out",
+        sidebarOpen ? "lg:ml-80" : ""
+      )}>
         {/* Header */}
         <header className="flex items-center justify-between p-4 border-b border-[var(--border-color)] flex-shrink-0">
           <div className="flex items-center gap-3">
             {!sidebarOpen && (
               <button
-                onClick={toggleSidebar}
+                onClick={() => setSidebarOpen(true)}
                 className="w-8 h-8 hover:bg-[var(--hover-color)] transition-all duration-200 rounded-lg flex items-center justify-center"
                 title="Open sidebar"
               >
@@ -103,7 +114,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
             )}
             {sidebarOpen && (
               <button
-                onClick={toggleSidebar}
+                onClick={() => setSidebarOpen(false)}
                 className="w-8 h-8 hover:bg-[var(--hover-color)] transition-all duration-200 rounded-lg flex items-center justify-center"
                 title="Close sidebar"
               >
