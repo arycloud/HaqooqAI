@@ -115,7 +115,8 @@ export function SidebarNew({ isOpen }: SidebarNewProps) {
       {/* Conversations List */}
       <div className="flex-grow overflow-y-auto scroll-container pr-2">
         <nav className="flex flex-col gap-1">
-          {loading ? (
+          {loading && conversations.length === 0 ? (
+            // Only show spinner if no cached data available
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-6 w-6 border-2 border-[var(--primary-color)] border-t-transparent"></div>
             </div>
@@ -125,35 +126,44 @@ export function SidebarNew({ isOpen }: SidebarNewProps) {
               <p className="text-[var(--text-secondary)] text-xs mt-1">Start a new chat below</p>
             </div>
           ) : (
-            conversations.map((conversation) => (
-              <button
-                key={conversation.id}
-                onClick={() => handleConversationClick(conversation.id)}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full transition-colors duration-200",
-                  isActiveConversation(conversation.id)
-                    ? "bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)]"
-                    : "hover:bg-[var(--hover-color)]"
-                )}
-              >
-                <span className={cn(
-                  "material-symbols-outlined text-xl",
-                  isActiveConversation(conversation.id)
-                    ? "text-[var(--text-primary)]"
-                    : "text-slate-400"
-                )}>
-                  chat_bubble
-                </span>
-                <p className={cn(
-                  "text-sm font-medium leading-normal truncate",
-                  isActiveConversation(conversation.id)
-                    ? "text-[var(--text-primary)]"
-                    : "text-slate-300"
-                )}>
-                  {getDisplayTitle(conversation.title)}
-                </p>
-              </button>
-            ))
+            // Show conversations immediately if cached data is available
+            <>
+              {conversations.map((conversation) => (
+                <button
+                  key={conversation.id}
+                  onClick={() => handleConversationClick(conversation.id)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full transition-colors duration-200",
+                    isActiveConversation(conversation.id)
+                      ? "bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)]"
+                      : "hover:bg-[var(--hover-color)]"
+                  )}
+                >
+                  <span className={cn(
+                    "material-symbols-outlined text-xl",
+                    isActiveConversation(conversation.id)
+                      ? "text-[var(--text-primary)]"
+                      : "text-slate-400"
+                  )}>
+                    chat_bubble
+                  </span>
+                  <p className={cn(
+                    "text-sm font-medium leading-normal truncate",
+                    isActiveConversation(conversation.id)
+                      ? "text-[var(--text-primary)]"
+                      : "text-slate-300"
+                  )}>
+                    {getDisplayTitle(conversation.title)}
+                  </p>
+                </button>
+              ))}
+              {loading && (
+                // Show subtle loading indicator at bottom if refreshing with cached data
+                <div className="flex items-center justify-center py-2 opacity-50">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-[var(--primary-color)] border-t-transparent"></div>
+                </div>
+              )}
+            </>
           )}
         </nav>
       </div>

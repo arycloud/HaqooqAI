@@ -11,12 +11,13 @@ import './index.css'
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 10 * 60 * 1000,   // Cache stays fresh for 10 minutes
-      gcTime: 30 * 60 * 1000,
-      retry: 1,
-      refetchOnMount: false,
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
+      staleTime: 30 * 60 * 1000,   // 30 minutes - data stays fresh longer
+      gcTime: 60 * 60 * 1000,     // 1 hour - keep in cache longer
+      retry: 2,                   // Retry twice on failure
+      retryDelay: 1000,          // 1 second delay between retries
+      refetchOnMount: false,      // Don't refetch on component mount
+      refetchOnWindowFocus: false, // Don't refetch when window gains focus
+      refetchOnReconnect: false,  // Don't refetch when reconnecting
     },
   },
 })

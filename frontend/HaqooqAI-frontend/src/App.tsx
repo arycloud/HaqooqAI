@@ -8,9 +8,29 @@ import { Settings } from '@/pages/Settings'
 // import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { InitialLoader } from '@/components/ui/InitialLoader';
 import { MainLayout } from '@/components/layout/MainLayout'
+import { useQueryClient } from '@tanstack/react-query'
+import { conversationService } from '@/services/backend/conversationService'
+import { useEffect } from 'react'
 
 function App() {
-  const { loading } = useAuth()
+  const { loading, user } = useAuth()
+  const queryClient = useQueryClient()
+
+  // Prefetch conversations when user is authenticated
+  useEffect(() => {
+    if (user && !loading) {
+      const userQueryKey = ['conversations', user?.github_id ?? user?.id ?? 'guest']
+      
+      // Only prefetch if not already in cache
+      if (!queryClient.getQueryData(userQueryKey)) {
+        queryClient.prefetchQuery({
+          queryKey: userQueryKey,
+          queryFn: () => conversationService.getConversations(),
+          staleTime: 30 * 60 * 1000, // 30 minutes
+        })
+      }
+    }
+  }, [user, loading, queryClient])
 
   if (loading) {
     return (
