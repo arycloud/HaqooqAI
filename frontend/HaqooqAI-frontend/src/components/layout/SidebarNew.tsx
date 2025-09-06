@@ -27,7 +27,12 @@ export function SidebarNew({ isOpen }: SidebarNewProps) {
 
   const getAvatarStyle = () => {
     if (user?.avatar_url) {
-      return { backgroundImage: `url("${user.avatar_url}")` }
+      return { 
+        backgroundImage: `url("${user.avatar_url}")`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }
     } else {
       return {
         backgroundColor: 'var(--primary-color)',
@@ -39,6 +44,17 @@ export function SidebarNew({ isOpen }: SidebarNewProps) {
         fontSize: '14px'
       }
     }
+  }
+
+  const getDisplayName = () => {
+    if (user?.username) {
+      return user.username
+    }
+    if (user?.email) {
+      // Extract name from email (before @)
+      return user.email.split('@')[0]
+    }
+    return 'User'
   }
 
   const handleNewChat = async () => {
@@ -73,20 +89,27 @@ export function SidebarNew({ isOpen }: SidebarNewProps) {
   if (!isOpen) return null
 
   return (
-    <aside className="flex flex-col w-80 h-full bg-[var(--sidebar-color)] border-r border-[var(--border-color)] p-4">
+    <aside className="fixed left-0 top-0 flex flex-col w-80 h-full bg-[var(--sidebar-color)] border-r border-[var(--border-color)] p-4 z-40">
       {/* User Profile Section */}
       <div className="flex items-center gap-3 mb-6">
         <div 
-          className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
+          className="rounded-full size-10 flex-shrink-0"
           style={getAvatarStyle()}
         >
           {!user?.avatar_url && (
             <span>{getUserInitials()}</span>
           )}
         </div>
-        <h1 className="text-[var(--text-primary)] text-base font-medium leading-normal">
-          {user?.username || user?.email || 'User'}
-        </h1>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-[var(--text-primary)] text-base font-medium leading-normal truncate">
+            {getDisplayName()}
+          </h1>
+          {user?.email && user?.username && (
+            <p className="text-[var(--text-secondary)] text-xs truncate">
+              {user.email}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Conversations List */}
