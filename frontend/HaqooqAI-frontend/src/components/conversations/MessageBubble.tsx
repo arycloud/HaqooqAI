@@ -78,7 +78,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-8`}>
-      <div className={`max-w-4xl ${isUser ? "order-2" : "order-1"} w-full`}>
+      <div className={`max-w-5xl ${isUser ? "order-2" : "order-1"} w-full`}>
         {/* Modern Header with Avatar */}
         <div className={`flex items-start space-x-4 mb-4 ${isUser ? "justify-end flex-row-reverse space-x-reverse" : "justify-start"}`}>
           <div className={`relative flex-shrink-0 ${
@@ -108,11 +108,6 @@ export function MessageBubble({ message }: MessageBubbleProps) {
               <span className="text-base font-semibold text-gray-900 dark:text-gray-100">
                 {isUser ? "You" : "HaqooqAI"}
               </span>
-              {!isUser && (
-                <div className="px-2 py-0.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-medium rounded-full">
-                  AI Assistant
-                </div>
-              )}
             </div>
             <span className="text-sm text-gray-500 dark:text-gray-400">
               {formatMessageTime(message.created_at)}

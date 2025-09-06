@@ -95,7 +95,7 @@ export function MessageList({ messages, loading, conversationId, sidebarOpen = t
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(59,130,246,0.05)_1px,transparent_0)] [background-size:32px_32px]" />
       </div>
       
-      <div className="relative z-10 max-w-4xl mx-auto p-6 space-y-8">
+      <div className="relative z-10 max-w-6xl mx-auto p-8 space-y-8">
         {validMessages.length === 0 && !loading ? (
           <div className="text-center py-20">
             <div className="relative mb-8">
@@ -151,9 +151,6 @@ export function MessageList({ messages, loading, conversationId, sidebarOpen = t
                         <span className="text-base font-semibold text-gray-900 dark:text-gray-100">
                           HaqooqAI
                         </span>
-                        <div className="px-2 py-0.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-medium rounded-full">
-                          AI Assistant
-                        </div>
                       </div>
                       <span className="text-sm text-gray-500 dark:text-gray-400">
                         Just now

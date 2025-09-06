@@ -43,7 +43,10 @@ export function MainLayout() {
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(139,92,246,0.05)_1px,transparent_0)] [background-size:32px_32px] pointer-events-none" />
 
-        <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} sidebarOpen={sidebarOpen} />
+        {/* Conditionally render Header - hide for chat routes */}
+        {!location.pathname.startsWith('/chat/') && (
+          <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} sidebarOpen={sidebarOpen} />
+        )}
 
         {/* Outlet for nested pages */}
         <main

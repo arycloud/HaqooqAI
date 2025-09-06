@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
-import { Scale } from 'lucide-react'
+import { Scale, Menu } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 // import { MainLayout } from '@/components/layout/MainLayout'
 import { MessageList } from './MessageList'
 import { MessageInput } from './MessageInput'
@@ -79,27 +80,16 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900/10">
-      {/* Modern Header with Glass Effect */}
-      <div className="flex-shrink-0 backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-b border-gray-200/50 dark:border-gray-700/50 px-6 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
-              <Scale className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Legal Assistant</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Powered by HaqooqAI</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            {(analyzingLoading || isCreatingConversation) && (
-              <div className="flex items-center space-x-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-full border border-blue-200 dark:border-blue-800">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">Processing</span>
-              </div>
-            )}
-          </div>
-        </div>
+      {/* Floating Menu Toggle for mobile */}
+      <div className="absolute top-4 left-4 z-20 lg:hidden">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="w-12 h-12 rounded-2xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300"
+          onClick={() => navigate('/')}
+        >
+          <Menu className="w-5 h-5" />
+        </Button>
       </div>
 
       {/* Messages Area - Enhanced with modern styling */}

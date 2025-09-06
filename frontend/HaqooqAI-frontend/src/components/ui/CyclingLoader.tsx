@@ -83,15 +83,8 @@ export function CyclingLoader({ type = 'general' }: CyclingLoaderProps) {
         <div className="absolute inset-0 w-6 h-6 bg-blue-500/20 rounded-full blur-sm animate-pulse" />
       </div>
       
-      {/* Enhanced text with shimmer effect */}
-      <div className="flex-1 space-y-2">
-        <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full animate-pulse" />
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {getLoaderTitle(type)}
-          </span>
-        </div>
-        
+      {/* Enhanced text with shimmer effect - only dynamic messages */}
+      <div className="flex-1">
         <TextEffect 
           per="word" 
           preset="fade-in-blur"
