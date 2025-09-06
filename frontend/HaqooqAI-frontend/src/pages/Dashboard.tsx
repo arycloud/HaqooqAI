@@ -11,7 +11,7 @@ import { Conversation } from '@/types/conversation'
 export function Dashboard() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { conversations, createConversation } = useConversations()
+  const { conversations, createConversation, loading } = useConversations()
 
   useEffect(() => {
     document.title = 'Dashboard - HaqooqAI'
@@ -137,7 +137,7 @@ export function Dashboard() {
           </div>
 
           {/* Enhanced Recent Conversations with larger elements */}
-          {conversations.length > 0 && (
+          {!loading && conversations.length > 0 && (
             <div className="slide-up">
               <div className="text-center mb-12 lg:mb-16">
                 <h2 className="text-4xl lg:text-5xl xl:text-6xl font-bold bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)] bg-clip-text text-transparent mb-4 lg:mb-6">

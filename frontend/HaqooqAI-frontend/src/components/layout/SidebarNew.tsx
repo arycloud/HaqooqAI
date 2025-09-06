@@ -11,7 +11,7 @@ interface SidebarNewProps {
 export function SidebarNew({ isOpen }: SidebarNewProps) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { conversations, createConversation, loading } = useConversations()
+  const { conversations, createConversation, loading, refreshing } = useConversations()
   const { user } = useAuth()
   const [isCreating, setIsCreating] = useState(false)
 
@@ -115,8 +115,8 @@ export function SidebarNew({ isOpen }: SidebarNewProps) {
       {/* Conversations List */}
       <div className="flex-grow overflow-y-auto scroll-container pr-2">
         <nav className="flex flex-col gap-1">
-          {loading && conversations.length === 0 ? (
-            // Only show spinner if no cached data available
+          {loading ? (
+            // Only show spinner on first load with no cached data
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-6 w-6 border-2 border-[var(--primary-color)] border-t-transparent"></div>
             </div>
@@ -126,7 +126,7 @@ export function SidebarNew({ isOpen }: SidebarNewProps) {
               <p className="text-[var(--text-secondary)] text-xs mt-1">Start a new chat below</p>
             </div>
           ) : (
-            // Show conversations immediately if cached data is available
+            // Always show conversations immediately from cache
             <>
               {conversations.map((conversation) => (
                 <button
@@ -157,10 +157,10 @@ export function SidebarNew({ isOpen }: SidebarNewProps) {
                   </p>
                 </button>
               ))}
-              {loading && (
-                // Show subtle loading indicator at bottom if refreshing with cached data
-                <div className="flex items-center justify-center py-2 opacity-50">
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-[var(--primary-color)] border-t-transparent"></div>
+              {refreshing && (
+                // Show tiny refreshing indicator at bottom if updating cache
+                <div className="flex items-center justify-center py-1 opacity-30">
+                  <div className="animate-spin rounded-full h-3 w-3 border border-[var(--primary-color)] border-t-transparent"></div>
                 </div>
               )}
             </>

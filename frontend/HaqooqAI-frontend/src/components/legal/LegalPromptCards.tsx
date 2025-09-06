@@ -71,22 +71,22 @@ export function LegalPromptCards({ onPromptSelect }: LegalPromptCardsProps) {
       {legalPrompts.map((prompt) => (
         <Card
           key={prompt.id}
-          className="cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-105"
+          className="cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-105 border border-[var(--border-color)] bg-[var(--sidebar-color)]"
           onClick={() => onPromptSelect(prompt.prompt)}
         >
           <CardHeader className="pb-3">
             <div className="flex items-center space-x-2">
-              <div className="p-2 bg-purple-100 rounded-lg text-purple-600">
+              <div className="p-2 bg-gradient-to-br from-[var(--primary-color)]/20 to-[var(--secondary-color)]/20 rounded-lg text-[var(--primary-color)]">
                 {prompt.icon}
               </div>
               <div>
-                <CardTitle className="text-sm font-medium">{prompt.title}</CardTitle>
-                <p className="text-xs text-purple-600">{prompt.category}</p>
+                <CardTitle className="text-sm font-medium text-[var(--text-primary)]">{prompt.title}</CardTitle>
+                <p className="text-xs text-[var(--primary-color)]">{prompt.category}</p>
               </div>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
-            <CardDescription className="text-sm">
+            <CardDescription className="text-sm text-[var(--text-secondary)]">
               {prompt.description}
             </CardDescription>
           </CardContent>

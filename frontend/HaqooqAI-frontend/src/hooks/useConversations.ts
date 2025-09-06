@@ -29,18 +29,22 @@ export const useConversations = () => {
     isFetching,
     error,
     refetch,
+    isFetched,
   } = useQuery<Conversation[]>({
     queryKey: userQueryKey,
     queryFn: () => conversationService.getConversations(),
     enabled: !!user,
-    staleTime: 30 * 60 * 1000,   // 30 minutes - data considered fresh
-    gcTime: 60 * 60 * 1000,     // 1 hour - keep in cache
-    refetchOnMount: false,       // Do NOT refetch on mount - use cache
-    refetchOnWindowFocus: false, // Don't refetch on window focus
-    refetchOnReconnect: false,   // Don't refetch on reconnect
+    staleTime: Infinity,         // NEVER consider data stale - only manual refresh
+    gcTime: 24 * 60 * 60 * 1000, // 24 hours - keep in cache much longer
+    refetchOnMount: false,       // NEVER refetch on mount - use cache only
+    refetchOnWindowFocus: false, // NEVER refetch on window focus
+    refetchOnReconnect: false,   // NEVER refetch on reconnect
+    refetchInterval: false,      // NEVER refetch automatically
+    refetchIntervalInBackground: false, // NEVER refetch in background
     placeholderData: (prev) => prev, // keeps old data in UI while refreshing
-    retry: 2,                    // Only retry twice on failure
-    retryDelay: 1000,           // 1 second delay between retries
+    retry: 1,                    // Only retry once on failure
+    retryDelay: 2000,           // 2 second delay between retries
+    networkMode: 'offlineFirst', // Use cache first, network second
   })
 
   // ====== Mutation: create conversation (optimistic add) ======
@@ -193,7 +197,8 @@ export const useConversations = () => {
 
   return {
     conversations,
-    loading: isLoading || isFetching,
+    loading: isLoading && !isFetched, // Only show loading if first time AND no cached data
+    refreshing: isFetching && isFetched, // Show refreshing state when updating cache
     error: error instanceof Error ? error.message : null,
     loadingConversationId,
     createConversation,
@@ -202,6 +207,6 @@ export const useConversations = () => {
     getConversation,
     updateConversationTitle,
     selectConversation,
-    refreshConversations: () => refetch,
+    refreshConversations: () => refetch(),
   }
 }
