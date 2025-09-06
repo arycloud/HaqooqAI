@@ -80,7 +80,7 @@ export function Dashboard() {
 
           {/* Enhanced Features Grid with larger cards */}
           <div className="grid lg:grid-cols-3 gap-10 lg:gap-12 xl:gap-16 mb-16 lg:mb-20">
-            <Card className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-0 bg-gradient-to-br from-white to-purple-50/50 dark:from-slate-800 dark:to-purple-900/20">
+            <Card className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-[var(--border-color)] bg-[var(--sidebar-color)]">
               <CardHeader className="text-center pb-6 lg:pb-8">
                 <div className="w-20 h-20 lg:w-24 lg:h-24 xl:w-28 xl:h-28 mx-auto mb-6 lg:mb-8 rounded-3xl bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-shadow duration-300">
                   <span className="material-symbols-outlined text-white text-4xl lg:text-5xl xl:text-6xl">flash_on</span>
@@ -94,7 +94,7 @@ export function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-0 bg-gradient-to-br from-white to-blue-50/50 dark:from-slate-800 dark:to-blue-900/20">
+            <Card className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-[var(--border-color)] bg-[var(--sidebar-color)]">
               <CardHeader className="text-center pb-6 lg:pb-8">
                 <div className="w-20 h-20 lg:w-24 lg:h-24 xl:w-28 xl:h-28 mx-auto mb-6 lg:mb-8 rounded-3xl bg-gradient-to-br from-[var(--secondary-color)] to-[var(--primary-color)] flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-shadow duration-300">
                   <span className="material-symbols-outlined text-white text-4xl lg:text-5xl xl:text-6xl">book</span>
@@ -108,7 +108,7 @@ export function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-0 bg-gradient-to-br from-white to-indigo-50/50 dark:from-slate-800 dark:to-indigo-900/20">
+            <Card className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-[var(--border-color)] bg-[var(--sidebar-color)]">
               <CardHeader className="text-center pb-6 lg:pb-8">
                 <div className="w-20 h-20 lg:w-24 lg:h-24 xl:w-28 xl:h-28 mx-auto mb-6 lg:mb-8 rounded-3xl bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-shadow duration-300">
                   <span className="material-symbols-outlined text-white text-4xl lg:text-5xl xl:text-6xl">balance</span>
@@ -151,7 +151,7 @@ export function Dashboard() {
                 {(conversations as Conversation[]).slice(0, 3).map((conversation: Conversation, index: number) => (
                   <Card
                     key={conversation.id}
-                    className="group cursor-pointer hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-0 bg-gradient-to-r from-white to-gray-50/50 dark:from-slate-800 dark:to-slate-700/50"
+                    className="group cursor-pointer hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-[var(--border-color)] bg-[var(--sidebar-color)]"
                     onClick={() => navigate(`/chat/${conversation.id}`)}
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
