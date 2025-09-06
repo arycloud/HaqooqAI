@@ -8,6 +8,8 @@ import { Settings } from '@/pages/Settings'
 // import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { InitialLoader } from '@/components/ui/InitialLoader';
 import { MainLayout } from '@/components/layout/MainLayout'
+import { ConnectionStatus } from '@/components/ui/ConnectionStatus'
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { useQueryClient } from '@tanstack/react-query'
 import { conversationService } from '@/services/backend/conversationService'
 import { useEffect } from 'react'
@@ -42,33 +44,36 @@ function App() {
   }
 
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
+    <ErrorBoundary>
+      <ConnectionStatus />
+      <Routes>
+        <Route path="/login" element={<Login />} />
 
-      {/* Chat routes - standalone without MainLayout */}
-      <Route
-        path="/chat/:conversationId?"
-        element={
-          <AuthGuard>
-            <Chat />
-          </AuthGuard>
-        }
-      />
+        {/* Chat routes - standalone without MainLayout */}
+        <Route
+          path="/chat/:conversationId?"
+          element={
+            <AuthGuard>
+              <Chat />
+            </AuthGuard>
+          }
+        />
 
-      {/* Other authenticated routes share MainLayout */}
-      <Route
-        element={
-          <AuthGuard>
-            <MainLayout />
-          </AuthGuard>
-        }
-      >
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/settings" element={<Settings />} />
-      </Route>
+        {/* Other authenticated routes share MainLayout */}
+        <Route
+          element={
+            <AuthGuard>
+              <MainLayout />
+            </AuthGuard>
+          }
+        >
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/settings" element={<Settings />} />
+        </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </ErrorBoundary>
   )
 }
 

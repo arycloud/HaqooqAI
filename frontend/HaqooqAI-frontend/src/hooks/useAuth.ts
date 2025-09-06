@@ -87,8 +87,34 @@ export const useAuth = () => {
           }
         } catch (tokenError) {
           console.error('Token validation failed:', tokenError)
-          // Clean up invalid session
-          authService.logout()
+          
+          // Check if this is a temporary service error vs invalid token
+          const errorMessage = tokenError instanceof Error ? tokenError.message : 'Unknown error'
+          
+          if (errorMessage.includes('temporarily unavailable') || 
+              errorMessage.includes('502') ||
+              errorMessage.includes('Backend database schema needs update')) {
+            // For temporary server errors or database issues, keep user logged in but show warning
+            console.warn('Authentication service temporarily unavailable, using cached session')
+            const cachedUser = authService.getStoredUser()
+            if (cachedUser) {
+              setUser(cachedUser)
+              if (errorMessage.includes('database schema')) {
+                toast.error('Backend service needs updating. Some features may be limited.', { duration: 5000 })
+              } else {
+                toast.error('Connection issues detected. Some features may be limited.')
+              }
+            } else {
+              // No cached user, must logout
+              authService.logout()
+              navigate('/login', { replace: true })
+            }
+          } else {
+            // For invalid token errors, force logout
+            console.error('Invalid token, forcing logout')
+            authService.logout()
+            navigate('/login', { replace: true })
+          }
         }
       }
     } catch (err) {

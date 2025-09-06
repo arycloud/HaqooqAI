@@ -120,51 +120,97 @@ class AuthService {
   }
 
   /**
-   * Validate GitHub token with backend
+   * Validate GitHub token with backend (with retry logic)
    */
   async validateToken(token: string): Promise<{ user: User; quota: any }> {
-    try {
-      this.storeToken(token);
+    const maxRetries = 3
+    const retryDelay = 1000 // 1 second
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        this.storeToken(token);
 
-      const response = await axios.post<AuthResponse>(
-        `${BACKEND_URL}${API_ENDPOINTS.AUTH_VALIDATE}`,
-        { github_token: token } as AuthRequest,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
+        const response = await axios.post<AuthResponse>(
+          `${BACKEND_URL}${API_ENDPOINTS.AUTH_VALIDATE}`,
+          { github_token: token } as AuthRequest,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            timeout: 10000, // 10 second timeout
+          }
+        );
+
+        if (response.data.status !== 'success') {
+          throw new Error('Authentication failed');
         }
-      );
 
-      if (response.data.status !== 'success') {
-        throw new Error('Authentication failed');
-      }
-
-      const user: User = {
-      id: response.data.user.github_id.toString(),
-      github_id: response.data.user.github_id,
-      username: response.data.user.username,
-      email: response.data.user.email,
-      avatar_url: response.data.user.avatar_url,
-      groq_api_key: undefined, // never store raw key in localStorage
-      has_api_key: response.data.quota?.has_api_key || false,
-      groq_api_key_present: response.data.quota?.has_api_key || false, // <-- add this line
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-      this.storeUser(user);
-
-      return {
-        user,
-        quota: response.data.quota,
+        const user: User = {
+        id: response.data.user.github_id.toString(),
+        github_id: response.data.user.github_id,
+        username: response.data.user.username,
+        email: response.data.user.email,
+        avatar_url: response.data.user.avatar_url,
+        groq_api_key: undefined, // never store raw key in localStorage
+        has_api_key: response.data.quota?.has_api_key || false,
+        groq_api_key_present: response.data.quota?.has_api_key || false, // <-- add this line
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
-    } catch (error) {
-      console.error('Token validation failed:', error);
-      await this.logout();
-      throw new Error('Authentication failed');
+
+        this.storeUser(user);
+
+        return {
+          user,
+          quota: response.data.quota,
+        };
+      } catch (error) {
+        console.error(`Token validation attempt ${attempt}/${maxRetries} failed:`, error);
+        
+        // Check if this is a 502 Bad Gateway or network error
+        if (axios.isAxiosError(error)) {
+          const status = error.response?.status
+          const isNetworkError = !error.response || status === 502 || status === 503 || status === 504
+          
+          // For 502 errors specifically, check if it's a database schema issue
+          if (status === 502) {
+            const errorData = error.response?.data
+            if (typeof errorData === 'object' && errorData?.detail) {
+              console.warn('502 error with backend details:', errorData.detail)
+              // This could be a database schema mismatch (api_key_hash vs encrypted_key)
+              if (errorData.detail.includes('api_key_hash') || errorData.detail.includes('does not exist')) {
+                console.error('Database schema mismatch detected - backend needs migration')
+                throw new Error('Backend database schema needs update - please contact support')
+              }
+            }
+          }
+          
+          if (isNetworkError && attempt < maxRetries) {
+            console.log(`Network error (${status || 'no response'}), retrying in ${retryDelay}ms...`)
+            await new Promise(resolve => setTimeout(resolve, retryDelay * attempt))
+            continue // Retry
+          }
+          
+          // For non-retryable errors (401, 403, etc.), fail immediately
+          if (status === 401 || status === 403) {
+            console.error('Authentication failed - invalid token')
+            await this.logout()
+            throw new Error('Invalid or expired token')
+          }
+        }
+        
+        // If this is the last attempt or non-retryable error, fail
+        if (attempt === maxRetries) {
+          console.error('All token validation attempts failed')
+          await this.logout()
+          throw new Error('Authentication service temporarily unavailable')
+        }
+      }
     }
+    
+    // This should never be reached
+    throw new Error('Authentication failed')
   }
 
   /**

@@ -11,7 +11,7 @@ interface SidebarNewProps {
 export function SidebarNew({ isOpen }: SidebarNewProps) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { conversations, createConversation, loading, refreshing } = useConversations()
+  const { conversations, createConversation, loading, refreshing, error } = useConversations()
   const { user } = useAuth()
   const [isCreating, setIsCreating] = useState(false)
 
