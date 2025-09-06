@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuth'
 import { aiService } from '@/services/backend/aiService'
 import { QuotaResponse, ProviderStatus } from '@/types/api'
@@ -11,7 +12,8 @@ export function QuotaDisplay() {
   const { user } = useAuth()
   const [quota, setQuota] = useState<QuotaResponse | null>(null)
   const [providers, setProviders] = useState<ProviderStatus[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true) // Start with loading true
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (user?.github_id) {
@@ -25,10 +27,12 @@ export function QuotaDisplay() {
 
     try {
       setLoading(true)
+      setError(null)
       const quotaData = await aiService.checkQuota(String(user.github_id))
       setQuota(quotaData)
     } catch (error) {
       console.error('Failed to load quota:', error)
+      setError('Failed to load quota information. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -42,6 +46,7 @@ export function QuotaDisplay() {
       setProviders(statuses)
     } catch (error) {
       console.error('Failed to load provider statuses:', error)
+      // Don't set error here as it's less critical than quota
     }
   }
 
@@ -72,8 +77,21 @@ export function QuotaDisplay() {
       </CardHeader>
       <CardContent className="space-y-4">
         {loading ? (
-          <div className="flex items-center justify-center py-4">
-            <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+          <div className="flex items-center justify-center py-8">
+            <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mr-3" />
+            <span className="text-muted-foreground">Loading usage information...</span>
+          </div>
+        ) : error ? (
+          <div className="text-center py-6">
+            <div className="text-amber-600 mb-2">
+              ⚠️ {error}
+            </div>
+            <button 
+              onClick={loadQuotaInfo}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Try again
+            </button>
           </div>
         ) : quota ? (
           <>
@@ -154,7 +172,17 @@ export function QuotaDisplay() {
             </div>
           </>
         ) : (
-          <p className="text-sm text-gray-500">Unable to load quota information</p>
+          <div className="text-center py-6">
+            <div className="text-muted-foreground mb-2">
+              Unable to load quota information. Please check your connection.
+            </div>
+            <button 
+              onClick={loadQuotaInfo}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Retry
+            </button>
+          </div>
         )}
       </CardContent>
     </Card>
