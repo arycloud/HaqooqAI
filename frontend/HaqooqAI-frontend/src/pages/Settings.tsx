@@ -180,243 +180,130 @@ export function Settings() {
 
         {/* AI Providers Tab */}
         <TabsContent value="providers" className="flex-1 overflow-y-auto">
-          <div className="container mx-auto px-6 max-w-7xl space-y-6 pb-8">
-            {/* Provider Comparison Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Globe className="h-5 w-5" />
-                  AI Provider Comparison
-                </CardTitle>
-                <CardDescription>
-                  Compare features, performance, and costs of all supported AI providers
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Provider</TableHead>
-                      <TableHead>Model</TableHead>
-                      <TableHead>Speed</TableHead>
-                      <TableHead>Context Length</TableHead>
-                      <TableHead>Daily Limit</TableHead>
-                      <TableHead>Cost (1K tokens)</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {providerInfo.map((provider, index) => {
-                      const configuredProvider = routingStats?.providers && Array.isArray(routingStats.providers) 
-                        ? routingStats.providers.find((p: any) => 
-                            p.name?.toLowerCase() === provider.name.toLowerCase()
-                          )
-                        : null
-                      
-                      return (
-                        <TableRow key={provider.name}>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <div className={`h-3 w-3 rounded-full ${provider.color}`} />
-                              <div>
-                                <div className="font-medium">{provider.name}</div>
-                                <div className="flex gap-1 mt-1">
-                                  {provider.features.slice(0, 2).map((feature, i) => (
-                                    <Badge key={i} variant="outline" className="text-xs px-1 py-0">
-                                      {feature}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">{provider.model}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <div className="flex">
-                                {[...Array(5)].map((_, i) => (
-                                  <div
-                                    key={i}
-                                    className={`h-2 w-2 rounded-full mr-1 ${
-                                      i < provider.speedRating ? 'bg-green-500' : 'bg-gray-200'
-                                    }`}
-                                  />
-                                ))}
-                              </div>
-                              <span className="text-sm text-muted-foreground">{provider.speed}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">{provider.contextLength}</TableCell>
-                          <TableCell className="text-sm">{provider.dailyLimit}</TableCell>
-                          <TableCell className="font-mono text-sm">{provider.costPer1kTokens}</TableCell>
-                          <TableCell>
-                            <Badge variant={
-                              configuredProvider?.has_default_key ? "default" : 
-                              provider.name === 'OpenAI' ? "secondary" : "outline"
-                            }>
-                              {configuredProvider?.has_default_key ? "Available" : 
-                               provider.name === 'OpenAI' ? "BYOK Only" : "System Default"}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+          <div className="container mx-auto px-6 max-w-5xl py-8">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold mb-2">AI Provider Information</h2>
+              <p className="text-muted-foreground">
+                Compare features, performance, and capabilities of supported AI providers
+              </p>
+            </div>
 
-            {/* Detailed Provider Cards */}
-            <div className="grid gap-6">
-              <h3 className="text-lg font-semibold">Detailed Provider Information</h3>
-              {providerInfo.map((provider, index) => (
-                <InView
-                  key={provider.name}
-                  variants={{
-                    hidden: { opacity: 0, x: -20 },
-                    visible: { opacity: 1, x: 0 }
-                  }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
-                >
-                  <Card className="overflow-hidden">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`h-4 w-4 rounded-full ${provider.color}`} />
-                          <div>
-                            <CardTitle className="text-lg">{provider.name}</CardTitle>
-                            <CardDescription className="text-sm">
-                              {provider.model} • {provider.speed}
-                            </CardDescription>
+            {/* Provider Cards - Same design as key management */}
+            <div className="grid gap-6 md:grid-cols-3">
+              {providerInfo.map((provider, index) => {
+                const configuredProvider = routingStats?.providers && Array.isArray(routingStats.providers) 
+                  ? routingStats.providers.find((p: any) => 
+                      p.name?.toLowerCase() === provider.name.toLowerCase()
+                    )
+                  : null
+                const isConfigured = configuredProvider?.has_default_key || false
+                
+                return (
+                  <Card
+                    key={provider.name}
+                    className={`relative transition-all duration-300 hover:shadow-lg ${
+                      provider.name === 'Groq'
+                        ? 'ring-2 ring-purple-500/20 bg-gradient-to-br from-purple-50 to-purple-100'
+                        : isConfigured
+                        ? 'ring-2 ring-green-500/20 bg-gradient-to-br from-green-50/50 to-emerald-50/50'
+                        : 'hover:shadow-md'
+                    }`}
+                  >
+                    {/* Status Badge */}
+                    {provider.name === 'Groq' && !isConfigured ? (
+                      <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                        <Badge className="bg-purple-600 text-white text-xs px-3 py-1">
+                          Most Popular
+                        </Badge>
+                      </div>
+                    ) : isConfigured ? (
+                      <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                        <Badge className="bg-green-600 text-white text-xs px-3 py-1">
+                          Connected
+                        </Badge>
+                      </div>
+                    ) : (
+                      <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                        <Badge className="bg-gray-500 text-white text-xs px-3 py-1">
+                          Not Connected
+                        </Badge>
+                      </div>
+                    )}
+                    
+                    <CardHeader className="text-center pb-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <CardTitle className="text-base">{provider.name}</CardTitle>
+                        <div className={`h-3 w-3 rounded-full ${provider.color}`} />
+                      </div>
+                      
+                      <CardDescription className="text-xs mb-3">
+                        {provider.description}
+                      </CardDescription>
+                    </CardHeader>
+                    
+                    <CardContent className="pt-2">
+                      {/* Features List */}
+                      <ul className="space-y-2 mb-4">
+                        {provider.features.map((feature, featureIndex) => (
+                          <li key={featureIndex} className="flex items-start gap-2 text-xs">
+                            <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 flex-shrink-0" />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      
+                      {/* Specifications */}
+                      <div className="space-y-2 mb-4">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Model:</span>
+                          <span className="font-mono">{provider.model}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Context:</span>
+                          <span className="font-mono">{provider.contextLength} tokens</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Daily Limit:</span>
+                          <span>{provider.dailyLimit}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Cost:</span>
+                          <span className="font-mono">{provider.costPer1kTokens}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Speed:</span>
+                          <div className="flex items-center gap-1">
+                            <div className="flex">
+                              {[...Array(5)].map((_, i) => (
+                                <div
+                                  key={i}
+                                  className={`h-1.5 w-1.5 rounded-full mr-0.5 ${
+                                    i < provider.speedRating ? 'bg-green-500' : 'bg-gray-200'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-xs text-muted-foreground">{provider.speed}</span>
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          {provider.features.map((feature, i) => (
-                            <Badge key={i} variant="outline" className="text-xs">
-                              {feature}
+                      </div>
+                      
+                      {/* Use Cases */}
+                      <div className="border-t pt-3">
+                        <h4 className="text-xs font-medium mb-2">Best Use Cases</h4>
+                        <div className="flex flex-wrap gap-1">
+                          {provider.useCases.map((useCase, i) => (
+                            <Badge key={i} variant="secondary" className="text-xs px-1 py-0">
+                              {useCase}
                             </Badge>
                           ))}
                         </div>
                       </div>
-                    </CardHeader>
-                    
-                    <CardContent className="pt-0">
-                      <p className="text-sm text-muted-foreground mb-4">
-                        {provider.description}
-                      </p>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Specifications */}
-                        <div>
-                          <h4 className="font-medium mb-3 text-sm">Specifications</h4>
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Context Length:</span>
-                              <span className="font-mono">{provider.contextLength} tokens</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Daily Limit:</span>
-                              <span>{provider.dailyLimit}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Cost per 1K tokens:</span>
-                              <span className="font-mono">{provider.costPer1kTokens}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Speed Rating:</span>
-                              <div className="flex">
-                                {[...Array(5)].map((_, i) => (
-                                  <div
-                                    key={i}
-                                    className={`h-2 w-2 rounded-full mr-1 ${
-                                      i < provider.speedRating ? 'bg-yellow-500' : 'bg-gray-200'
-                                    }`}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Best Use Cases */}
-                        <div>
-                          <h4 className="font-medium mb-3 text-sm">Best Use Cases</h4>
-                          <div className="space-y-2">
-                            {provider.useCases.map((useCase, i) => (
-                              <div key={i} className="flex items-center gap-2 text-sm">
-                                <CheckCircle className="h-3 w-3 text-green-600" />
-                                <span>{useCase}</span>
-                              </div>
-                            ))}
-                          </div>
-                          
-                          <h4 className="font-medium mb-2 mt-4 text-sm">Key Strengths</h4>
-                          <div className="flex flex-wrap gap-1">
-                            {provider.strengths.map((strength, i) => (
-                              <Badge key={i} variant="secondary" className="text-xs">
-                                {strength}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
                     </CardContent>
                   </Card>
-                </InView>
-              ))}
+                )
+              })}
             </div>
-            
-            {/* Routing Information */}
-            {routingStats?.routing_config && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <HelpCircle className="h-5 w-5" />
-                    Smart Routing Configuration
-                  </CardTitle>
-                  <CardDescription>
-                    How our system intelligently routes requests to the best provider
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="p-4 border rounded-lg">
-                      <Info className="h-5 w-5 mb-2 text-blue-600" />
-                      <p className="text-sm font-medium">Message Threshold</p>
-                      <p className="text-2xl font-bold">{routingStats.routing_config.message_threshold || 'N/A'}</p>
-                      <p className="text-xs text-muted-foreground">Messages before upgrade</p>
-                    </div>
-                    
-                    <div className="p-4 border rounded-lg">
-                      <Database className="h-5 w-5 mb-2 text-purple-600" />
-                      <p className="text-sm font-medium">Token Threshold</p>
-                      <p className="text-2xl font-bold">
-                        {routingStats.routing_config.token_threshold?.toLocaleString() || 'N/A'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Tokens before upgrade</p>
-                    </div>
-                    
-                    <div className="p-4 border rounded-lg">
-                      <Zap className="h-5 w-5 mb-2 text-orange-600" />
-                      <p className="text-sm font-medium">Max Query Tokens</p>
-                      <p className="text-2xl font-bold">
-                        {routingStats.routing_config.max_query_tokens?.toLocaleString() || 'N/A'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Maximum per request</p>
-                    </div>
-                    
-                    <div className="p-4 border rounded-lg">
-                      <Activity className="h-5 w-5 mb-2 text-green-600" />
-                      <p className="text-sm font-medium">Max Messages</p>
-                      <p className="text-2xl font-bold">
-                        {routingStats.routing_config.max_conversation_messages || 'N/A'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Per conversation</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </TabsContent>
 
@@ -523,7 +410,7 @@ export function Settings() {
                     {/* Routing Configuration */}
                     {routingStats.routing_config && (
                       <div>
-                        <h4 className="font-medium mb-3">Smart Routing Configuration</h4>
+                        <h4 className="text-sm font-medium mb-3">Smart Routing Configuration</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                           <div className="p-4 border rounded-lg">
                             <div className="flex items-center gap-2 mb-2">
@@ -581,50 +468,6 @@ export function Settings() {
                     </Button>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-            
-            {/* Help Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <HelpCircle className="h-5 w-5" />
-                  Need Help?
-                </CardTitle>
-                <CardDescription>
-                  Resources and support for getting the most out of HaqooqAI
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <h4 className="font-medium mb-2">🔐 Security</h4>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      All API keys are encrypted before storage using industry-standard encryption.
-                    </p>
-                  </div>
-                  
-                  <div className="p-4 border rounded-lg">
-                    <h4 className="font-medium mb-2">⚡ Usage</h4>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Your own API keys provide unlimited system quota and bypass daily limits.
-                    </p>
-                  </div>
-                  
-                  <div className="p-4 border rounded-lg">
-                    <h4 className="font-medium mb-2">🔄 Routing</h4>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Our system automatically selects the best provider based on query complexity and context.
-                    </p>
-                  </div>
-                  
-                  <div className="p-4 border rounded-lg">
-                    <h4 className="font-medium mb-2">📊 Analytics</h4>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Track your usage patterns and optimize your API key configuration for best results.
-                    </p>
-                  </div>
-                </div>
               </CardContent>
             </Card>
           </div>

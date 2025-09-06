@@ -243,7 +243,7 @@ export function MultiProviderApiKeySettings() {
                   : 'hover:shadow-md'
               }`}
             >
-              {plan.popular && (
+              {plan.popular && !isConfigured && (
                 <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
                   <Badge className="bg-purple-600 text-white text-xs px-3 py-1">
                     Most Popular
@@ -251,10 +251,16 @@ export function MultiProviderApiKeySettings() {
                 </div>
               )}
               
-              {isConfigured && !plan.popular && (
+              {isConfigured ? (
                 <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
                   <Badge className="bg-green-600 text-white text-xs px-3 py-1">
                     Connected
+                  </Badge>
+                </div>
+              ) : (
+                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                  <Badge className="bg-gray-500 text-white text-xs px-3 py-1">
+                    Not Connected
                   </Badge>
                 </div>
               )}
@@ -277,14 +283,7 @@ export function MultiProviderApiKeySettings() {
                   </Button>
                 </div>
                 
-                <div className="text-2xl font-bold text-purple-600">
-                  {plan.price}
-                  <span className="text-sm font-normal text-muted-foreground">
-                    {plan.price !== 'Free' && plan.price !== 'BYOK Only' ? '/1K tokens' : ''}
-                  </span>
-                </div>
-                
-                <CardDescription className="text-xs h-8 flex items-center justify-center">
+                <CardDescription className="text-xs mb-3">
                   {plan.description}
                 </CardDescription>
               </CardHeader>
