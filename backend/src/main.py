@@ -640,6 +640,8 @@ async def save_groq_key(
         return ApiKeyResponse(
             status="success",
             message="API key saved successfully",
+            provider="groq",  # Legacy endpoint specifically for Groq
+            configured=True,
             has_unlimited=True
         )
 
@@ -682,6 +684,8 @@ async def delete_groq_key(
         return ApiKeyResponse(
             status="success",
             message="API key deleted successfully",
+            provider="groq",  # Legacy endpoint specifically for Groq
+            configured=False,
             has_unlimited=False
         )
 

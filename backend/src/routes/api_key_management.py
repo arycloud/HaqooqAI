@@ -156,7 +156,8 @@ async def create_or_update_api_key(
             status="success",
             message=f"{request.provider.title()} API key stored successfully",
             provider=request.provider,
-            configured=True
+            configured=True,
+            has_unlimited=True  # Having any API key provides unlimited access
         )
         
     except HTTPException:
@@ -291,7 +292,8 @@ async def delete_api_key(
             status="success",
             message=f"{provider.title()} API key deleted successfully",
             provider=provider,
-            configured=False
+            configured=False,
+            has_unlimited=False  # No API key means no unlimited access
         )
         
     except HTTPException:

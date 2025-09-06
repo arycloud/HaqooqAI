@@ -31,11 +31,12 @@ class ProviderStatus(BaseModel):
 
 
 class ApiKeyResponse(BaseModel):
-    """Response for API key operations"""
+    """Response for API key operations (unified model for all providers)"""
     status: str = Field(..., description="Operation status (success, error)")
     message: str = Field(..., description="Human-readable message")
-    provider: str = Field(..., description="Provider name")
-    configured: bool = Field(..., description="Whether the key is now configured")
+    provider: Optional[str] = Field(None, description="Provider name (groq, gemini, openai)")
+    configured: Optional[bool] = Field(None, description="Whether the key is now configured")
+    has_unlimited: Optional[bool] = Field(None, description="Whether user now has unlimited access")
 
 
 class ApiKeyListResponse(BaseModel):
@@ -92,13 +93,6 @@ class AIResponse(BaseModel):
     processing_time: Optional[float] = Field(None, description="Processing time in seconds")
     query_id: Optional[str] = Field(None, description="Unique query identifier")
     routing_info: Optional[RoutingInfo] = Field(None, description="LLM routing information")
-
-
-class ApiKeyResponse(BaseModel):
-    """Response for API key management"""
-    status: str = Field(..., description="Response status")
-    message: str = Field(..., description="Response message")
-    has_unlimited: bool = Field(..., description="Whether user now has unlimited access")
 
 
 class QuotaResponse(BaseModel):
