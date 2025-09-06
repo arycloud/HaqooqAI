@@ -101,7 +101,7 @@ export function MessageInput({
                       onBlur={() => setIsFocused(false)}
                       placeholder={placeholder}
                       disabled={disabled}
-                      className="w-full resize-none border-0 outline-none bg-transparent min-h-[64px] max-h-[200px] py-4 px-6 text-lg text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 font-medium leading-relaxed rounded-2xl transition-all duration-200"
+                      className="w-full resize-none border-0 outline-none bg-transparent focus:bg-transparent min-h-[64px] max-h-[200px] py-4 px-6 text-lg text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 font-medium leading-relaxed rounded-2xl transition-all duration-200"
                       rows={1}
                     />
                     

@@ -2,13 +2,16 @@ import { useEffect, useState } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { Scale, Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-// import { MainLayout } from '@/components/layout/MainLayout'
+import { SidebarToggle } from '@/components/ui/SidebarToggle'
+import { Sidebar } from '@/components/layout/Sidebar'
 import { MessageList } from './MessageList'
 import { MessageInput } from './MessageInput'
 import { CyclingLoader } from '@/components/ui/CyclingLoader'
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay'
 import { useMessages } from '@/hooks/useMessages'
 import { useConversations } from '@/hooks/useConversations'
+import { motion, AnimatePresence } from 'motion/react'
+import { cn } from '@/lib/utils'
 
 interface ChatInterfaceProps {
   conversationId?: string
@@ -21,6 +24,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(conversationId)
   const [isNewConversation, setIsNewConversation] = useState(!conversationId)
   const [isCreatingConversation, setIsCreatingConversation] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const {
     messages,
@@ -79,23 +83,44 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
   }
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900/10">
-      {/* Floating Menu Toggle for mobile */}
-      <div className="absolute top-4 left-4 z-20 lg:hidden">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="w-12 h-12 rounded-2xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300"
-          onClick={() => navigate('/')}
-        >
-          <Menu className="w-5 h-5" />
-        </Button>
-      </div>
+    <div className="h-screen flex bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900/10">
+      {/* Sidebar with animation */}
+      <AnimatePresence mode="wait">
+        {sidebarOpen && (
+          <motion.div
+            initial={{ x: -320, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -320, opacity: 0 }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 30,
+              opacity: { duration: 0.2 }
+            }}
+            className="relative z-30"
+          >
+            <Sidebar isOpen={true} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Messages Area - Enhanced with modern styling */}
-      <div className="flex-1 min-h-0 overflow-y-auto relative">
-        {/* Subtle pattern overlay */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(59,130,246,0.08)_1px,transparent_0)] [background-size:24px_24px] pointer-events-none" />
+      {/* Main Chat Area */}
+      <div className={cn(
+        "flex flex-col flex-1 relative transition-all duration-300",
+        sidebarOpen ? "ml-0" : "w-full"
+      )}>
+        {/* Sidebar Toggle */}
+        <SidebarToggle
+          isOpen={sidebarOpen}
+          onToggle={() => setSidebarOpen(!sidebarOpen)}
+          variant="floating"
+          showLabel={true}
+        />
+
+        {/* Messages Area - Enhanced with modern styling */}
+        <div className="flex-1 min-h-0 overflow-y-auto relative">
+          {/* Subtle pattern overlay */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(59,130,246,0.08)_1px,transparent_0)] [background-size:24px_24px] pointer-events-none" />
         
         {setupLoading ? (
           <div className="flex items-center justify-center h-full relative z-10">
@@ -158,26 +183,44 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
               </div>
             </div>
           </div>
-        ) : (
-          <div className="relative z-10">
-            <MessageList 
-              messages={conversationMessages} 
-              loading={analyzingLoading}
-              conversationId={currentConversationId}
-              loadingType="analyzing"
-            />
-          </div>
-        )}
+          ) : (
+            <div className="relative z-10">
+              <MessageList
+                messages={conversationMessages}
+                loading={analyzingLoading}
+                conversationId={currentConversationId}
+                loadingType="analyzing"
+                sidebarOpen={sidebarOpen}
+                onSampleQuery={handleSendMessage}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Enhanced Message Input with modern glass effect */}
+        <div className="flex-shrink-0 backdrop-blur-xl bg-white/90 dark:bg-gray-900/90 border-t border-gray-200/50 dark:border-gray-700/50">
+          <MessageInput
+            onSendMessage={handleSendMessage}
+            disabled={analyzingLoading || isCreatingConversation || setupLoading}
+            sidebarOpen={sidebarOpen}
+            placeholder="Ask about Pakistani law..."
+          />
+        </div>
       </div>
 
-      {/* Enhanced Message Input with modern glass effect */}
-      <div className="flex-shrink-0 backdrop-blur-xl bg-white/90 dark:bg-gray-900/90 border-t border-gray-200/50 dark:border-gray-700/50">
-        <MessageInput
-          onSendMessage={handleSendMessage}
-          disabled={analyzingLoading || isCreatingConversation || setupLoading}
-          placeholder="Ask about Pakistani law..."
-        />
-      </div>
+      {/* Overlay for sidebar */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-20 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

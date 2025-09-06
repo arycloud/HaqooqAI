@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react'
 import { Message } from '@/types/message'
 import { MessageBubble } from './MessageBubble'
-import { CyclingLoader } from '@/components/ui/CyclingLoader'
+import { WelcomeScreen } from './WelcomeScreen'
+import { TextShimmer } from '@/components/core/text-shimmer'
 import { Scale } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { motion } from 'motion/react'
 
 interface MessageListProps {
   messages: Message[]
@@ -11,9 +13,10 @@ interface MessageListProps {
   conversationId?: string
   sidebarOpen?: boolean
   loadingType?: 'messages' | 'analyzing' | 'setup'
+  onSampleQuery?: (query: string) => void
 }
 
-export function MessageList({ messages, loading, conversationId, sidebarOpen = true, loadingType = 'messages' }: MessageListProps) {
+export function MessageList({ messages, loading, conversationId, sidebarOpen = true, loadingType = 'messages', onSampleQuery }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Ensure messages is always an array to prevent map errors
@@ -36,55 +39,7 @@ export function MessageList({ messages, loading, conversationId, sidebarOpen = t
   }
 
   if (!conversationId) {
-    return (
-      <div className="h-full flex items-center justify-center relative">
-        {/* Background pattern */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(59,130,246,0.08)_1px,transparent_0)] [background-size:24px_24px]" />
-        
-        <div className="text-center max-w-3xl px-8 relative z-10">
-          <div className="relative mb-8">
-            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mx-auto shadow-2xl">
-              <Scale className="w-12 h-12 text-white" />
-            </div>
-            <div className="absolute -inset-8 bg-gradient-to-r from-blue-500/20 to-purple-600/20 rounded-full blur-2xl" />
-          </div>
-          
-          <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Welcome to <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">HaqooqAI</span>
-          </h2>
-          
-          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
-            Your intelligent Pakistani legal assistant powered by advanced AI
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-            <div className="group p-6 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                <span className="text-white text-xl">📚</span>
-              </div>
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Legal Research</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Get instant answers with verified legal sources</p>
-            </div>
-            
-            <div className="group p-6 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                <span className="text-white text-xl">⚖️</span>
-              </div>
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Case Analysis</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Analyze legal cases and precedents</p>
-            </div>
-            
-            <div className="group p-6 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                <span className="text-white text-xl">📋</span>
-              </div>
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Document Help</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Assistance with legal documentation</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+    return <WelcomeScreen onSampleQuery={onSampleQuery} />
   }
 
   return (
@@ -133,9 +88,14 @@ export function MessageList({ messages, loading, conversationId, sidebarOpen = t
             ))}
 
             {loading && (
-              <div className="flex justify-start">
+              <motion.div
+                className="flex justify-start"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+              >
                 <div className="max-w-2xl">
-                  {/* Modern loading bubble */}
+                  {/* Modern loading bubble with single TextShimmer */}
                   <div className="flex items-start space-x-4">
                     <div className="relative flex-shrink-0 group">
                       <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center shadow-lg group-hover:from-blue-600 group-hover:to-purple-700 transition-all duration-300">
@@ -145,7 +105,7 @@ export function MessageList({ messages, loading, conversationId, sidebarOpen = t
                         <div className="w-full h-full bg-green-400 rounded-full animate-pulse" />
                       </div>
                     </div>
-                    
+
                     <div className="flex flex-col space-y-1">
                       <div className="flex items-center space-x-2">
                         <span className="text-base font-semibold text-gray-900 dark:text-gray-100">
@@ -157,24 +117,28 @@ export function MessageList({ messages, loading, conversationId, sidebarOpen = t
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="mt-4 mr-8">
                     <div className="relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-lg">
-                      <CyclingLoader type={loadingType} />
-                      
-                      {/* Animated dots */}
-                      <div className="absolute bottom-4 right-6 flex items-center space-x-1">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      </div>
-                      
+                      {/* Single TextShimmer loading animation */}
+                      <TextShimmer
+                        className="text-base text-gray-600 dark:text-gray-400 font-medium"
+                        duration={1}
+                      >
+                        {loadingType === 'analyzing'
+                          ? "HaqooqAI is analyzing your legal query..."
+                          : loadingType === 'setup'
+                          ? "Setting up your conversation..."
+                          : "Loading messages..."
+                        }
+                      </TextShimmer>
+
                       {/* Speech bubble tail */}
                       <div className="absolute top-6 left-[-8px] w-4 h-4 bg-white/80 dark:bg-gray-800/80 border-l border-t border-gray-200/50 dark:border-gray-700/50 transform rotate-45 backdrop-blur-sm" />
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
           </>
         )}

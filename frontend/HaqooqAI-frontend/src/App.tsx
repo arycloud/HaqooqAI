@@ -25,7 +25,17 @@ function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
 
-      {/* All authenticated routes share MainLayout */}
+      {/* Chat routes - standalone without MainLayout */}
+      <Route
+        path="/chat/:conversationId?"
+        element={
+          <AuthGuard>
+            <Chat />
+          </AuthGuard>
+        }
+      />
+
+      {/* Other authenticated routes share MainLayout */}
       <Route
         element={
           <AuthGuard>
@@ -34,7 +44,6 @@ function App() {
         }
       >
         <Route path="/" element={<Dashboard />} />
-        <Route path="/chat/:conversationId?" element={<Chat />} />
         <Route path="/settings" element={<Settings />} />
       </Route>
 

@@ -1,8 +1,8 @@
-// NEW FILE: /Users/apple/PycharmProjects/HaqooqAI_2.0/HaqooqAI/frontend/HaqooqAI-frontend/src/components/ui/ErrorDisplay.tsx
 import { AlertTriangle, RefreshCw, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'motion/react'
 
 interface ErrorDisplayProps {
   error: string
@@ -40,11 +40,27 @@ export function ErrorDisplay({ error, onRetry, showSettingsButton = false }: Err
   const suggestion = getErrorSuggestion(errorType)
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="text-center">
-        <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
-          <AlertTriangle className="w-6 h-6 text-red-600" />
-        </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+    >
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader className="text-center">
+          <motion.div
+            className="mx-auto w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4"
+            animate={{
+              scale: [1, 1.1, 1],
+              rotate: [0, -5, 5, 0]
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              repeatType: "reverse"
+            }}
+          >
+            <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+          </motion.div>
         <CardTitle className="text-lg">Something went wrong</CardTitle>
         <CardDescription className="text-sm">
           {error}
@@ -77,5 +93,6 @@ export function ErrorDisplay({ error, onRetry, showSettingsButton = false }: Err
         </div>
       </CardContent>
     </Card>
+    </motion.div>
   )
 }

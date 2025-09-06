@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { ExternalLink, Scale, User } from 'lucide-react';
+import { ExternalLink, Scale, User, Copy, Check, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { formatMessageTime } from '@/utils/formatters';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { motion } from 'motion/react';
+import { cn } from '@/lib/utils';
 
 interface Source {
   title: string;
@@ -49,9 +52,27 @@ function sanitizeContent(text: string): string {
 
 export function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === "user";
+  const [copied, setCopied] = useState(false);
+  const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
+
   const extractionResult = isUser
     ? { cleanContent: message.content, sources: [], disclaimer: "" }
     : extractStructuredContent(message.content, message.sources, message.disclaimer);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  };
+
+  const handleFeedback = (type: 'up' | 'down') => {
+    setFeedback(feedback === type ? null : type);
+    // Here you could send feedback to your analytics service
+  };
 
   const { cleanContent, sources: extractedSources, disclaimer } = extractionResult;
 
@@ -77,7 +98,16 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   );
 
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-8`}>
+    <motion.div
+      className={`flex ${isUser ? "justify-end" : "justify-start"} mb-8`}
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{
+        duration: 0.4,
+        ease: [0.4, 0, 0.2, 1],
+        delay: 0.1
+      }}
+    >
       <div className={`max-w-5xl ${isUser ? "order-2" : "order-1"} w-full`}>
         {/* Modern Header with Avatar */}
         <div className={`flex items-start space-x-4 mb-4 ${isUser ? "justify-end flex-row-reverse space-x-reverse" : "justify-start"}`}>
@@ -194,6 +224,58 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             }`} />
           </div>
 
+          {/* Action Buttons */}
+          <motion.div
+            className={`flex items-center space-x-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${
+              isUser ? "justify-end" : "justify-start"
+            }`}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 0, y: 0 }}
+            whileHover={{ opacity: 1 }}
+          >
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCopy}
+              className="h-8 px-3 text-xs bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+            >
+              {copied ? (
+                <Check className="w-3 h-3 mr-1 text-green-600" />
+              ) : (
+                <Copy className="w-3 h-3 mr-1" />
+              )}
+              {copied ? 'Copied!' : 'Copy'}
+            </Button>
+
+            {!isUser && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleFeedback('up')}
+                  className={cn(
+                    "h-8 px-3 text-xs bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-200",
+                    feedback === 'up' && "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
+                  )}
+                >
+                  <ThumbsUp className="w-3 h-3" />
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleFeedback('down')}
+                  className={cn(
+                    "h-8 px-3 text-xs bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200",
+                    feedback === 'down' && "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+                  )}
+                >
+                  <ThumbsDown className="w-3 h-3" />
+                </Button>
+              </>
+            )}
+          </motion.div>
+
           {/* Enhanced Sources and Disclaimer Section */}
           {!isUser && (uniqueSources.length > 0 || disclaimer) && (
             <div className="mt-6">
@@ -278,6 +360,6 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

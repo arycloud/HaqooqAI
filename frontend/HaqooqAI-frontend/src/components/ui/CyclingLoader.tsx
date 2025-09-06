@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Scale } from 'lucide-react'
-import { TextEffect } from '@/components/motion-primitives/text-effect'
+import { TextShimmer } from '@/components/core/text-shimmer'
 
 export type LoaderType = 'analyzing' | 'setup' | 'fetching' | 'general' | 'messages'
 
@@ -85,16 +85,13 @@ export function CyclingLoader({ type = 'general' }: CyclingLoaderProps) {
       
       {/* Enhanced text with shimmer effect - only dynamic messages */}
       <div className="flex-1">
-        <TextEffect 
-          per="word" 
-          preset="fade-in-blur"
+        <TextShimmer
           className="text-base text-gray-600 dark:text-gray-400 font-medium"
-          trigger={true}
+          duration={1.5}
           key={`shimmer-${currentMessageIndex}`}
-          speedReveal={1.2}
         >
           {messages[currentMessageIndex]}
-        </TextEffect>
+        </TextShimmer>
       </div>
       
       {/* Animated dots indicator */}
