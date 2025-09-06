@@ -1,0 +1,17 @@
+{
+  "$schema": "https://motion-primitives.com/schema.json",
+  "name": "motion-primitives",
+  "style": "default",
+  "tsx": true,
+  "tailwind": {
+    "config": "tailwind.config.js",
+    "css": "src/index.css",
+    "baseColor": "slate",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "aliases": {
+    "components": "src/components/motion",
+    "utils": "src/lib/utils"
+  }
+}

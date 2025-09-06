@@ -188,6 +188,10 @@ cython_debug/
 #  you could uncomment the following to ignore the entire vscode folder
 # .vscode/
 
+# MCP Server Configuration (personal IDE preference)
+.vscode/mcp.json
+frontend/HaqooqAI-frontend/.vscode/mcp.json
+
 # Ruff stuff:
 .ruff_cache/
 
@@ -204,6 +208,16 @@ __marimo__/
 
 # Node.js dependencies
 frontend/HaqooqAI-frontend/node_modules/
+
+# Frontend build outputs
+frontend/HaqooqAI-frontend/dist/
+frontend/HaqooqAI-frontend/build/
+
+# Frontend environment files
+frontend/HaqooqAI-frontend/.env.local
+frontend/HaqooqAI-frontend/.env.development.local
+frontend/HaqooqAI-frontend/.env.test.local
+frontend/HaqooqAI-frontend/.env.production.local
 
 # Python venvs
 venv/
