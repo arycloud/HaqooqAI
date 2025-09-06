@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
-import { Scale, Menu } from 'lucide-react'
+import { Scale, Menu, Share } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { SidebarToggle } from '@/components/ui/SidebarToggle'
-import { Sidebar } from '@/components/layout/Sidebar'
+import { SidebarNew } from '@/components/layout/SidebarNew'
 import { MessageList } from './MessageList'
-import { MessageInput } from './MessageInput'
+import { MessageInputNew } from './MessageInputNew'
 import { CyclingLoader } from '@/components/ui/CyclingLoader'
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay'
 import { useMessages } from '@/hooks/useMessages'
@@ -83,44 +82,57 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
   }
 
   return (
-    <div className="h-screen flex bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900/10">
-      {/* Sidebar with animation */}
-      <AnimatePresence mode="wait">
-        {sidebarOpen && (
-          <motion.div
-            initial={{ x: -320, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -320, opacity: 0 }}
-            transition={{
-              type: "spring",
-              stiffness: 300,
-              damping: 30,
-              opacity: { duration: 0.2 }
-            }}
-            className="relative z-30"
-          >
-            <Sidebar isOpen={true} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div className="relative flex size-full min-h-screen flex-col bg-[var(--background-color)] group/design-root overflow-x-hidden">
+      <div className="flex h-full grow">
+        {/* Sidebar */}
+        <AnimatePresence mode="wait">
+          {sidebarOpen && (
+            <motion.div
+              initial={{ x: -320, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -320, opacity: 0 }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 30,
+                opacity: { duration: 0.2 }
+              }}
+              className="relative z-30"
+            >
+              <SidebarNew isOpen={true} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* Main Chat Area */}
-      <div className={cn(
-        "flex flex-col flex-1 relative transition-all duration-300",
-        sidebarOpen ? "ml-0" : "w-full"
-      )}>
-        {/* Sidebar Toggle */}
-        <SidebarToggle
-          isOpen={sidebarOpen}
-          onToggle={() => setSidebarOpen(!sidebarOpen)}
-          variant="floating"
-          showLabel={true}
-        />
+        {/* Main Chat Area */}
+        <main className="flex-1 flex flex-col">
+          {/* Header */}
+          <header className="flex items-center justify-between p-4 border-b border-[var(--border-color)]">
+            <div className="flex items-center gap-3">
+              {!sidebarOpen && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSidebarOpen(true)}
+                  className="w-8 h-8 hover:bg-[var(--hover-color)] transition-all duration-200 rounded-lg"
+                  title="Open sidebar"
+                >
+                  <Menu className="w-5 h-5 text-[var(--text-primary)]" />
+                </Button>
+              )}
+              <h2 className="text-[var(--text-primary)] text-xl font-bold leading-tight">
+                HaqooqAI Legal Assistant
+              </h2>
+            </div>
+            <Button className="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-8 px-4 bg-[var(--hover-color)] text-[var(--text-primary)] text-sm font-medium leading-normal hover:bg-opacity-80">
+              <Share className="w-4 h-4" />
+              <span className="truncate">Share</span>
+            </Button>
+          </header>
 
-        {/* Messages Area - Enhanced with modern styling */}
-        <div className="flex-1 min-h-0 overflow-y-auto relative">
-          {/* Subtle pattern overlay */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(59,130,246,0.08)_1px,transparent_0)] [background-size:24px_24px] pointer-events-none" />
+          {/* Messages Area */}
+          <div className="flex-1 overflow-y-auto p-6 scroll-container bg-[var(--background-color)]">
+            <div className="flex flex-col gap-8 max-w-4xl mx-auto">
         
         {setupLoading ? (
           <div className="flex items-center justify-center h-full relative z-10">
@@ -199,11 +211,11 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
 
         {/* Enhanced Message Input with modern glass effect */}
         <div className="flex-shrink-0 backdrop-blur-xl bg-white/90 dark:bg-gray-900/90 border-t border-gray-200/50 dark:border-gray-700/50">
-          <MessageInput
+          <MessageInputNew
             onSendMessage={handleSendMessage}
             disabled={analyzingLoading || isCreatingConversation || setupLoading}
             sidebarOpen={sidebarOpen}
-            placeholder="Ask about Pakistani law..."
+            placeholder="Message HaqooqAI..."
           />
         </div>
       </div>

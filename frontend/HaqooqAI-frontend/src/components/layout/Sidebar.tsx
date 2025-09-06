@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
-import { Scale, Plus, MessageSquare, Trash2, MoreHorizontal, Menu, Settings, LogOut, User } from 'lucide-react'
+import { Scale, Plus, MessageSquare, Trash2, MoreHorizontal, Crown, Settings, LogOut, User } from 'lucide-react'
 import { useConversations } from '@/hooks/useConversations'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { QuotaBadge } from './QuotaBadge'
 import { Conversation } from '@/types/conversation'
+import { motion } from 'motion/react'
 
 interface SidebarProps {
   isOpen: boolean
@@ -37,8 +38,6 @@ export function Sidebar({ isOpen }: SidebarProps) {
   } = useConversations()
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  const isChatRoute = location.pathname.startsWith('/chat/')
-
   const handleLogout = async () => {
     await logout()
   }
@@ -59,10 +58,10 @@ export function Sidebar({ isOpen }: SidebarProps) {
   const handleDeleteConversation = async (conversationId: string, e: React.MouseEvent) => {
     e.stopPropagation()
     setDeletingId(conversationId)
-    
+
     try {
       await deleteConversation(conversationId)
-      
+
       // If we're currently viewing this conversation, navigate to home
       if (location.pathname === `/chat/${conversationId}`) {
         navigate('/')
@@ -83,39 +82,20 @@ export function Sidebar({ isOpen }: SidebarProps) {
   }
 
   return (
-    <div
-      className={cn(
-        "bg-gray-900 text-white transition-all duration-300 flex flex-col",
-        isOpen ? "w-80" : "w-0 overflow-hidden"
-      )}
-    >
-      {/* Header with conditional content */}
-      <div className="p-4 border-b border-gray-700">
-        {isChatRoute ? (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Scale className="w-8 h-8 text-purple-400" />
-              <h1 className="text-xl font-bold">HaqooqAI</h1>
-            </div>
-            {/* Menu toggle for chat routes */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => window.history.back()}
-              className="w-8 h-8 hover:bg-gray-800 transition-all duration-200 rounded-lg"
-              title="Close sidebar"
-            >
-              <Menu className="w-5 h-5" />
-            </Button>
-          </div>
-        ) : (
-          <div className="flex items-center space-x-3">
-            <Scale className="w-8 h-8 text-purple-400" />
-            <Link to="/" className="text-xl font-bold hidden md:block">
-              <h1 className="text-xl font-bold">HaqooqAI</h1>
-            </Link>
-          </div>
-        )}
+    <aside className="flex flex-col w-80 bg-[var(--sidebar-color)] border-r border-[var(--border-color)] p-4">
+      {/* Header with User Profile */}
+      <div className="flex items-center gap-3 mb-6">
+        <div
+          className="bg-center bg-no-repeat aspect-square bg-cover rounded-full w-10 h-10"
+          style={{
+            backgroundImage: user?.avatar_url
+              ? `url(${user.avatar_url})`
+              : `url("https://lh3.googleusercontent.com/aida-public/AB6AXuCpUGhkvdwtrXrOTqAaaB-58kuaDmMK2lpAXk9rNDhmHZfXdLik1y0lrKXMUY51pVBCDC2-vAAAecAF81UZOf6rgBZmh5lhq6tDxyg1JXTEwygsQDbcC-iiRnPE0FfWPiybJAelyjEa10vwtNpEsGpMkwFnD8DpAIRzclOivxma3NJqugFDv2jkw_gDul1J3mUZ7IPascsoSxIYIMz5HupbZds5Ph8qSotlGKjteOHhhqVI0t5JEiJXv83O_kBu5Sb-Wye2sz2tq2w")`
+          }}
+        />
+        <h1 className="text-[var(--text-primary)] text-base font-medium leading-normal">
+          {user?.name || user?.login || 'User'}
+        </h1>
       </div>
 
       {/* User section for chat routes */}

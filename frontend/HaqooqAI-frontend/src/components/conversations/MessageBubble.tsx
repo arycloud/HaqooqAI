@@ -98,17 +98,30 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   );
 
   return (
-    <motion.div
-      className={`flex ${isUser ? "justify-end" : "justify-start"} mb-8`}
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{
-        duration: 0.4,
-        ease: [0.4, 0, 0.2, 1],
-        delay: 0.1
-      }}
-    >
-      <div className={`max-w-5xl ${isUser ? "order-2" : "order-1"} w-full`}>
+    <div className="flex items-start gap-4">
+      {/* Avatar */}
+      <div
+        className="bg-center bg-no-repeat aspect-square bg-cover rounded-full w-10 h-10 flex-shrink-0"
+        style={{
+          backgroundImage: isUser
+            ? `url("https://lh3.googleusercontent.com/aida-public/AB6AXuADvzRasd2oQf260RfVgglGC8fhX7-WzRtlxYF3WRTIXKtHwGHuMEV6N8QhdeTWbyC6iBdqS2ccwJoSge3NZXAFOAarGcRc-R_BglZRnTGAciUxTIaPsn7CKJji0lvH9mPq6zhTPSak7gDBI41d8myoVkr0tetdwqqNXg7BKajOOKotkC7EUXMldBI3tBlY_XLldTVdM6r0ZrUJLBTOKOFILkBw6FDNKodrxd1CsZqi4Ro07Lnn9XH8ORPCtgJUH-a-b9LLyUmaizQ")`
+            : `url("https://lh3.googleusercontent.com/aida-public/AB6AXuCVhzVdaXxR_p3E3fMgkBz6ftAWMIQhZhO0eUcPg45HQcdqABNiD5l6e6QsmtMvjc9BB0OvnBD2tGF3S-xwL9gIbPYll5USP6s23Kp2ACsN2pS8-BL7xZuTvsl5GBDScDTeMDzmxcLqQHziqI-MLkoUT2iRVJlLOMarIe7usrFfE8Oajmt1IlKu5v4ugihjYpj3CPmESsk0vDWPxGgE5iZTajLFJF2ShkkHueRk2B1iNOrj3fEjiDXuT7ntwpGvAgSaQ5GOyihkuWw")`
+        }}
+      />
+
+      {/* Message Content */}
+      <div className={cn(
+        "p-4 rounded-xl flex-1",
+        isUser
+          ? "bg-gradient-to-r from-pink-500/10 to-purple-500/10"
+          : "bg-gradient-to-r from-purple-500/10 to-indigo-500/10"
+      )}>
+        <p className={cn(
+          "text-sm font-bold leading-tight mb-2",
+          isUser ? "text-pink-300" : "text-purple-300"
+        )}>
+          {isUser ? "You" : "HaqooqAI Assistant"}
+        </p>
         {/* Modern Header with Avatar */}
         <div className={`flex items-start space-x-4 mb-4 ${isUser ? "justify-end flex-row-reverse space-x-reverse" : "justify-start"}`}>
           <div className={`relative flex-shrink-0 ${

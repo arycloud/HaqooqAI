@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Message } from '@/types/message'
-import { MessageBubble } from './MessageBubble'
+import { MessageBubbleNew } from './MessageBubbleNew'
 import { WelcomeScreen } from './WelcomeScreen'
 import { TextShimmer } from '@/components/core/text-shimmer'
 import { Scale } from 'lucide-react'
@@ -84,7 +84,7 @@ export function MessageList({ messages, loading, conversationId, sidebarOpen = t
         ) : (
           <>
             {validMessages.map((message) => (
-              <MessageBubble key={message.id} message={message} />
+              <MessageBubbleNew key={message.id} message={message} />
             ))}
 
             {loading && (

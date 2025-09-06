@@ -35,25 +35,7 @@ const sampleQueries = [
 
 export function WelcomeScreen({ onSampleQuery }: WelcomeScreenProps) {
   return (
-    <div className="h-full flex items-center justify-center relative overflow-hidden">
-      {/* Animated background pattern */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(59,130,246,0.08)_1px,transparent_0)] [background-size:24px_24px]" />
-      <motion.div
-        className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-white to-purple-50/50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900/10"
-        animate={{
-          background: [
-            "radial-gradient(circle at 20% 50%, rgba(59,130,246,0.1) 0%, transparent 50%)",
-            "radial-gradient(circle at 80% 50%, rgba(147,51,234,0.1) 0%, transparent 50%)",
-            "radial-gradient(circle at 50% 20%, rgba(59,130,246,0.1) 0%, transparent 50%)",
-            "radial-gradient(circle at 20% 50%, rgba(59,130,246,0.1) 0%, transparent 50%)"
-          ]
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          ease: "linear"
-        }}
-      />
+    <div className="h-full flex items-center justify-center relative overflow-hidden bg-[var(--background-color)]">
       
       <div className="text-center max-w-6xl px-8 relative z-10">
         {/* Hero Section */}
@@ -64,13 +46,13 @@ export function WelcomeScreen({ onSampleQuery }: WelcomeScreenProps) {
           className="mb-12"
         >
           <div className="relative mb-8">
-            <motion.div 
-              className="w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mx-auto shadow-2xl"
-              animate={{ 
+            <motion.div
+              className="w-24 h-24 rounded-3xl bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] flex items-center justify-center mx-auto shadow-2xl"
+              animate={{
                 rotate: [0, 5, -5, 0],
                 scale: [1, 1.05, 1]
               }}
-              transition={{ 
+              transition={{
                 duration: 4,
                 repeat: Infinity,
                 ease: "easeInOut"
@@ -92,25 +74,25 @@ export function WelcomeScreen({ onSampleQuery }: WelcomeScreenProps) {
             />
           </div>
           
-          <motion.h1 
-            className="text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6"
+          <motion.h1
+            className="text-5xl lg:text-6xl font-bold text-[var(--text-primary)] mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
             Welcome to{' '}
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)] bg-clip-text text-transparent">
               HaqooqAI
             </span>
           </motion.h1>
-          
-          <motion.p 
-            className="text-xl lg:text-2xl text-gray-600 dark:text-gray-300 mb-8 leading-relaxed max-w-3xl mx-auto"
+
+          <motion.p
+            className="text-xl lg:text-2xl text-[var(--text-secondary)] mb-8 leading-relaxed max-w-3xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-            Your intelligent Pakistani legal assistant powered by advanced AI. 
+            Your intelligent Pakistani legal assistant powered by advanced AI.
             Get instant, accurate answers to your legal questions with verified sources.
           </motion.p>
 
