@@ -86,7 +86,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps) {
                 <div className="w-11 h-11 lg:w-12 lg:h-12 rounded-full bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] flex items-center justify-center ring-2 ring-[var(--border-color)] group-hover:ring-[var(--primary-color)] transition-all duration-200">
                   <User className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
                 </div>
-              )}}
+              )}
               <span className="hidden md:block text-base lg:text-lg font-medium text-[var(--text-primary)] group-hover:text-[var(--text-primary)] transition-colors duration-200">
                 {user?.username}
               </span>
