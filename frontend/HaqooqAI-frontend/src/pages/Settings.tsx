@@ -128,36 +128,40 @@ export function Settings() {
   ]
 
   return (
-    <div className="container mx-auto px-6 py-8 pb-20 max-w-7xl">
-      <InView
-        variants={{
-          hidden: { opacity: 0, y: 30, filter: 'blur(4px)' },
-          visible: { opacity: 1, y: 0, filter: 'blur(0px)' }
-        }}
-        viewOptions={{ margin: '0px 0px -200px 0px' }}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
-      >
-        {/* Header Section */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-purple-600 to-blue-600">
-              <SettingsIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                <TextEffect per="char" preset="fade">
-                  Settings
-                </TextEffect>
-              </h1>
-              <p className="text-lg text-muted-foreground mt-1">
-                Configure your API keys, monitor usage, and explore AI capabilities
-              </p>
+    <div className="h-full flex flex-col">
+      {/* Header Section - Fixed at top */}
+      <div className="container mx-auto px-6 py-8 max-w-7xl flex-shrink-0">
+        <InView
+          variants={{
+            hidden: { opacity: 0, y: 30, filter: 'blur(4px)' },
+            visible: { opacity: 1, y: 0, filter: 'blur(0px)' }
+          }}
+          viewOptions={{ margin: '0px 0px -200px 0px' }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+        >
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-purple-600 to-blue-600">
+                <SettingsIcon className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                  <TextEffect per="char" preset="fade">
+                    Settings
+                  </TextEffect>
+                </h1>
+                <p className="text-lg text-muted-foreground mt-1">
+                  Configure your API keys, monitor usage, and explore AI capabilities
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        </InView>
+      </div>
 
-        {/* Main Tabs Layout */}
-        <Tabs defaultValue="api-keys" className="space-y-8">
+      {/* Main Tabs Layout - Scrollable content */}
+      <Tabs defaultValue="api-keys" className="flex flex-col flex-1 min-h-0">
+        <div className="container mx-auto px-6 max-w-7xl flex-shrink-0">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="api-keys" className="flex items-center gap-2">
               <Key className="h-4 w-4" />
@@ -176,9 +180,11 @@ export function Settings() {
               System Info
             </TabsTrigger>
           </TabsList>
+        </div>
 
-          {/* API Keys Tab */}
-          <TabsContent value="api-keys" className="space-y-6">
+        {/* API Keys Tab */}
+        <TabsContent value="api-keys" className="flex-1 overflow-y-auto">
+          <div className="container mx-auto px-6 max-w-7xl space-y-6 pb-8">
             <div className="grid gap-6">
               <Card className="border-dashed border-2">
                 <CardHeader>
@@ -194,6 +200,44 @@ export function Settings() {
                 </CardHeader>
               </Card>
               
+              {/* Quick Setup Guide */}
+              <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Info className="h-5 w-5 text-blue-600" />
+                    Quick Setup Guide
+                  </CardTitle>
+                  <CardDescription>
+                    Add your API keys below to unlock unlimited usage and access to premium AI models
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
+                      <div className="h-2 w-2 rounded-full bg-orange-500" />
+                      <div>
+                        <p className="font-medium text-sm">Groq</p>
+                        <p className="text-xs text-muted-foreground">Free & Fast</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
+                      <div className="h-2 w-2 rounded-full bg-blue-500" />
+                      <div>
+                        <p className="font-medium text-sm">Gemini</p>
+                        <p className="text-xs text-muted-foreground">Large Context</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
+                      <div className="h-2 w-2 rounded-full bg-green-500" />
+                      <div>
+                        <p className="font-medium text-sm">OpenAI</p>
+                        <p className="text-xs text-muted-foreground">Premium Quality</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
               <MultiProviderApiKeySettings />
               
               {/* Legacy API Key Settings for backward compatibility */}
@@ -207,10 +251,12 @@ export function Settings() {
                 </div>
               </details>
             </div>
-          </TabsContent>
+          </div>
+        </TabsContent>
 
-          {/* Quota Tab */}
-          <TabsContent value="quota" className="space-y-6">
+        {/* Quota Tab */}
+        <TabsContent value="quota" className="flex-1 overflow-y-auto">
+          <div className="container mx-auto px-6 max-w-7xl space-y-6 pb-8">
             <div className="grid gap-6">
               <QuotaDisplay />
               
@@ -296,10 +342,12 @@ export function Settings() {
                 </Card>
               )}
             </div>
-          </TabsContent>
+          </div>
+        </TabsContent>
 
-          {/* AI Providers Tab */}
-          <TabsContent value="providers" className="space-y-6">
+        {/* AI Providers Tab */}
+        <TabsContent value="providers" className="flex-1 overflow-y-auto">
+          <div className="container mx-auto px-6 max-w-7xl space-y-6 pb-8">
             {/* Provider Comparison Table */}
             <Card>
               <CardHeader>
@@ -536,10 +584,12 @@ export function Settings() {
                 </CardContent>
               </Card>
             )}
-          </TabsContent>
+          </div>
+        </TabsContent>
 
-          {/* System Info Tab */}
-          <TabsContent value="system" className="space-y-6">
+        {/* System Info Tab */}
+        <TabsContent value="system" className="flex-1 overflow-y-auto">
+          <div className="container mx-auto px-6 max-w-7xl space-y-6 pb-8">
             {/* System Status Overview */}
             <Card>
               <CardHeader>
@@ -744,9 +794,9 @@ export function Settings() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
-      </InView>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

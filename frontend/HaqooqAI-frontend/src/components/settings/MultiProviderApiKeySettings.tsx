@@ -143,149 +143,170 @@ export function MultiProviderApiKeySettings() {
         </p>
       </div>
 
-      {PROVIDER_CONFIGS.map((config) => {
-        const status = getProviderStatus(config.provider)
-        const isConfigured = status?.configured || false
-        const isValid = status?.valid || false
-        const currentKey = apiKeys[config.provider] || ''
-        const isValidFormat = currentKey ? validateApiKey(config.provider, currentKey) : true
+      {/* Provider Cards Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {PROVIDER_CONFIGS.map((config) => {
+          const status = getProviderStatus(config.provider)
+          const isConfigured = status?.configured || false
+          const isValid = status?.valid || false
+          const currentKey = apiKeys[config.provider] || ''
+          const isValidFormat = currentKey ? validateApiKey(config.provider, currentKey) : true
 
-        return (
-          <Card key={config.provider} className="w-full">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <CardTitle className="text-lg">{config.displayName}</CardTitle>
-                  <div className="flex space-x-2">
-                    {isConfigured && (
-                      <Badge variant={isValid ? "default" : "destructive"}>
-                        {isValid ? 'Active' : 'Invalid'}
-                      </Badge>
-                    )}
-                    {config.provider === 'groq' && (
-                      <Badge variant="secondary">Default</Badge>
-                    )}
-                    {config.provider === 'openai' && (
-                      <Badge variant="outline">BYOK Only</Badge>
-                    )}
+          return (
+            <Card key={config.provider} className="w-full h-fit">
+              <CardHeader className="pb-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center space-x-3">
+                    <CardTitle className="text-base">{config.displayName}</CardTitle>
+                    <div className="flex space-x-1">
+                      {isConfigured && (
+                        <Badge variant={isValid ? "default" : "destructive"} className="text-xs">
+                          {isValid ? 'Active' : 'Invalid'}
+                        </Badge>
+                      )}
+                      {config.provider === 'groq' && (
+                        <Badge variant="secondary" className="text-xs">Default</Badge>
+                      )}
+                      {config.provider === 'openai' && (
+                        <Badge variant="outline" className="text-xs">BYOK Only</Badge>
+                      )}
+                    </div>
                   </div>
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => window.open(config.documentationUrl, '_blank')}
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                  </Button>
                 </div>
                 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => window.open(config.documentationUrl, '_blank')}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </Button>
-              </div>
+                <CardDescription className="text-sm">
+                  {config.description}
+                </CardDescription>
+                
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {config.features.slice(0, 2).map((feature, index) => (
+                    <Badge key={index} variant="outline" className="text-xs px-2 py-0">
+                      {feature}
+                    </Badge>
+                  ))}
+                </div>
+              </CardHeader>
               
-              <CardDescription>
-                {config.description}
-              </CardDescription>
-              
-              <div className="flex flex-wrap gap-2 mt-2">
-                {config.features.map((feature, index) => (
-                  <Badge key={index} variant="outline" className="text-xs">
-                    {feature}
-                  </Badge>
-                ))}
-              </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-4">
-              {status?.last_validated && (
-                <p className="text-xs text-gray-500">
-                  Last validated: {new Date(status.last_validated).toLocaleString()}
-                </p>
-              )}
+              <CardContent className="space-y-4 pt-0">
+                {status?.last_validated && (
+                  <p className="text-xs text-gray-500">
+                    Last validated: {new Date(status.last_validated).toLocaleString()}
+                  </p>
+                )}
 
-              <div className="flex space-x-2">
-                <div className="flex-1 relative">
-                  <Input
-                    type={showKeys[config.provider] ? "text" : "password"}
-                    placeholder={
-                      isConfigured 
-                        ? `${config.displayName} API key is configured`
-                        : config.keyFormat.placeholder
-                    }
-                    value={currentKey}
-                    onChange={(e) => setApiKeys(prev => ({ 
-                      ...prev, 
-                      [config.provider]: e.target.value 
-                    }))}
-                    className={!isValidFormat ? "border-red-300" : ""}
-                    disabled={loading || savingProvider === config.provider}
-                  />
-                  
-                  {currentKey && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 h-auto"
-                      onClick={() => setShowKeys(prev => ({ 
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Input
+                      type={showKeys[config.provider] ? "text" : "password"}
+                      placeholder={
+                        isConfigured 
+                          ? `${config.displayName} key configured`
+                          : config.keyFormat.placeholder
+                      }
+                      value={currentKey}
+                      onChange={(e) => setApiKeys(prev => ({ 
                         ...prev, 
-                        [config.provider]: !prev[config.provider] 
+                        [config.provider]: e.target.value 
                       }))}
+                      className={`text-sm ${!isValidFormat ? "border-red-300" : ""}`}
+                      disabled={loading || savingProvider === config.provider}
+                    />
+                    
+                    {currentKey && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 h-auto"
+                        onClick={() => setShowKeys(prev => ({ 
+                          ...prev, 
+                          [config.provider]: !prev[config.provider] 
+                        }))}
+                      >
+                        {showKeys[config.provider] ? (
+                          <EyeOff className="w-3 h-3" />
+                        ) : (
+                          <Eye className="w-3 h-3" />
+                        )}
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={() => handleSaveApiKey(config.provider)}
+                      disabled={
+                        !currentKey || 
+                        !isValidFormat || 
+                        loading || 
+                        savingProvider === config.provider
+                      }
+                      size="sm"
+                      className="flex-1"
                     >
-                      {showKeys[config.provider] ? (
-                        <EyeOff className="w-4 h-4" />
+                      {savingProvider === config.provider ? (
+                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       ) : (
-                        <Eye className="w-4 h-4" />
+                        <>
+                          <Save className="w-3 h-3 mr-1" />
+                          Save
+                        </>
                       )}
                     </Button>
+
+                    {isConfigured && (
+                      <Button
+                        variant="destructive"
+                        onClick={() => handleDeleteApiKey(config.provider)}
+                        disabled={loading || deletingProvider === config.provider}
+                        size="sm"
+                      >
+                        {deletingProvider === config.provider ? (
+                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3 h-3" />
+                        )}
+                      </Button>
+                    )}
+                  </div>
+
+                  {currentKey && !isValidFormat && (
+                    <p className="text-xs text-red-600">
+                      Invalid format. Should 
+                      {config.keyFormat.prefix && ` start with "${config.keyFormat.prefix}" and`} be at least {config.keyFormat.minLength} chars.
+                    </p>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
 
-                <Button
-                  onClick={() => handleSaveApiKey(config.provider)}
-                  disabled={
-                    !currentKey || 
-                    !isValidFormat || 
-                    loading || 
-                    savingProvider === config.provider
-                  }
-                >
-                  {savingProvider === config.provider ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                </Button>
-
-                {isConfigured && (
-                  <Button
-                    variant="destructive"
-                    onClick={() => handleDeleteApiKey(config.provider)}
-                    disabled={loading || deletingProvider === config.provider}
-                  >
-                    {deletingProvider === config.provider ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
-                  </Button>
-                )}
-              </div>
-
-              {currentKey && !isValidFormat && (
-                <p className="text-sm text-red-600">
-                  Invalid format. {config.displayName} API keys should 
-                  {config.keyFormat.prefix && ` start with "${config.keyFormat.prefix}" and`} be at least {config.keyFormat.minLength} characters long.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        )
-      })}
-
+      {/* Security Information */}
       <Card>
         <CardContent className="pt-6">
-          <div className="text-sm text-gray-600 space-y-2">
-            <p><strong>Security:</strong> All API keys are encrypted before storage.</p>
-            <p><strong>Usage:</strong> Your own API keys provide unlimited system quota.</p>
-            <p><strong>Routing:</strong> The system automatically selects the best provider based on query complexity.</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+            <div className="text-center">
+              <div className="font-medium text-foreground mb-1">🔐 Security</div>
+              <p>All API keys are encrypted before storage using industry-standard encryption.</p>
+            </div>
+            <div className="text-center">
+              <div className="font-medium text-foreground mb-1">⚡ Unlimited Usage</div>
+              <p>Your own API keys provide unlimited system quota and bypass daily limits.</p>
+            </div>
+            <div className="text-center">
+              <div className="font-medium text-foreground mb-1">🔄 Smart Routing</div>
+              <p>System automatically selects the best provider based on query complexity.</p>
+            </div>
           </div>
         </CardContent>
       </Card>
