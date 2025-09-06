@@ -246,7 +246,7 @@ class SupabaseClient:
             # In production, you should encrypt/hash the API key
             api_key_data = {
                 "github_id": github_id,
-                "api_key_hash": api_key,  # In production: hash this
+                "encrypted_key": api_key,  # Database uses encrypted_key column
                 "created_at": datetime.now().isoformat(),
                 "updated_at": datetime.now().isoformat()
             }
@@ -269,10 +269,10 @@ class SupabaseClient:
             raise Exception("Supabase service client not initialized")
 
         try:
-            result = self.service_client.table(API_KEYS_TABLE).select("api_key_hash").eq("github_id", github_id).execute()
+            result = self.service_client.table(API_KEYS_TABLE).select("encrypted_key").eq("github_id", github_id).execute()
 
             if result.data:
-                return result.data[0]["api_key_hash"]
+                return result.data[0]["encrypted_key"]
             return None
 
         except Exception as e:

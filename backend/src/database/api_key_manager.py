@@ -47,7 +47,7 @@ class APIKeyManager:
             data = {
                 "github_id": user_id,
                 "provider": provider,
-                "api_key_hash": encrypted_key,  # Using existing column name for compatibility
+                "encrypted_key": encrypted_key,  # Database has this column name
                 "updated_at": datetime.now().isoformat()
             }
             
@@ -81,14 +81,14 @@ class APIKeyManager:
         """
         try:
             # Query the database
-            result = self.db.client.table("api_keys").select("api_key_hash").eq(
+            result = self.db.client.table("api_keys").select("encrypted_key").eq(
                 "github_id", user_id
             ).eq("provider", provider).execute()
             
             if not result.data:
                 return None
             
-            encrypted_key = result.data[0]["api_key_hash"]
+            encrypted_key = result.data[0]["encrypted_key"]
             
             # Decrypt the API key
             decrypted_key = self.encryption.decrypt_api_key(encrypted_key, user_id, provider)
@@ -139,13 +139,13 @@ class APIKeyManager:
         try:
             # Get all API keys for the user
             result = self.db.client.table("api_keys").select(
-                "provider, api_key_hash, updated_at"
+                "provider, encrypted_key, updated_at"
             ).eq("github_id", user_id).execute()
             
             configured_providers = {}
             for row in result.data:
                 provider = row["provider"]
-                encrypted_key = row["api_key_hash"]
+                encrypted_key = row["encrypted_key"]
                 updated_at = datetime.fromisoformat(row["updated_at"].replace('Z', '+00:00'))
                 
                 # Validate that the encrypted key can be decrypted
@@ -201,7 +201,7 @@ class APIKeyManager:
         """
         try:
             result = self.db.client.table("api_keys").select(
-                "api_key_hash, updated_at"
+                "encrypted_key, updated_at"
             ).eq("github_id", user_id).eq("provider", provider).execute()
             
             if not result.data:
@@ -213,7 +213,7 @@ class APIKeyManager:
                 )
             
             row = result.data[0]
-            encrypted_key = row["api_key_hash"]
+            encrypted_key = row["encrypted_key"]
             updated_at = datetime.fromisoformat(row["updated_at"].replace('Z', '+00:00'))
             
             # Validate that the encrypted key can be decrypted
@@ -269,13 +269,13 @@ class APIKeyManager:
         """
         try:
             result = self.db.client.table("api_keys").select(
-                "provider, api_key_hash"
+                "provider, encrypted_key"
             ).eq("github_id", user_id).execute()
             
             keys = {}
             for row in result.data:
                 provider = row["provider"]
-                encrypted_key = row["api_key_hash"]
+                encrypted_key = row["encrypted_key"]
                 
                 try:
                     decrypted_key = self.encryption.decrypt_api_key(encrypted_key, user_id, provider)
