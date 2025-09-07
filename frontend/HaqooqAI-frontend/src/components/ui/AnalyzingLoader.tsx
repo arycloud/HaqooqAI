@@ -19,7 +19,7 @@ export function AnalyzingLoader() {
   useEffect(() => {
     const interval = setInterval(() => {
       setStepIndex((prev) => (prev + 1) % ANALYZING_STEPS.length)
-    }, 2500) // rotate every 2.5s
+    }, 3000) // rotate every 3s
     return () => clearInterval(interval)
   }, [])
 
@@ -35,8 +35,9 @@ export function AnalyzingLoader() {
       {/* Shimmer Texts */}
       <div className="flex flex-col">
         <TextShimmer className="font-semibold text-[15px] text-white">
-            {step.main}
+        {step.main}
         </TextShimmer>
+
         {/* <TextShimmer
           className="text-[14px] text-[var(--text-secondary)] mt-1"
           duration={2.2}
