@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm"
 import { useAuth } from '@/hooks/useAuth'
 import { Message } from '@/types/message'
 import { cn } from '@/lib/utils'
+import { AIResponse } from '@/types/api'
 
 interface MessageBubbleNewProps {
   message: Message
