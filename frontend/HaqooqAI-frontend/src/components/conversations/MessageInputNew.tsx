@@ -44,7 +44,7 @@ export function MessageInputNew({
   }
 
   return (
-    <div className="sticky bottom-0 p-3 bg-[var(--sidebar-color)] border-t border-[var(--border-color)]">
+    <div className="p-3 bg-[var(--sidebar-color)] border-t border-[var(--border-color)]">
       <div className="max-w-4xl mx-auto">
         <form onSubmit={handleSubmit} className="relative">
           <textarea
