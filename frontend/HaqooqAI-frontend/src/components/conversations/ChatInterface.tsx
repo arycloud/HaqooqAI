@@ -135,7 +135,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
         <div className="flex flex-col flex-1 min-h-0">
           {/* Scrollable Messages Area */}
           <div className="flex-1 overflow-y-auto p-6 scroll-container bg-[var(--background-color)]">
-            <div className="flex flex-col gap-8 max-w-4xl mx-auto h-full">
+            <div className="flex flex-col gap-8 max-w-4xl mx-auto">
               {error && (
                 <ErrorDisplay 
                   error={error} 
@@ -145,7 +145,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
               
               {/* Show welcome content only when there are no messages and not loading */}
               {conversationMessages.length === 0 && !fetchingLoading && !setupLoading && !analyzingLoading && (
-                <div className="flex items-center justify-center h-full">
+                <div className="flex items-center justify-center">
                   <div className="text-center space-y-8 max-w-md mx-auto px-6">
                     {/* HaqooqAI Logo with glow effect */}
                     <div className="relative">
