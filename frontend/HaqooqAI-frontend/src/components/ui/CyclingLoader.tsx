@@ -86,12 +86,12 @@ export function CyclingLoader({ type = 'general' }: CyclingLoaderProps) {
       {/* Enhanced text with shimmer effect - only dynamic messages */}
       <div className="flex-1">
         <TextShimmer
-          className="text-base text-[var(--text-secondary)] font-medium"
-          duration={1.5}
-          key={`shimmer-${currentMessageIndex}`}
-        >
-          {messages[currentMessageIndex]}
-        </TextShimmer>
+        className="text-base font-medium"
+        duration={1.5}
+        key={`shimmer-${currentMessageIndex}`}
+      >
+        {messages[currentMessageIndex]}
+      </TextShimmer>
       </div>
       
       {/* Animated dots indicator */}

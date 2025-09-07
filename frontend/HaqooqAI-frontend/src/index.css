@@ -438,3 +438,13 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+
+@keyframes text-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.animate-text-shimmer {
+  animation: text-shimmer linear infinite;
+}
