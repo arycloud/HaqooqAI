@@ -145,12 +145,12 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
           </button>
         </header>
 
-        {/* Content Area - Fixed structure to ensure input stays at bottom */}
+        {/* Content Area — Ensures input stays at bottom */}
         <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          {/* Scrollable Messages Area */}
+          {/* Scrollable Messages Area — ✅ CRITICAL FIX: Added min-h-0 and box-border */}
           <div 
             ref={scrollContainerRef}
-            className="flex-1 overflow-y-auto p-6 scroll-container bg-[var(--background-color)]"
+            className="flex-1 min-h-0 overflow-y-auto p-6 scroll-container bg-[var(--background-color)] box-border"
           >
             <div className="flex flex-col gap-8 max-w-4xl mx-auto">
               {error && (
@@ -216,7 +216,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                 </div>
               )}
 
-              {/* ✅ MOVED INSIDE: Sample Legal Questions — only show when no messages and NOT loading */}
+              {/* Sample Legal Questions — inside scrollable area */}
               {conversationMessages.length === 0 && !fetchingLoading && !setupLoading && !analyzingLoading && (
                 <div className="pt-8">
                   <div className="text-center mb-6">
@@ -264,13 +264,13 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                 </div>
               )}
 
-              {/* Spacer for scroll-to-bottom */}
+              {/* Spacer for auto-scroll */}
               <div ref={messagesEndRef} />
             </div>
           </div>
         </div>
 
-        {/* ✅ Input Field — Always visually at bottom */}
+        {/* Input Field — Always at bottom */}
         <div className="flex-shrink-0 w-full">
           <MessageInputNew
             onSendMessage={handleSendMessage}
