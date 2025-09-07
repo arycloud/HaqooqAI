@@ -22,7 +22,7 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
     updateConversation,
     deleteConversation
   } = useConversations()
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
 
   const [showConfirm, setShowConfirm] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
@@ -76,6 +76,10 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
       } catch (err) {
         console.error("Failed to create conversation", err)
       }
+    }
+
+  const handleLogout = async () => {
+      await logout()
     }
 
   const handleConversationClick = (id: string) => {
@@ -270,7 +274,7 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
         <button
           onClick={() => {
             localStorage.clear()
-            navigate('/login')
+            {handleLogout}
           }}
           className="p-2 rounded-lg hover:bg-[var(--hover-color)]"
           title="Logout"
