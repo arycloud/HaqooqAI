@@ -17,13 +17,13 @@ export const useConversations = () => {
   const location = useLocation()
   const [loadingConversationId, setLoadingConversationId] = useState<string | null>(null)
 
-  // Stable key for React Query cache
+  // Stable query key
   const userQueryKey = useMemo(
-    () => QUERY_KEY(user?.github_id ?? user?.id),
+    () => ['conversations', user?.github_id ?? user?.id ?? 'guest'],
     [user]
   )
 
-  // ====== Query: conversations list (cached) ======
+  // ====== Query: conversations list ======
   const {
     data: conversations = [],
     isLoading,
@@ -46,58 +46,34 @@ export const useConversations = () => {
     networkMode: 'online',
   })
 
-  // ====== Mutation: create conversation (optimistic add) ======
+  // ====== Mutation: create conversation ======
   const createMutation = useMutation({
     mutationFn: (title: string) => conversationService.createConversation(title),
-    onMutate: async (title) => {
-      await queryClient.cancelQueries({ queryKey: userQueryKey })
-
-      const previous = queryClient.getQueryData<Conversation[]>(userQueryKey)
-
-      const optimisticConversation: Conversation = {
-        id: `temp-${Date.now()}`,
-        title,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        user_id: user?.id ?? 'guest',
-      }
-
-      // Optimistic add
-      queryClient.setQueryData<Conversation[]>(userQueryKey, (old = []) => [
-        optimisticConversation,
-        ...old,
-      ])
-
-      return { previous }
-    },
-    onError: (_err, _vars, ctx) => {
-      if (ctx?.previous) {
-        queryClient.setQueryData(userQueryKey, ctx.previous)
-      }
-      toast.error('Failed to create conversation')
-    },
     onSuccess: (created) => {
-      // Replace temp with actual
-      queryClient.setQueryData<Conversation[]>(userQueryKey, (old = []) => [
-        created,
-        ...old.filter((c) => !c.id.startsWith('temp-')),
-      ])
+      queryClient.setQueryData<Conversation[]>(
+        QUERY_KEY(user?.github_id ?? user?.id),
+        (old = []) => [created, ...old]
+      )
+    },
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : 'Failed to create conversation'
+      toast.error(msg)
     },
   })
 
-  // ====== Mutation: update conversation title (optimistic update) ======
+  // ====== Mutation: update conversation title ======
   const updateMutation = useMutation({
     mutationFn: ({ id, title }: { id: string; title: string }) =>
       conversationService.updateConversation(id, title),
     onMutate: async ({ id, title }) => {
-      await queryClient.cancelQueries({ queryKey: userQueryKey })
-      const previous = queryClient.getQueryData<Conversation[]>(userQueryKey)
+      const key = QUERY_KEY(user?.github_id ?? user?.id)
+      await queryClient.cancelQueries({ queryKey: key })
 
-      queryClient.setQueryData<Conversation[]>(userQueryKey, (old = []) =>
+      const previous = queryClient.getQueryData<Conversation[]>(key)
+
+      queryClient.setQueryData<Conversation[]>(key, (old = []) =>
         old
-          .map((c) =>
-            c.id === id ? { ...c, title, updated_at: new Date().toISOString() } : c
-          )
+          .map((c) => (c.id === id ? { ...c, title, updated_at: new Date().toISOString() } : c))
           .sort((a, b) => +new Date(b.updated_at) - +new Date(a.updated_at))
       )
 
@@ -105,7 +81,7 @@ export const useConversations = () => {
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.previous) {
-        queryClient.setQueryData(userQueryKey, ctx.previous)
+        queryClient.setQueryData(QUERY_KEY(user?.github_id ?? user?.id), ctx.previous)
       }
       toast.error('Failed to update conversation')
     },
@@ -113,25 +89,25 @@ export const useConversations = () => {
       toast.success('Conversation renamed successfully')
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: userQueryKey })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY(user?.github_id ?? user?.id) })
     },
   })
 
-  // ====== Mutation: delete conversation (optimistic remove) ======
+  // ====== Mutation: delete conversation ======
   const deleteMutation = useMutation({
-    mutationFn: (conversationId: string) =>
-      conversationService.deleteConversation(conversationId),
+    mutationFn: (conversationId: string) => conversationService.deleteConversation(conversationId),
     onMutate: async (conversationId) => {
       await queryClient.cancelQueries({ queryKey: userQueryKey })
 
       const previous = queryClient.getQueryData<Conversation[]>(userQueryKey)
+
       queryClient.setQueryData<Conversation[]>(userQueryKey, (old = []) =>
         old.filter((c) => c.id !== conversationId)
       )
 
       return { previous }
     },
-    onError: (_err, _id, ctx) => {
+    onError: (_err, _vars, ctx) => {
       if (ctx?.previous) {
         queryClient.setQueryData(userQueryKey, ctx.previous)
       }
@@ -145,26 +121,46 @@ export const useConversations = () => {
     },
   })
 
-  // ====== Public API methods ======
+  // ====== Functions ======
   const createConversation = async (title?: string): Promise<Conversation> => {
     if (!user) throw new Error('User not authenticated')
     const conversationTitle = title || 'New Conversation'
-    return createMutation.mutateAsync(conversationTitle)
+    try {
+      const conversation = await createMutation.mutateAsync(conversationTitle)
+      return conversation
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create conversation'
+      toast.error(errorMessage)
+      throw err
+    }
   }
 
   const updateConversation = async (
     conversationId: string,
     updates: Partial<Pick<Conversation, 'title'>>
   ): Promise<void> => {
-    if (!updates.title) return
-    return updateMutation.mutateAsync({ id: conversationId, title: updates.title })
+    if (!updates.title) {
+      return Promise.resolve() // ✅ always return Promise<void>
+    }
+    try {
+      await updateMutation.mutateAsync({ id: conversationId, title: updates.title })
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update conversation'
+      toast.error(errorMessage)
+      throw err
+    }
   }
 
   const deleteConversation = async (conversationId: string): Promise<void> => {
-    await deleteMutation.mutateAsync(conversationId)
-    useConversationStore.getState().removeConversation(conversationId)
-    if (location.pathname === `/chat/${conversationId}`) {
-      navigate('/')
+    try {
+      await deleteMutation.mutateAsync(conversationId)
+      useConversationStore.getState().removeConversation(conversationId)
+
+      if (location.pathname === `/chat/${conversationId}`) {
+        navigate('/')
+      }
+    } catch (error) {
+      console.error('Failed to delete conversation:', error)
     }
   }
 
