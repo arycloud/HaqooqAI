@@ -93,7 +93,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
   }
 
   return (
-    <div className="flex flex-col h-full max-h-screen bg-[var(--background-color)] group/design-root overflow-hidden">
+    <div className="flex flex-col min-h-screen bg-[var(--background-color)] group/design-root">
       {/* Sidebar with overlay */}
       {sidebarOpen && (
         <>
