@@ -1,4 +1,3 @@
-// src/components/layout/SidebarNew.tsx
 import React, { useEffect, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Plus } from 'lucide-react'
@@ -49,7 +48,6 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
   }, [user])
 
   useEffect(() => {
-    // When the sidebar opens, ensure conversations are refreshed if empty
     if (isOpen && (!conversations || conversations.length === 0)) {
       refreshConversations()
     }
@@ -180,21 +178,22 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
           <span className="truncate">New Chat</span>
         </button>
 
-        <div className="mt-2">
+        {/* Icons only */}
+        <div className="mt-4 flex items-center justify-center gap-6">
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--hover-color)] w-full text-left transition-colors duration-200"
+            className="p-2 rounded-lg hover:bg-[var(--hover-color)]"
+            title="Dashboard"
           >
             <span className="material-symbols-outlined text-[var(--accent-color)]">dashboard</span>
-            <p className="text-[var(--text-primary)] text-sm font-medium leading-normal">Dashboard</p>
           </button>
 
           <button
             onClick={() => navigate('/settings')}
-            className="mt-2 flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--hover-color)] w-full text-left transition-colors duration-200"
+            className="p-2 rounded-lg hover:bg-[var(--hover-color)]"
+            title="Settings"
           >
             <span className="material-symbols-outlined text-[var(--accent-color)]">settings</span>
-            <p className="text-[var(--text-primary)] text-sm font-medium leading-normal">Settings</p>
           </button>
         </div>
       </div>

@@ -80,10 +80,6 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
           <div className="text-[11px] text-[var(--text-secondary)] select-none">
             •
           </div>
-          {/* Time */}
-          <div className="text-[11px] text-[var(--text-secondary)]">
-            {timeLabel}
-          </div>
         </div>
 
         {/* Bubble */}
