@@ -9,6 +9,7 @@ import { useMessages } from '@/hooks/useMessages'
 import { useConversations } from '@/hooks/useConversations'
 import { Header } from '@/components/layout/Header'
 import { cn } from '@/lib/utils'
+import { AnalyzingLoader } from '../ui/AnalyzingLoader'
 
 interface ChatInterfaceProps {
   conversationId?: string
@@ -273,22 +274,10 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
 
             {/* ANALYZING overlay (non-bubble): show while waiting for AI response after user submits */}
             {showAnalyzingOverlay && (
-              <div className="flex flex-col items-center justify-center w-full mt-6">
-                <div className="mb-4">
-                  <LogoCircle size={64} />
-                </div>
-
-                <div className="w-full max-w-md bg-[var(--input-color)]/0 p-0 rounded-md">
-                  <CyclingLoader type="analyzing" />
-                </div>
-
-                {/* Shimmer placeholders under the loader */}
-                <div className="w-full max-w-md mt-4 space-y-2">
-                  <div className="h-3 w-3/4 bg-[var(--hover-color)]/30 rounded animate-pulse" />
-                  <div className="h-3 w-2/3 bg-[var(--hover-color)]/20 rounded animate-pulse" />
-                </div>
-              </div>
-            )}
+            <div className="flex justify-start mt-6">
+              <AnalyzingLoader />
+            </div>
+          )}
 
             <div ref={messagesEndRef} />
           </div>

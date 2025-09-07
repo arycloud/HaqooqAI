@@ -1,0 +1,41 @@
+// src/components/chat/AnalyzingLoader.tsx
+import { useState, useEffect } from 'react'
+import { TextShimmer } from '@/components/core/text-shimmer'
+
+const ANALYZING_STEPS = [
+  { main: "Thinking…", sub: "Analyzing your question…" },
+  { main: "Preparing response…", sub: "Gathering legal knowledge…" },
+  { main: "Checking details…", sub: "Reviewing query scope…" }
+]
+
+export function AnalyzingLoader() {
+  const [stepIndex, setStepIndex] = useState(0)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStepIndex((prev) => (prev + 1) % ANALYZING_STEPS.length)
+    }, 2500) // change every 2.5s
+    return () => clearInterval(interval)
+  }, [])
+
+  const step = ANALYZING_STEPS[stepIndex]
+
+  return (
+    <div className="flex items-start space-x-3 p-4 rounded-xl bg-[var(--bubble-assistant-bg)] shadow-md animate-in fade-in-50 slide-in-from-bottom-2">
+      {/* Spinner */}
+      <div className="relative flex-shrink-0 mt-1">
+        <div className="w-6 h-6 border-3 border-[var(--primary-color)] border-t-transparent rounded-full animate-spin" />
+      </div>
+
+      {/* Texts */}
+      <div className="flex flex-col">
+        <TextShimmer className="font-medium text-[var(--text-primary)] text-sm" duration={1.5} key={`main-${stepIndex}`}>
+          {step.main}
+        </TextShimmer>
+        <TextShimmer className="text-sm text-[var(--text-secondary)] mt-1" duration={2} key={`sub-${stepIndex}`}>
+          {step.sub}
+        </TextShimmer>
+      </div>
+    </div>
+  )
+}

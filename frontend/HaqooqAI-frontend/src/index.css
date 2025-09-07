@@ -42,6 +42,11 @@
     --ring: 322 87% 55%;
     --radius: 0.75rem;
 
+    --primary-color: #e53935; 
+    --text-primary: #ffffff;
+    --text-secondary: #9ca3af;
+    --bubble-assistant-bg: #1f2937; /* dark gray bubble bg */
+
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     --gradient-soft: linear-gradient(
