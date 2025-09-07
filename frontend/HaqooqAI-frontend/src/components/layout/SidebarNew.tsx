@@ -152,8 +152,8 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
         </div>
 
         {/* Conversations list */}
-        <div className="flex-grow overflow-y-auto pr-2 pl-4 pb-4 mt-4">
-          <nav className="flex flex-col gap-2">
+        <div className="flex-grow overflow-y-auto pr-2 pl-4 pb-4">
+          <nav className="flex flex-col gap-2 mt-4">
             {loading && (!conversations || conversations.length === 0) ? (
               <div className="py-2 space-y-2">
                 {Array.from({ length: 6 }).map((_, i) => (

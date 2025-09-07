@@ -112,146 +112,146 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
         </>
       )}
 
-      {/* Header (sticky) */}
-      <div className={cn(sidebarOpen ? "lg:ml-80" : "")}>
-        <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} sidebarOpen={sidebarOpen} />
-      </div>
-
-      {/* Main */}
+      {/* Main content with sidebar shift */}
       <div
         className={cn(
-          "flex flex-col flex-1 h-full transition-all duration-500 ease-in-out overflow-hidden",
+          "flex flex-col flex-1 h-full transition-all duration-500 ease-in-out",
           sidebarOpen ? "lg:ml-80" : ""
         )}
       >
-        {/* Messages */}
-        <div className="flex flex-col flex-1 min-h-0">
-          <div
-            ref={scrollContainerRef}
-            className="flex flex-col flex-1 overflow-y-auto p-6 bg-[var(--background-color)]"
-          >
-            <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full">
-              {error && <ErrorDisplay error={error} onRetry={handleRetryMessage} />}
+        {/* Sticky Header */}
+        <header className="sticky top-0 z-20">
+          <Header
+            onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+            sidebarOpen={sidebarOpen}
+          />
+        </header>
 
-              {/* Centered Loader when opening conversation */}
-              {showCenteredLoader && (
-                <div className="flex flex-col items-center justify-center flex-1 py-20">
-                  <CyclingLoader type={loaderType} />
-                </div>
-              )}
+        {/* Messages Area */}
+        <div className="flex flex-col flex-1 min-h-0 overflow-y-auto p-6 bg-[var(--background-color)]">
+          <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full">
+            {error && <ErrorDisplay error={error} onRetry={handleRetryMessage} />}
 
-              {/* Empty state prompt cards */}
-              {conversationMessages.length === 0 &&
-                !fetchingLoading &&
-                !setupLoading &&
-                !analyzingLoading &&
-                !isCreatingConversation && (
-                  <div className="pt-8">
-                    <div className="text-center mb-6">
-                      <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
-                        Try asking about:
-                      </h3>
-                      <p className="text-sm text-[var(--text-secondary)]">
-                        Click on any question to get started
-                      </p>
-                    </div>
+            {/* Centered Loader when opening/loading a conversation */}
+            {showCenteredLoader && (
+              <div className="flex flex-col items-center justify-center flex-1 py-20">
+                <CyclingLoader type={loaderType} />
+              </div>
+            )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                      <div
-                        className="p-4 bg-gradient-to-r from-purple-500/15 to-indigo-500/15 rounded-xl border hairline hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
-                        onClick={() =>
-                          handleSendMessage(
-                            "What are the legal requirements for property purchase in Pakistan?"
-                          )
-                        }
-                      >
-                        <div className="flex items-start gap-2">
-                          <span className="material-symbols-outlined text-purple-400 mt-0.5">
-                            home
-                          </span>
-                          <div className="text-left">
-                            <h4 className="font-semibold text-[var(--text-primary)] text-sm">
-                              Property Purchase
-                            </h4>
-                            <p className="text-xs text-[var(--text-secondary)] mt-1">
-                              Legal documents and procedures for buying property
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div
-                        className="p-4 bg-gradient-to-r from-pink-500/15 to-purple-500/15 rounded-xl border hairline hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
-                        onClick={() =>
-                          handleSendMessage("How do I register a marriage in Pakistan?")
-                        }
-                      >
-                        <div className="flex items-start gap-2">
-                          <span className="material-symbols-outlined text-pink-400 mt-0.5">
-                            favorite
-                          </span>
-                          <div className="text-left">
-                            <h4 className="font-semibold text-[var(--text-primary)] text-sm">
-                              Marriage Registration
-                            </h4>
-                            <p className="text-xs text-[var(--text-secondary)] mt-1">
-                              Required documents and process for marriage
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div
-                        className="p-4 bg-gradient-to-r from-indigo-500/15 to-blue-500/15 rounded-xl border hairline hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
-                        onClick={() =>
-                          handleSendMessage(
-                            "What documents are needed to start a business in Pakistan?"
-                          )
-                        }
-                      >
-                        <div className="flex items-start gap-2">
-                          <span className="material-symbols-outlined text-blue-400 mt-0.5">
-                            business
-                          </span>
-                          <div className="text-left">
-                            <h4 className="font-semibold text-[var(--text-primary)] text-sm">
-                              Business Registration
-                            </h4>
-                            <p className="text-xs text-[var(--text-secondary)] mt-1">
-                              Steps and documents required to register a business
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-              {conversationMessages.length > 0 &&
-                conversationMessages.map((message) => (
-                  <MessageBubbleNew
-                    key={message.id}
-                    message={message}
-                    isLoading={false}
-                  />
-                ))}
-
-              {/* Analyzing Loader (message bubble style) */}
-              {analyzingLoading && (
-                <div className="flex items-start gap-3 mt-2">
-                  <div
-                    className="bg-gradient-to-r from-purple-500 to-indigo-500 p-3 rounded-xl flex-1"
-                  >
-                    <p className="text-purple-300 text-sm font-bold leading-tight mb-2">
-                      HaqooqAI
+            {/* Empty state cards */}
+            {conversationMessages.length === 0 &&
+              !fetchingLoading &&
+              !setupLoading &&
+              !analyzingLoading &&
+              !isCreatingConversation && (
+                <div className="pt-8">
+                  <div className="text-center mb-6">
+                    <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+                      Try asking about:
+                    </h3>
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      Click on any question to get started
                     </p>
-                    <CyclingLoader type="analyzing" />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    {/* Example cards */}
+                    <div
+                      className="p-4 bg-gradient-to-r from-purple-500/15 to-indigo-500/15 rounded-xl border hairline hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
+                      onClick={() =>
+                        handleSendMessage(
+                          "What are the legal requirements for property purchase in Pakistan?"
+                        )
+                      }
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="material-symbols-outlined text-purple-400 mt-0.5">
+                          home
+                        </span>
+                        <div className="text-left">
+                          <h4 className="font-semibold text-[var(--text-primary)] text-sm">
+                            Property Purchase
+                          </h4>
+                          <p className="text-xs text-[var(--text-secondary)] mt-1">
+                            Legal documents and procedures for buying property
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      className="p-4 bg-gradient-to-r from-pink-500/15 to-purple-500/15 rounded-xl border hairline hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
+                      onClick={() =>
+                        handleSendMessage(
+                          "How do I register a marriage in Pakistan?"
+                        )
+                      }
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="material-symbols-outlined text-pink-400 mt-0.5">
+                          favorite
+                        </span>
+                        <div className="text-left">
+                          <h4 className="font-semibold text-[var(--text-primary)] text-sm">
+                            Marriage Registration
+                          </h4>
+                          <p className="text-xs text-[var(--text-secondary)] mt-1">
+                            Required documents and process for marriage
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      className="p-4 bg-gradient-to-r from-indigo-500/15 to-blue-500/15 rounded-xl border hairline hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
+                      onClick={() =>
+                        handleSendMessage(
+                          "What documents are needed to start a business in Pakistan?"
+                        )
+                      }
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="material-symbols-outlined text-blue-400 mt-0.5">
+                          business
+                        </span>
+                        <div className="text-left">
+                          <h4 className="font-semibold text-[var(--text-primary)] text-sm">
+                            Business Registration
+                          </h4>
+                          <p className="text-xs text-[var(--text-secondary)] mt-1">
+                            Steps and documents required to register a business
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
 
-              <div ref={messagesEndRef} />
-            </div>
+            {/* Messages */}
+            {conversationMessages.length > 0 &&
+              conversationMessages.map((message) => (
+                <MessageBubbleNew
+                  key={message.id}
+                  message={message}
+                  isLoading={false}
+                />
+              ))}
+
+            {/* Analyzing loader (as message bubble, after sending) */}
+            {analyzingLoading && (
+              <div className="flex items-start gap-3 mt-2">
+                <div className="bg-gradient-to-r from-purple-500 to-indigo-500 p-3 rounded-xl flex-1">
+                  <p className="text-purple-300 text-sm font-bold leading-tight mb-2">
+                    HaqooqAI
+                  </p>
+                  <CyclingLoader type="analyzing" />
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
           </div>
         </div>
 
@@ -271,4 +271,5 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
       </div>
     </div>
   )
+
 }
