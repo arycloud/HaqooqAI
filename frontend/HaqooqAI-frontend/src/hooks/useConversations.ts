@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useAuth } from './useAuth'
 import { Conversation } from '@/types/conversation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -13,15 +13,16 @@ const QUERY_KEY = (githubId?: number | string) => ['conversations', githubId ?? 
 export const useConversations = () => {
   const { user } = useAuth()
   const queryClient = useQueryClient()
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate = useNavigate()
+  const location = useLocation()
   const [loadingConversationId, setLoadingConversationId] = useState<string | null>(null)
 
-  // Create a stable key for React Query
+  // Stable key for React Query cache
   const userQueryKey = useMemo(
-    () => ['conversations', user?.github_id ?? user?.id ?? 'guest'],
+    () => QUERY_KEY(user?.github_id ?? user?.id),
     [user]
   )
+
   // ====== Query: conversations list (cached) ======
   const {
     data: conversations = [],
@@ -34,12 +35,12 @@ export const useConversations = () => {
     queryKey: userQueryKey,
     queryFn: () => conversationService.getConversations(),
     enabled: !!user,
-    staleTime: 5 * 60 * 1000,        // 5 minutes: data considered fresh
-    gcTime: 30 * 60 * 1000,          // 30 minutes: keep in cache
-    refetchOnMount: false,           // ❌ don't refetch every mount
-    refetchOnWindowFocus: false,     // ❌ don't block UI when tab focus changes
-    refetchOnReconnect: false,       // ❌ don't block UI on reconnect
-    placeholderData: (prev) => prev, // ✅ show cached immediately
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    placeholderData: (prev) => prev,
     retry: 2,
     retryDelay: 1000,
     networkMode: 'online',
@@ -48,16 +49,40 @@ export const useConversations = () => {
   // ====== Mutation: create conversation (optimistic add) ======
   const createMutation = useMutation({
     mutationFn: (title: string) => conversationService.createConversation(title),
-    onSuccess: (created) => {
-      queryClient.setQueryData<Conversation[]>(
-        QUERY_KEY(user?.github_id ?? user?.id),
-        (old = []) => [created, ...old]
-      )
+    onMutate: async (title) => {
+      await queryClient.cancelQueries({ queryKey: userQueryKey })
+
+      const previous = queryClient.getQueryData<Conversation[]>(userQueryKey)
+
+      const optimisticConversation: Conversation = {
+        id: `temp-${Date.now()}`,
+        title,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        user_id: user?.id ?? 'guest',
+      }
+
+      // Optimistic add
+      queryClient.setQueryData<Conversation[]>(userQueryKey, (old = []) => [
+        optimisticConversation,
+        ...old,
+      ])
+
+      return { previous }
     },
-    onError: (err: any) => {
-      const msg = err instanceof Error ? err.message : 'Failed to create conversation'
-      toast.error(msg)
-    }
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) {
+        queryClient.setQueryData(userQueryKey, ctx.previous)
+      }
+      toast.error('Failed to create conversation')
+    },
+    onSuccess: (created) => {
+      // Replace temp with actual
+      queryClient.setQueryData<Conversation[]>(userQueryKey, (old = []) => [
+        created,
+        ...old.filter((c) => !c.id.startsWith('temp-')),
+      ])
+    },
   })
 
   // ====== Mutation: update conversation title (optimistic update) ======
@@ -65,23 +90,22 @@ export const useConversations = () => {
     mutationFn: ({ id, title }: { id: string; title: string }) =>
       conversationService.updateConversation(id, title),
     onMutate: async ({ id, title }) => {
-      const key = QUERY_KEY(user?.github_id ?? user?.id)
-      await queryClient.cancelQueries({ queryKey: key })
+      await queryClient.cancelQueries({ queryKey: userQueryKey })
+      const previous = queryClient.getQueryData<Conversation[]>(userQueryKey)
 
-      const previous = queryClient.getQueryData<Conversation[]>(key)
-      // optimistic update
-      queryClient.setQueryData<Conversation[]>(key, (old = []) =>
+      queryClient.setQueryData<Conversation[]>(userQueryKey, (old = []) =>
         old
-          .map((c) => (c.id === id ? { ...c, title, updated_at: new Date().toISOString() } : c))
+          .map((c) =>
+            c.id === id ? { ...c, title, updated_at: new Date().toISOString() } : c
+          )
           .sort((a, b) => +new Date(b.updated_at) - +new Date(a.updated_at))
       )
 
       return { previous }
     },
     onError: (_err, _vars, ctx) => {
-      // rollback
       if (ctx?.previous) {
-        queryClient.setQueryData(QUERY_KEY(user?.github_id ?? user?.id), ctx.previous)
+        queryClient.setQueryData(userQueryKey, ctx.previous)
       }
       toast.error('Failed to update conversation')
     },
@@ -89,87 +113,60 @@ export const useConversations = () => {
       toast.success('Conversation renamed successfully')
     },
     onSettled: () => {
-      // optional: make sure we’re synced with server if other fields changed
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY(user?.github_id ?? user?.id) })
+      queryClient.invalidateQueries({ queryKey: userQueryKey })
     },
   })
 
+  // ====== Mutation: delete conversation (optimistic remove) ======
+  const deleteMutation = useMutation({
+    mutationFn: (conversationId: string) =>
+      conversationService.deleteConversation(conversationId),
+    onMutate: async (conversationId) => {
+      await queryClient.cancelQueries({ queryKey: userQueryKey })
+
+      const previous = queryClient.getQueryData<Conversation[]>(userQueryKey)
+      queryClient.setQueryData<Conversation[]>(userQueryKey, (old = []) =>
+        old.filter((c) => c.id !== conversationId)
+      )
+
+      return { previous }
+    },
+    onError: (_err, _id, ctx) => {
+      if (ctx?.previous) {
+        queryClient.setQueryData(userQueryKey, ctx.previous)
+      }
+      toast.error('Failed to delete conversation')
+    },
+    onSuccess: () => {
+      toast.success('Conversation deleted successfully')
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: userQueryKey })
+    },
+  })
+
+  // ====== Public API methods ======
   const createConversation = async (title?: string): Promise<Conversation> => {
     if (!user) throw new Error('User not authenticated')
-    try {
-      const conversationTitle = title || 'New Conversation'
-      const conversation = await conversationService.createConversation(conversationTitle)
-      return conversation
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create conversation'
-      toast.error(errorMessage)
-      throw err
-    }
+    const conversationTitle = title || 'New Conversation'
+    return createMutation.mutateAsync(conversationTitle)
   }
 
   const updateConversation = async (
     conversationId: string,
     updates: Partial<Pick<Conversation, 'title'>>
   ): Promise<void> => {
-
     if (!updates.title) return
-
-    try {
-      await conversationService.updateConversation(conversationId, updates.title)
-      toast.success('Conversation renamed successfully')
-      refetch() // refresh list after rename
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update conversation'
-      toast.error(errorMessage)
-      throw err
-    }
+    return updateMutation.mutateAsync({ id: conversationId, title: updates.title })
   }
 
-  const deleteMutation = useMutation({
-    mutationFn: (conversationId: string) => conversationService.deleteConversation(conversationId),
-    onMutate: async (conversationId) => {
-      // Use userQueryKey for consistency
-      await queryClient.cancelQueries({ queryKey: userQueryKey });
-
-      const previous = queryClient.getQueryData<Conversation[]>(userQueryKey);
-      // Optimistic update: remove the conversation from the list
-      queryClient.setQueryData<Conversation[]>(userQueryKey, (old = []) =>
-        old.filter((c) => c.id !== conversationId)
-      );
-
-      return { previous };
-    },
-    onError: (err, conversationId, context) => {
-      // Rollback optimistic update on error using userQueryKey
-      if (context?.previous) {
-        queryClient.setQueryData(userQueryKey, context.previous);
-      }
-      toast.error('Failed to delete conversation');
-    },
-    onSuccess: () => {
-      toast.success('Conversation deleted successfully');
-    },
-    onSettled: () => {
-      // Optional: Refetch conversations to ensure consistency using userQueryKey
-      queryClient.invalidateQueries({ queryKey: userQueryKey });
-    },
-  });
-
   const deleteConversation = async (conversationId: string): Promise<void> => {
-    try {
-      await deleteMutation.mutateAsync(conversationId);
-
-      // Remove conversation from Zustand store
-      useConversationStore.getState().removeConversation(conversationId);
-
-      // If we're currently viewing this conversation, navigate to home
-      if (location.pathname === `/chat/${conversationId}`) {
-        navigate('/');
-      }
-    } catch (error) {
-      console.error('Failed to delete conversation:', error);
+    await deleteMutation.mutateAsync(conversationId)
+    useConversationStore.getState().removeConversation(conversationId)
+    if (location.pathname === `/chat/${conversationId}`) {
+      navigate('/')
     }
-  };
+  }
 
   const getConversation = async (conversationId: string): Promise<Conversation | null> => {
     try {
@@ -188,15 +185,15 @@ export const useConversations = () => {
     setLoadingConversationId(conversationId)
   }
 
-  const updateConversationTitle = async (conversationId: string, firstMessage: string): Promise<void> => {
+  const updateConversationTitle = async (conversationId: string, firstMessage: string) => {
     const title = generateConversationTitle(firstMessage)
     await updateConversation(conversationId, { title })
   }
 
   return {
     conversations,
-    loading: isLoading && !isFetched, // Only show loading if first time AND no cached data
-    refreshing: isFetching && isFetched, // Show refreshing state when updating cache
+    loading: isLoading && !isFetched,
+    refreshing: isFetching && isFetched,
     error: error instanceof Error ? error.message : null,
     loadingConversationId,
     createConversation,
