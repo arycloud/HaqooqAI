@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 interface MessageInputNewProps {
   onSendMessage: (content: string) => void
@@ -6,16 +6,23 @@ interface MessageInputNewProps {
   placeholder?: string
 }
 
-export function MessageInputNew({ 
-  onSendMessage, 
-  disabled = false, 
-  placeholder = "Ask a sample legal question..." 
+export function MessageInputNew({
+  onSendMessage,
+  disabled = false,
+  placeholder = "Ask a sample legal question..."
 }: MessageInputNewProps) {
   const [message, setMessage] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  useEffect(() => {
+    // nice-to-have: focus on mount (desktop only)
+    if (window.matchMedia('(pointer:fine)').matches) {
+      textareaRef.current?.focus()
+    }
+  }, [])
+
+  const handleSubmit = (e?: React.FormEvent | React.KeyboardEvent) => {
+    e?.preventDefault()
     if (message.trim() && !disabled) {
       onSendMessage(message.trim())
       setMessage('')
@@ -34,18 +41,16 @@ export function MessageInputNew({
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value)
-    
-    // Auto-resize textarea
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
       const scrollHeight = textareaRef.current.scrollHeight
-      textareaRef.current.style.height = Math.min(scrollHeight, 150) + 'px'
+      textareaRef.current.style.height = Math.min(scrollHeight, 180) + 'px'
     }
   }
 
   return (
-    <div className="p-3 bg-[var(--sidebar-color)] border-t border-[var(--border-color)]">
-      <div className="max-w-4xl mx-auto">
+    <div className="p-3 sm:p-4 bg-[var(--sidebar-color)]">
+      <div className="max-w-3xl sm:max-w-4xl mx-auto">
         <form onSubmit={handleSubmit} className="relative">
           <textarea
             ref={textareaRef}
@@ -55,19 +60,19 @@ export function MessageInputNew({
             placeholder={placeholder}
             disabled={disabled}
             rows={2}
-            className="w-full resize-none rounded-xl text-[var(--text-primary)] bg-[var(--input-color)] border-none min-h-[60px] placeholder:text-[var(--text-secondary)] pl-5 pr-32 py-4 focus:ring-2 focus:ring-[var(--primary-color)] focus:outline-none transition-all duration-200"
-            style={{ minHeight: '60px', maxHeight: '150px' }}
+            className="w-full resize-none rounded-xl text-[var(--text-primary)] bg-[var(--input-color)] border border-[var(--border-color)] min-h-[56px] placeholder:text-[var(--text-secondary)] pl-4 pr-28 py-3 focus:ring-2 focus:ring-[var(--primary-color)] focus:outline-none transition-all duration-200"
+            style={{ minHeight: '56px', maxHeight: '180px' }}
           />
           <button
             type="submit"
             disabled={disabled || !message.trim()}
-            className="absolute right-3 top-1/2 -translate-y-1/2 flex min-w-24 cursor-pointer items-center justify-center overflow-hidden rounded-lg h-11 px-5 bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)] text-[var(--text-primary)] text-sm font-medium leading-normal hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            className="absolute right-2 top-1/2 -translate-y-1/2 flex min-w-20 cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)] text-white text-sm font-medium leading-normal hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="truncate">Send</span>
             <span className="material-symbols-outlined ml-2 text-base">send</span>
           </button>
         </form>
-        <p className="text-[var(--text-secondary)] text-xs font-normal leading-normal pt-2 px-2 text-center">
+        <p className="text-[var(--text-secondary)] text-[11px] sm:text-xs font-normal leading-normal pt-2 px-2 text-center">
           AI Assistant can make mistakes. Consider checking important information.
         </p>
       </div>

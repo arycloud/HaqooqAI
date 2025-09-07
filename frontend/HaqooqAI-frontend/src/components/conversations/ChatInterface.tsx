@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef } from 'react'
-import { useParams, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useState, useRef, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { MessageBubbleNew } from './MessageBubbleNew'
 import { MessageInputNew } from './MessageInputNew'
-import { CyclingLoader } from '@/components/ui/CyclingLoader'
+import { CyclingLoader, LoaderType } from '@/components/ui/CyclingLoader'
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay'
 import { useMessages } from '@/hooks/useMessages'
 import { useConversations } from '@/hooks/useConversations'
@@ -34,17 +34,31 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
     refreshMessages,
   } = useMessages(currentConversationId, isNewConversation)
 
+  const conversationMessages = currentConversationId ? messages[currentConversationId] || [] : []
+
+  // pick correct loader type
+  const loaderType: LoaderType | undefined = useMemo(() => {
+    if (analyzingLoading) return 'analyzing'
+    if (setupLoading) return 'setup'
+    if (fetchingLoading) return 'messages'
+    return undefined
+  }, [analyzingLoading, setupLoading, fetchingLoading])
+
   // Scroll to bottom function
-  const scrollToBottom = () => {
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+      messagesEndRef.current.scrollIntoView({ behavior })
     }
   }
 
-  // Scroll to bottom when messages change or loading state changes
+  // Scroll to bottom when messages or loading state changes
+  useEffect(() => {
+    scrollToBottom('auto')
+  }, [currentConversationId])
+
   useEffect(() => {
     scrollToBottom()
-  }, [messages, fetchingLoading, setupLoading, analyzingLoading, currentConversationId])
+  }, [conversationMessages.length, fetchingLoading, setupLoading, analyzingLoading])
 
   useEffect(() => {
     if (conversationId && conversationId !== currentConversationId) {
@@ -62,7 +76,6 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
   const handleSendMessage = async (content: string) => {
     let targetConversationId = currentConversationId
 
-    // If no conversation exists, create one
     if (!targetConversationId) {
       try {
         setIsCreatingConversation(true)
@@ -81,202 +94,164 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
 
     if (targetConversationId) {
       await sendMessage(targetConversationId, content)
+      // scroll a tick later to ensure new “user” message rendered
+      requestAnimationFrame(() => scrollToBottom())
     }
   }
 
-  const conversationMessages = currentConversationId ? messages[currentConversationId] || [] : []
-
   const handleRetryMessage = () => {
-    if (refreshMessages) {
-      refreshMessages()
-    }
+    if (refreshMessages) refreshMessages()
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-[var(--background-color)] group/design-root">
-      {/* Sidebar with overlay */}
+    <div className="flex h-screen bg-[var(--background-color)] group/design-root overflow-hidden">
+      {/* Sidebar with overlay (mobile) */}
       {sidebarOpen && (
         <>
-          {/* Overlay for mobile */}
-          <div 
-            className="fixed inset-0 bg-black/50 z-30 lg:hidden" 
+          <div
+            className="fixed inset-0 bg-black/50 z-30 lg:hidden"
             onClick={() => setSidebarOpen(false)}
           />
-          {/* Sidebar */}
           <div className="relative z-40">
             <SidebarNew isOpen={true} />
           </div>
         </>
       )}
 
-      {/* Main Chat Area */}
-      <div className={cn(
-        "flex flex-col flex-1 h-full transition-all duration-500 ease-in-out overflow-hidden",
-        sidebarOpen ? "lg:ml-80" : ""
-      )}>
+      {/* Main column */}
+      <div
+        className={cn(
+          "flex flex-col flex-1 min-w-0 transition-all duration-500 ease-in-out",
+          sidebarOpen ? "lg:ml-80" : ""
+        )}
+      >
         {/* Header */}
-        <header className="flex items-center justify-between p-4 border-b border-[var(--border-color)] flex-shrink-0">
+        <header className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-color)] flex-shrink-0">
           <div className="flex items-center gap-3">
-            {!sidebarOpen && (
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="w-8 h-8 hover:bg-[var(--hover-color)] transition-all duration-200 rounded-lg flex items-center justify-center"
-                title="Open sidebar"
-              >
-                <span className="material-symbols-outlined text-[var(--text-primary)] text-xl">menu</span>
-              </button>
-            )}
-            {sidebarOpen && (
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="w-8 h-8 hover:bg-[var(--hover-color)] transition-all duration-200 rounded-lg flex items-center justify-center"
-                title="Close sidebar"
-              >
-                <span className="material-symbols-outlined text-[var(--text-primary)] text-xl">close</span>
-              </button>
-            )}
-            <h2 className="text-[var(--text-primary)] text-xl font-bold leading-tight">
+            <button
+              onClick={() => setSidebarOpen((v) => !v)}
+              className="w-9 h-9 hover:bg-[var(--hover-color)] transition-all duration-200 rounded-lg flex items-center justify-center"
+              title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+            >
+              <span className="material-symbols-outlined text-[var(--text-primary)] text-xl">
+                {sidebarOpen ? 'close' : 'menu'}
+              </span>
+            </button>
+            <h2 className="text-[var(--text-primary)] text-lg sm:text-xl font-bold leading-tight">
               HaqooqAI Legal Assistant
             </h2>
           </div>
-          <button className="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-8 px-4 bg-[var(--hover-color)] text-[var(--text-primary)] text-sm font-medium leading-normal hover:bg-opacity-80">
-            <span className="material-symbols-outlined text-base">share</span>
-            <span className="truncate">Share</span>
-          </button>
+
+          <div className="flex items-center gap-2">
+            <button className="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-8 px-4 bg-[var(--hover-color)] text-[var(--text-primary)] text-sm font-medium leading-normal hover:bg-opacity-80">
+              <span className="material-symbols-outlined text-base">share</span>
+              <span className="truncate">Share</span>
+            </button>
+          </div>
         </header>
 
-        {/* Content Area — Ensures input stays at bottom */}
+        {/* Messages + Composer */}
         <div className="flex flex-col flex-1 min-h-0">
-          {/* Scrollable Messages Area — ✅ CRITICAL FIX: Added min-h-0 and box-border */}
-            <div
-              ref={scrollContainerRef}
-              className="flex flex-col flex-1 overflow-y-auto p-6 bg-[var(--background-color)]"
-            >
-            <div className="flex flex-col gap-8 max-w-4xl mx-auto w-full">
-              {error && (
-                <ErrorDisplay 
-                  error={error} 
-                  onRetry={handleRetryMessage}
-                />
-              )}
-              
-              {/* Show welcome content only when there are no messages and not loading */}
+          {/* Scroll area */}
+          <div
+            ref={scrollContainerRef}
+            className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 bg-[var(--background-color)]"
+          >
+            <div className="mx-auto w-full max-w-3xl sm:max-w-4xl">
+              {error && <ErrorDisplay error={error} onRetry={handleRetryMessage} />}
+
+              {/* Empty welcome */}
               {conversationMessages.length === 0 && !fetchingLoading && !setupLoading && !analyzingLoading && (
-                <div className="flex items-center justify-center">
+                <div className="pt-16 sm:pt-20">
                   <div className="text-center space-y-8 max-w-md mx-auto px-6">
-                    {/* HaqooqAI Logo with glow effect */}
                     <div className="relative">
                       <div className="w-20 h-20 rounded-3xl bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)] flex items-center justify-center mx-auto shadow-2xl">
                         <span className="material-symbols-outlined text-white text-3xl">balance</span>
                       </div>
                       <div className="absolute -inset-4 bg-gradient-to-r from-[var(--primary-color)]/20 to-[var(--secondary-color)]/20 rounded-full blur-xl animate-pulse" />
                     </div>
-                    
-                    {/* Welcome Content */}
                     <div className="space-y-3">
-                      <h2 className="text-2xl font-bold text-[var(--text-primary)]">
-                        Welcome to HaqooqAI
-                      </h2>
-                      <p className="text-lg text-[var(--text-secondary)]">
-                        Your intelligent Pakistani legal assistant
-                      </p>
+                      <h2 className="text-2xl font-bold text-[var(--text-primary)]">Welcome to HaqooqAI</h2>
+                      <p className="text-[var(--text-secondary)]">Your intelligent Pakistani legal assistant</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-10">
+                    <div className="text-center mb-6">
+                      <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Try asking about:</h3>
+                      <p className="text-sm text-[var(--text-secondary)]">Click on any question to get started</p>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {[
+                        ["What are the legal requirements for property purchase in Pakistan?", "home", "Property Purchase", "Legal documents and procedures for buying property in Pakistan"],
+                        ["How do I register a marriage in Pakistan?", "favorite", "Marriage Registration", "Required documents and process for marriage registration"],
+                        ["What documents are needed to start a business in Pakistan?", "business", "Business Registration", "Steps and documents required to register a business"],
+                      ].map(([q, icon, title, subtitle]) => (
+                        <button
+                          key={title}
+                          onClick={() => handleSendMessage(String(q))}
+                          className="text-left p-4 bg-[var(--hover-color)]/70 hover:bg-[var(--hover-color)] backdrop-blur-sm rounded-xl border border-[var(--border-color)] transition-all duration-200 cursor-pointer shadow-sm hover:shadow"
+                        >
+                          <div className="flex items-start gap-2">
+                            <span className="material-symbols-outlined text-[var(--primary-color)] mt-0.5">{icon}</span>
+                            <div>
+                              <h4 className="font-semibold text-[var(--text-primary)] text-sm">{title}</h4>
+                              <p className="text-xs text-[var(--text-secondary)] mt-1">{subtitle}</p>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Show messages when available */}
-              {conversationMessages.length > 0 && conversationMessages.map((message) => (
-                <MessageBubbleNew
-                  key={message.id}
-                  message={message}
-                  isLoading={false}
-                />
-              ))}
+              {/* Messages */}
+              <div className="flex flex-col gap-5">
+                {conversationMessages.length > 0 && conversationMessages.map((message) => (
+                  <MessageBubbleNew
+                    key={message.id}
+                    message={message}
+                    isLoading={false}
+                  />
+                ))}
 
-              {/* Show spinner only when loading */}
-              {(fetchingLoading || setupLoading || analyzingLoading) && (
-                <div className="flex items-start gap-4">
-                  <div 
-                    className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex-shrink-0"
-                    style={{
-                      background: 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))',
-                      color: 'white',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    <span className="material-symbols-outlined text-base">balance</span>
-                  </div>
-                  <div className="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 p-4 rounded-xl flex-1">
-                    <p className="text-purple-300 text-sm font-bold leading-tight mb-2">HaqooqAI</p>
-                    <CyclingLoader type="analyzing" />
-                  </div>
-                </div>
-              )}
-
-              {/* Sample Legal Questions — inside scrollable area */}
-              {conversationMessages.length === 0 && !fetchingLoading && !setupLoading && !analyzingLoading && (
-                <div className="pt-8">
-                  <div className="text-center mb-6">
-                    <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Try asking about:</h3>
-                    <p className="text-sm text-[var(--text-secondary)]">Click on any question to get started</p>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                    <div 
-                      className="p-4 bg-gradient-to-r from-purple-500/15 to-indigo-500/15 backdrop-blur-sm rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
-                      onClick={() => handleSendMessage("What are the legal requirements for property purchase in Pakistan?")}
+                {/* Streaming / loading indicator (assistant “thinking”) */}
+                {(fetchingLoading || setupLoading || analyzingLoading) && (
+                  <div className="flex items-start gap-3">
+                    <div
+                      className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-9 flex-shrink-0"
+                      style={{
+                        background: 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))',
+                        color: 'white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
                     >
-                      <div className="flex items-start gap-2">
-                        <span className="material-symbols-outlined text-purple-400 mt-0.5">home</span>
-                        <div className="text-left">
-                          <h4 className="font-semibold text-[var(--text-primary)] text-sm">Property Purchase</h4>
-                          <p className="text-xs text-[var(--text-secondary)] mt-1">Legal documents and procedures for buying property in Pakistan</p>
-                        </div>
-                      </div>
+                      <span className="material-symbols-outlined text-sm">balance</span>
                     </div>
-                    <div 
-                      className="p-4 bg-gradient-to-r from-pink-500/15 to-purple-500/15 backdrop-blur-sm rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
-                      onClick={() => handleSendMessage("How do I register a marriage in Pakistan?")}
-                    >
-                      <div className="flex items-start gap-2">
-                        <span className="material-symbols-outlined text-pink-400 mt-0.5">favorite</span>
-                        <div className="text-left">
-                          <h4 className="font-semibold text-[var(--text-primary)] text-sm">Marriage Registration</h4>
-                          <p className="text-xs text-[var(--text-secondary)] mt-1">Required documents and process for marriage registration</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div 
-                      className="p-4 bg-gradient-to-r from-indigo-500/15 to-blue-500/15 backdrop-blur-sm rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
-                      onClick={() => handleSendMessage("What documents are needed to start a business in Pakistan?")}
-                    >
-                      <div className="flex items-start gap-2">
-                        <span className="material-symbols-outlined text-blue-400 mt-0.5">business</span>
-                        <div className="text-left">
-                          <h4 className="font-semibold text-[var(--text-primary)] text-sm">Business Registration</h4>
-                          <p className="text-xs text-[var(--text-secondary)] mt-1">Steps and documents required to register a business</p>
-                        </div>
-                      </div>
+                    <div className="bg-[var(--hover-color)]/60 p-4 rounded-xl flex-1 border border-[var(--border-color)]">
+                      <p className="text-purple-300 text-xs font-bold leading-tight mb-1.5">HaqooqAI</p>
+                      <CyclingLoader type={loaderType ?? 'general'} />
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Spacer for auto-scroll */}
               <div ref={messagesEndRef} />
             </div>
           </div>
-        </div>
 
-        {/* Input Field — Always at bottom */}
-        <div className="flex-shrink-0 w-full">
-          <MessageInputNew
-            onSendMessage={handleSendMessage}
-            disabled={fetchingLoading || isCreatingConversation || setupLoading || analyzingLoading}
-            placeholder="Ask a sample legal question..."
-          />
+          {/* Composer (sticky bottom) */}
+          <div className="flex-shrink-0 w-full border-t border-[var(--border-color)] bg-[var(--sidebar-color)] pb-[env(safe-area-inset-bottom)]">
+            <MessageInputNew
+              onSendMessage={handleSendMessage}
+              disabled={fetchingLoading || isCreatingConversation || setupLoading || analyzingLoading}
+              placeholder="Ask a sample legal question..."
+            />
+          </div>
         </div>
       </div>
     </div>
