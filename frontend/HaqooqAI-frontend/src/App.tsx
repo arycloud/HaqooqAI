@@ -7,7 +7,7 @@ import { Chat } from '@/pages/Chat'
 import { Settings } from '@/pages/Settings'
 // import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { InitialLoader } from '@/components/ui/InitialLoader';
-import { MainLayout } from '@/components/layout/MainLayout'
+import MainLayout from '@/components/layout/MainLayout'
 import { ConnectionStatus } from '@/components/ui/ConnectionStatus'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { useQueryClient } from '@tanstack/react-query'
