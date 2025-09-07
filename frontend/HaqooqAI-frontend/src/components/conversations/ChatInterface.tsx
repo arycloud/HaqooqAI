@@ -132,7 +132,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
         </header>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-6 scroll-container bg-[var(--background-color)]">
+        <div className="flex-1 overflow-y-auto p-6 scroll-container bg-[var(--background-color)] min-h-0">
           <div className="flex flex-col gap-8 max-w-4xl mx-auto">
             {error && (
               <ErrorDisplay 
@@ -159,9 +159,6 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                     </h2>
                     <p className="text-lg text-[var(--text-secondary)]">
                       Your intelligent Pakistani legal assistant
-                    </p>
-                    <p className="text-sm text-[var(--text-secondary)] opacity-80">
-                      Ask any question about Pakistani law and get instant, accurate answers with citations
                     </p>
                   </div>
                 </div>
@@ -247,12 +244,14 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
           </div>
         )}
 
-        {/* Message Input */}
-        <MessageInputNew
-          onSendMessage={handleSendMessage}
-          disabled={fetchingLoading || isCreatingConversation}
-          placeholder="Ask a sample legal question..."
-        />
+        {/* Message Input - Always at the bottom */}
+        <div className="mt-auto">
+          <MessageInputNew
+            onSendMessage={handleSendMessage}
+            disabled={fetchingLoading || isCreatingConversation}
+            placeholder="Ask a sample legal question..."
+          />
+        </div>
       </main>
     </div>
   )
