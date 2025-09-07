@@ -66,13 +66,17 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
   }, [isOpen, conversations, refreshConversations])
 
   const handleNewChat = async () => {
-    try {
-      const conv = await createConversation('New Conversation')
-      navigate(`/chat/${conv.id}`)
-    } catch (err) {
-      console.error('Failed to create conversation', err)
+  try {
+        const conv = await createConversation("New Conversation")
+        if (conv?.id) {
+          navigate(`/chat/${conv.id}`)
+        } else {
+          console.error("Conversation creation failed: no ID returned")
+        }
+      } catch (err) {
+        console.error("Failed to create conversation", err)
+      }
     }
-  }
 
   const handleConversationClick = (id: string) => {
     navigate(`/chat/${id}`)
