@@ -64,79 +64,97 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
   return (
     <div
       className={cn(
-        "flex w-full mb-4",
+        "flex w-full mb-6",
         isUser ? "justify-end" : "justify-start"
       )}
     >
       <div
         className={cn(
-          "flex items-start gap-4 max-w-[75%]",
-          isUser ? "flex-row-reverse" : "flex-row"
+          "flex flex-col max-w-[75%]",
+          isUser ? "items-end" : "items-start"
         )}
       >
-        {/* Avatar */}
-        <div
-          className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex-shrink-0"
-          style={getAvatarStyle()}
+        {/* Sender name */}
+        <p
+          className={cn(
+            "text-sm font-semibold mb-1",
+            isUser ? "text-pink-400 text-right" : "text-purple-400 text-left"
+          )}
         >
-          {isUser && !user?.avatar_url && (
-            <span>{getUserInitials(user)}</span>
-          )}
-          {!isUser && (
-            <span className="material-symbols-outlined text-base">balance</span>
-          )}
-        </div>
+          {isUser ? "You" : "HaqooqAI"}
+        </p>
 
-        {/* Message Content */}
+        {/* Bubble row */}
         <div
           className={cn(
-            "p-4 rounded-xl",
-            isUser
-              ? "bg-gradient-to-r from-pink-500/10 to-purple-500/10"
-              : "bg-gradient-to-r from-purple-500/10 to-indigo-500/10 flex-1"
+            "flex items-start gap-3 w-full",
+            isUser ? "flex-row-reverse" : "flex-row"
           )}
         >
-          {/* Role Label */}
-          <p
-            className={cn(
-              "text-sm font-bold leading-tight mb-2",
-              isUser ? "text-pink-300 text-right" : "text-purple-300"
-            )}
+          {/* Avatar */}
+          <div
+            className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex-shrink-0"
+            style={getAvatarStyle()}
           >
-            {isUser ? 'You' : 'HaqooqAI'}
-          </p>
-
-          {/* Message Content */}
-          <div className="text-slate-300 text-base font-normal leading-relaxed space-y-2">
-            {message.content.split('\n').map((line, index) =>
-              line.trim() && <p key={index}>{line}</p>
+            {isUser && !user?.avatar_url && (
+              <span>{getUserInitials(user)}</span>
+            )}
+            {!isUser && (
+              <span className="material-symbols-outlined text-base">balance</span>
             )}
           </div>
 
-          {/* Action Buttons (Assistant Only) */}
-          {!isUser && (
-            <div className="flex items-center gap-2 mt-4">
-              <button
-                onClick={handleCopy}
-                className="p-2 rounded-lg text-slate-400 hover:bg-[var(--hover-color)] hover:text-[var(--text-primary)] transition-colors"
-                title={copied ? "Copied!" : "Copy message"}
-              >
-                <span className="material-symbols-outlined text-base">
-                  {copied ? 'check' : 'content_copy'}
-                </span>
-              </button>
-              <button className="p-2 rounded-lg text-slate-400 hover:bg-[var(--hover-color)] hover:text-[var(--text-primary)] transition-colors">
-                <span className="material-symbols-outlined text-base">thumb_up</span>
-              </button>
-              <button className="p-2 rounded-lg text-slate-400 hover:bg-[var(--hover-color)] hover:text-[var(--text-primary)] transition-colors">
-                <span className="material-symbols-outlined text-base">thumb_down</span>
-              </button>
-              <button className="p-2 rounded-lg text-slate-400 hover:bg-[var(--hover-color)] hover:text-[var(--text-primary)] transition-colors">
-                <span className="material-symbols-outlined text-base">refresh</span>
-              </button>
+          {/* Message bubble */}
+          <div
+            className={cn(
+              "p-4 rounded-xl",
+              isUser
+                ? "bg-[var(--primary-color)] text-white"
+                : "bg-gradient-to-r from-purple-500/10 to-indigo-500/10 text-slate-300"
+            )}
+          >
+            {/* Message Content */}
+            <div className="text-base font-normal leading-relaxed space-y-2">
+              {message.content.split('\n').map((line, index) =>
+                line.trim() && <p key={index}>{line}</p>
+              )}
             </div>
-          )}
+
+            {/* Action buttons (Assistant only) */}
+            {!isUser && (
+              <div className="flex items-center gap-2 mt-4">
+                <button
+                  onClick={handleCopy}
+                  className="p-2 rounded-lg text-slate-400 hover:bg-[var(--hover-color)] hover:text-[var(--text-primary)] transition-colors"
+                  title={copied ? "Copied!" : "Copy message"}
+                >
+                  <span className="material-symbols-outlined text-base">
+                    {copied ? 'check' : 'content_copy'}
+                  </span>
+                </button>
+                <button className="p-2 rounded-lg text-slate-400 hover:bg-[var(--hover-color)] hover:text-[var(--text-primary)] transition-colors">
+                  <span className="material-symbols-outlined text-base">thumb_up</span>
+                </button>
+                <button className="p-2 rounded-lg text-slate-400 hover:bg-[var(--hover-color)] hover:text-[var(--text-primary)] transition-colors">
+                  <span className="material-symbols-outlined text-base">thumb_down</span>
+                </button>
+                <button className="p-2 rounded-lg text-slate-400 hover:bg-[var(--hover-color)] hover:text-[var(--text-primary)] transition-colors">
+                  <span className="material-symbols-outlined text-base">refresh</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Timestamp */}
+        <p
+          className={cn(
+            "text-xs text-slate-400 mt-1",
+            isUser ? "text-right" : "text-left"
+          )}
+        >
+          {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </p>
       </div>
     </div>
   )
