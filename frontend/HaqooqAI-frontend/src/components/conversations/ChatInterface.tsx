@@ -143,7 +143,8 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                 />
               )}
               
-              {conversationMessages.length === 0 && !fetchingLoading && (
+              {/* Show welcome content only when there are no messages and not loading */}
+              {conversationMessages.length === 0 && !fetchingLoading && !setupLoading && !analyzingLoading && (
                 <div className="flex items-center justify-center h-full min-h-[500px]">
                   <div className="text-center space-y-8 max-w-md mx-auto px-6">
                     {/* HaqooqAI Logo with glow effect */}
@@ -175,7 +176,8 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                 />
               ))}
 
-              {fetchingLoading && (
+              {/* Show spinner only when loading */}
+              {(fetchingLoading || setupLoading || analyzingLoading) && (
                 <div className="flex items-start gap-4">
                   <div 
                     className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex-shrink-0"
@@ -198,8 +200,8 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
             </div>
           </div>
 
-          {/* Sample Legal Questions - Display when no messages */}
-          {conversationMessages.length === 0 && !fetchingLoading && (
+          {/* Sample Legal Questions - Display only when no messages and not loading */}
+          {conversationMessages.length === 0 && !fetchingLoading && !setupLoading && !analyzingLoading && (
             <div className="max-w-4xl mx-auto px-6 pb-4">
               <div className="text-center mb-6">
                 <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Try asking about:</h3>
@@ -251,7 +253,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
         <div className="flex-shrink-0">
           <MessageInputNew
             onSendMessage={handleSendMessage}
-            disabled={fetchingLoading || isCreatingConversation}
+            disabled={fetchingLoading || isCreatingConversation || setupLoading || analyzingLoading}
             placeholder="Ask a sample legal question..."
           />
         </div>
