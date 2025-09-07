@@ -202,24 +202,46 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
         {/* Sample Legal Questions - Display when no messages */}
         {conversationMessages.length === 0 && !fetchingLoading && (
           <div className="max-w-4xl mx-auto px-6 pb-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+            <div className="text-center mb-6">
+              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Try asking about:</h3>
+              <p className="text-sm text-[var(--text-secondary)]">Click on any question to get started</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
               <div 
-                className="p-3 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 backdrop-blur-sm rounded-lg border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer"
+                className="p-4 bg-gradient-to-r from-purple-500/15 to-indigo-500/15 backdrop-blur-sm rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
                 onClick={() => handleSendMessage("What are the legal requirements for property purchase in Pakistan?")}
               >
-                <p className="text-xs text-[var(--text-primary)]">💼 Property Purchase</p>
+                <div className="flex items-start gap-2">
+                  <span className="material-symbols-outlined text-purple-400 mt-0.5">home</span>
+                  <div className="text-left">
+                    <h4 className="font-semibold text-[var(--text-primary)] text-sm">Property Purchase</h4>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1">Legal documents and procedures for buying property in Pakistan</p>
+                  </div>
+                </div>
               </div>
               <div 
-                className="p-3 bg-gradient-to-r from-pink-500/10 to-purple-500/10 backdrop-blur-sm rounded-lg border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer"
+                className="p-4 bg-gradient-to-r from-pink-500/15 to-purple-500/15 backdrop-blur-sm rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
                 onClick={() => handleSendMessage("How do I register a marriage in Pakistan?")}
               >
-                <p className="text-xs text-[var(--text-primary)]">❤️ Marriage Registration</p>
+                <div className="flex items-start gap-2">
+                  <span className="material-symbols-outlined text-pink-400 mt-0.5">favorite</span>
+                  <div className="text-left">
+                    <h4 className="font-semibold text-[var(--text-primary)] text-sm">Marriage Registration</h4>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1">Required documents and process for marriage registration</p>
+                  </div>
+                </div>
               </div>
               <div 
-                className="p-3 bg-gradient-to-r from-indigo-500/10 to-blue-500/10 backdrop-blur-sm rounded-lg border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer"
+                className="p-4 bg-gradient-to-r from-indigo-500/15 to-blue-500/15 backdrop-blur-sm rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
                 onClick={() => handleSendMessage("What documents are needed to start a business in Pakistan?")}
               >
-                <p className="text-xs text-[var(--text-primary)]">🏢 Business Registration</p>
+                <div className="flex items-start gap-2">
+                  <span className="material-symbols-outlined text-blue-400 mt-0.5">business</span>
+                  <div className="text-left">
+                    <h4 className="font-semibold text-[var(--text-primary)] text-sm">Business Registration</h4>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1">Steps and documents required to register a business</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

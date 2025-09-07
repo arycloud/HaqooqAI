@@ -44,7 +44,7 @@ export function MessageInputNew({
   }
 
   return (
-    <div className="sticky bottom-0 p-4 bg-[var(--sidebar-color)] border-t border-[var(--border-color)]">
+    <div className="sticky bottom-0 p-3 bg-[var(--sidebar-color)] border-t border-[var(--border-color)]">
       <div className="max-w-4xl mx-auto">
         <form onSubmit={handleSubmit} className="relative">
           <textarea
@@ -67,7 +67,7 @@ export function MessageInputNew({
             <span className="material-symbols-outlined ml-2 text-base">send</span>
           </button>
         </form>
-        <p className="text-[var(--text-secondary)] text-xs font-normal leading-normal pt-3 px-2 text-center">
+        <p className="text-[var(--text-secondary)] text-xs font-normal leading-normal pt-2 px-2 text-center">
           AI Assistant can make mistakes. Consider checking important information.
         </p>
       </div>
