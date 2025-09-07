@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { useConversations } from '@/hooks/useConversations'
@@ -12,8 +12,20 @@ interface SidebarNewProps {
 export default function SidebarNew({ isOpen }: SidebarNewProps) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { conversations, loading, refreshing, error, createConversation, refreshConversations } = useConversations()
+  const {
+    conversations,
+    loading,
+    refreshing,
+    error,
+    createConversation,
+    refreshConversations,
+    updateConversationTitle,
+    deleteConversation
+  } = useConversations()
   const { user } = useAuth()
+
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState('')
 
   const initials = useMemo(() => {
     if (user?.username) return user.username.charAt(0).toUpperCase()
@@ -64,6 +76,25 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
 
   const handleConversationClick = (id: string) => {
     navigate(`/chat/${id}`)
+  }
+
+  const handleRename = (id: string, title: string) => {
+    setEditingId(id)
+    setEditValue(title)
+  }
+
+  const handleRenameSubmit = async (id: string) => {
+    if (editValue.trim()) {
+      await updateConversationTitle(id, editValue.trim())
+    }
+    setEditingId(null)
+    setEditValue('')
+  }
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this conversation?')) {
+      await deleteConversation(id)
+    }
   }
 
   const isActive = (id: string) => location.pathname === `/chat/${id}`
@@ -128,33 +159,72 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
               {conversations.map((conversation) => {
                 const active = isActive(conversation.id)
                 return (
-                  <button
+                  <div
                     key={conversation.id}
-                    onClick={() => handleConversationClick(conversation.id)}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full transition-colors duration-150",
+                      "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors duration-150 group",
                       active
                         ? "bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)] text-white"
                         : "hover:bg-[var(--hover-color)]"
                     )}
                   >
-                    <span className={cn(
-                      "material-symbols-outlined text-base",
-                      active ? "text-white" : "text-slate-400"
-                    )}>chat_bubble</span>
+                    <span
+                      className={cn(
+                        "material-symbols-outlined text-base flex-shrink-0",
+                        active ? "text-white" : "text-slate-400"
+                      )}
+                    >
+                      chat_bubble
+                    </span>
 
                     <div className="flex-1 min-w-0">
-                      <p className={cn(
-                        "text-sm font-medium truncate",
-                        active ? "text-white" : "text-slate-200"
-                      )}>
-                        {conversation.title || 'Untitled'}
-                      </p>
+                      {editingId === conversation.id ? (
+                        <input
+                          type="text"
+                          className="w-full text-sm bg-transparent border-b border-[var(--border-color)] focus:outline-none focus:border-[var(--primary-color)]"
+                          value={editValue}
+                          autoFocus
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={() => handleRenameSubmit(conversation.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleRenameSubmit(conversation.id)
+                            if (e.key === 'Escape') setEditingId(null)
+                          }}
+                        />
+                      ) : (
+                        <button
+                          className={cn(
+                            "block text-sm font-medium truncate text-left w-full",
+                            active ? "text-white" : "text-slate-200"
+                          )}
+                          onClick={() => handleConversationClick(conversation.id)}
+                        >
+                          {conversation.title || 'Untitled'}
+                        </button>
+                      )}
                       <p className="text-xs text-[var(--text-secondary)] truncate">
                         {formatDate(conversation.updated_at || conversation.created_at)}
                       </p>
                     </div>
-                  </button>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        className="material-symbols-outlined text-sm text-[var(--text-secondary)] hover:text-blue-500"
+                        title="Rename"
+                        onClick={() => handleRename(conversation.id, conversation.title || 'Untitled')}
+                      >
+                        edit
+                      </button>
+                      <button
+                        className="material-symbols-outlined text-sm text-[var(--text-secondary)] hover:text-red-500"
+                        title="Delete"
+                        onClick={() => handleDelete(conversation.id)}
+                      >
+                        delete
+                      </button>
+                    </div>
+                  </div>
                 )
               })}
 
