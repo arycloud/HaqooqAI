@@ -30,7 +30,6 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
       if (user?.avatar_url) {
         return { backgroundImage: `url("${user.avatar_url}")` }
       } else {
-        // Fallback with user initials
         return {
           backgroundColor: 'var(--primary-color)',
           color: 'white',
@@ -42,7 +41,6 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
         }
       }
     } else {
-      // HaqooqAI avatar - using a legal scales icon with gradient
       return {
         background: 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))',
         color: 'white',
@@ -64,65 +62,81 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
   }
 
   return (
-    <div className="flex items-start gap-4">
-      {/* Avatar */}
-      <div 
-        className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex-shrink-0"
-        style={getAvatarStyle()}
+    <div
+      className={cn(
+        "flex w-full mb-4",
+        isUser ? "justify-end" : "justify-start"
+      )}
+    >
+      <div
+        className={cn(
+          "flex items-start gap-4 max-w-[75%]",
+          isUser ? "flex-row-reverse" : "flex-row"
+        )}
       >
-        {isUser && !user?.avatar_url && (
-          <span>{getUserInitials(user)}</span>
-        )}
-        {!isUser && (
-          <span className="material-symbols-outlined text-base">balance</span>
-        )}
-      </div>
-      
-      {/* Message Content */}
-      <div className={cn(
-        "p-4 rounded-xl",
-        isUser 
-          ? "bg-gradient-to-r from-pink-500/10 to-purple-500/10"
-          : "bg-gradient-to-r from-purple-500/10 to-indigo-500/10 flex-1"
-      )}>
-        {/* Role Label */}
-        <p className={cn(
-          "text-sm font-bold leading-tight mb-2",
-          isUser ? "text-pink-300" : "text-purple-300"
-        )}>
-          {isUser ? 'You' : 'HaqooqAI'}
-        </p>
-        
-        {/* Message Content */}
-        <div className="text-slate-300 text-base font-normal leading-relaxed space-y-2">
-          {message.content.split('\n').map((line, index) => (
-            line.trim() && <p key={index}>{line}</p>
-          ))}
+        {/* Avatar */}
+        <div
+          className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex-shrink-0"
+          style={getAvatarStyle()}
+        >
+          {isUser && !user?.avatar_url && (
+            <span>{getUserInitials(user)}</span>
+          )}
+          {!isUser && (
+            <span className="material-symbols-outlined text-base">balance</span>
+          )}
         </div>
-        
-        {/* Action Buttons for Assistant Messages */}
-        {!isUser && (
-          <div className="flex items-center gap-2 mt-4">
-            <button 
-              onClick={handleCopy}
-              className="p-2 rounded-lg text-slate-400 hover:bg-[var(--hover-color)] hover:text-[var(--text-primary)] transition-colors"
-              title={copied ? "Copied!" : "Copy message"}
-            >
-              <span className="material-symbols-outlined text-base">
-                {copied ? 'check' : 'content_copy'}
-              </span>
-            </button>
-            <button className="p-2 rounded-lg text-slate-400 hover:bg-[var(--hover-color)] hover:text-[var(--text-primary)] transition-colors">
-              <span className="material-symbols-outlined text-base">thumb_up</span>
-            </button>
-            <button className="p-2 rounded-lg text-slate-400 hover:bg-[var(--hover-color)] hover:text-[var(--text-primary)] transition-colors">
-              <span className="material-symbols-outlined text-base">thumb_down</span>
-            </button>
-            <button className="p-2 rounded-lg text-slate-400 hover:bg-[var(--hover-color)] hover:text-[var(--text-primary)] transition-colors">
-              <span className="material-symbols-outlined text-base">refresh</span>
-            </button>
+
+        {/* Message Content */}
+        <div
+          className={cn(
+            "p-4 rounded-xl",
+            isUser
+              ? "bg-gradient-to-r from-pink-500/10 to-purple-500/10"
+              : "bg-gradient-to-r from-purple-500/10 to-indigo-500/10 flex-1"
+          )}
+        >
+          {/* Role Label */}
+          <p
+            className={cn(
+              "text-sm font-bold leading-tight mb-2",
+              isUser ? "text-pink-300 text-right" : "text-purple-300"
+            )}
+          >
+            {isUser ? 'You' : 'HaqooqAI'}
+          </p>
+
+          {/* Message Content */}
+          <div className="text-slate-300 text-base font-normal leading-relaxed space-y-2">
+            {message.content.split('\n').map((line, index) =>
+              line.trim() && <p key={index}>{line}</p>
+            )}
           </div>
-        )}
+
+          {/* Action Buttons (Assistant Only) */}
+          {!isUser && (
+            <div className="flex items-center gap-2 mt-4">
+              <button
+                onClick={handleCopy}
+                className="p-2 rounded-lg text-slate-400 hover:bg-[var(--hover-color)] hover:text-[var(--text-primary)] transition-colors"
+                title={copied ? "Copied!" : "Copy message"}
+              >
+                <span className="material-symbols-outlined text-base">
+                  {copied ? 'check' : 'content_copy'}
+                </span>
+              </button>
+              <button className="p-2 rounded-lg text-slate-400 hover:bg-[var(--hover-color)] hover:text-[var(--text-primary)] transition-colors">
+                <span className="material-symbols-outlined text-base">thumb_up</span>
+              </button>
+              <button className="p-2 rounded-lg text-slate-400 hover:bg-[var(--hover-color)] hover:text-[var(--text-primary)] transition-colors">
+                <span className="material-symbols-outlined text-base">thumb_down</span>
+              </button>
+              <button className="p-2 rounded-lg text-slate-400 hover:bg-[var(--hover-color)] hover:text-[var(--text-primary)] transition-colors">
+                <span className="material-symbols-outlined text-base">refresh</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
