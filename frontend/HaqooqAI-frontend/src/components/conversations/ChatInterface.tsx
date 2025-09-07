@@ -146,13 +146,13 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
         </header>
 
         {/* Content Area — Ensures input stays at bottom */}
-        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        <div className="flex flex-col flex-1 min-h-0">
           {/* Scrollable Messages Area — ✅ CRITICAL FIX: Added min-h-0 and box-border */}
-          <div 
-            ref={scrollContainerRef}
-            className="flex-1 min-h-0 overflow-y-auto p-6 scroll-container bg-[var(--background-color)] box-border"
-          >
-            <div className="flex flex-col gap-8 max-w-4xl mx-auto">
+            <div
+              ref={scrollContainerRef}
+              className="flex flex-col flex-1 overflow-y-auto p-6 bg-[var(--background-color)]"
+            >
+            <div className="flex flex-col gap-8 max-w-4xl mx-auto w-full">
               {error && (
                 <ErrorDisplay 
                   error={error} 
