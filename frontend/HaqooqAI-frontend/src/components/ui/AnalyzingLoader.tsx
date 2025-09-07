@@ -3,9 +3,14 @@ import { useState, useEffect } from 'react'
 import { TextShimmer } from '@/components/core/text-shimmer'
 
 const ANALYZING_STEPS = [
-  { main: "Thinking…", sub: "Analyzing your question…" },
-  { main: "Preparing response…", sub: "Gathering legal knowledge…" },
-  { main: "Checking details…", sub: "Reviewing query scope…" }
+  { main: "HaqooqAI is Thinking…"},
+  { main: "Checking the scope of your query..."},
+  { main: "Searching my legal knowledge base...."},
+  { main: "Invoking the web search to grab latest info...."},
+  { main: "Checking details…"},
+  { main: "Crafting a compelling response…"},
+  { main: "Be ready! I'm shipping the response...."},
+  
 ]
 
 export function AnalyzingLoader() {
@@ -36,13 +41,13 @@ export function AnalyzingLoader() {
         >
           {step.main}
         </TextShimmer>
-        <TextShimmer
+        {/* <TextShimmer
           className="text-[14px] text-[var(--text-secondary)] mt-1"
           duration={2.2}
           key={`sub-${stepIndex}`}
         >
           {step.sub}
-        </TextShimmer>
+        </TextShimmer> */}
       </div>
     </div>
   )

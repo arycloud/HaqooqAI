@@ -105,10 +105,15 @@
 
 
 @keyframes text-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .animate-text-shimmer {
-  animation: text-shimmer linear infinite;
+  animation: text-shimmer 2s linear infinite;
+  background-size: 200% 100%;
 }
