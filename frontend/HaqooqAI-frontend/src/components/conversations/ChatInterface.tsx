@@ -132,7 +132,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
         </header>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-6 scroll-container bg-[var(--background-color)] min-h-0">
+        <div className="flex-1 overflow-y-auto p-6 scroll-container bg-[var(--background-color)]">
           <div className="flex flex-col gap-8 max-w-4xl mx-auto">
             {error && (
               <ErrorDisplay 
@@ -229,6 +229,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
         <MessageInputNew
           onSendMessage={handleSendMessage}
           disabled={fetchingLoading || isCreatingConversation}
+          placeholder="Ask a sample legal question..."
         />
       </main>
     </div>
