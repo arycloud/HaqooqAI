@@ -19,6 +19,15 @@ export function AuthGuard({ children }: AuthGuardProps) {
     return !!(hashParams.get('access_token') || urlParams.get('access_token'))
   }
 
+  const isDevelopmentMode = import.meta.env.VITE_REACT_APP_ENV === 'development';
+  console.log('Development Mode:', isDevelopmentMode);
+  console.log('User Authenticated:', isAuthenticated);
+  if (isDevelopmentMode) {
+    console.warn('Authentication bypassed in development mode');
+    return <>{children}</>;
+  } 
+
+
   useEffect(() => {
     // If we're on a protected route and not authenticated,
     // the redirect will happen automatically

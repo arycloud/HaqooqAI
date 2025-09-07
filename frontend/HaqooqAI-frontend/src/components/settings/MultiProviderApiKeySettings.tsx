@@ -79,7 +79,7 @@ const PROVIDER_PLANS: ProviderPlan[] = [
     provider: 'openai',
     name: 'OpenAI',
     price: '$10.00',
-    description: 'Industry-leading AI models',
+    description: 'Industry-leading AI models, best for analysis',
     features: [
       'BYOK only access',
       'Industry standard',
@@ -216,14 +216,14 @@ export function MultiProviderApiKeySettings() {
     <div className="space-y-8">
       {/* Header */}
       <div className="text-center max-w-2xl mx-auto">
-        <h2 className="text-2xl font-bold mb-2">AI Provider Plans</h2>
-        <p className="text-muted-foreground">
-          Connect your API keys to unlock unlimited access and premium features across multiple AI providers.
+        <h2 className="text-2xl font-bold mb-2 text-[var(--text-primary)]">AI Provider API Keys</h2>
+        <p className="text-[var(--text-secondary)]">
+          Connect your API keys to unlock unlimited access and premium features.
         </p>
       </div>
 
-      {/* Provider Plans - Pricing Block Style */}
-      <div className="grid gap-6 md:grid-cols-3">
+      {/* Simplified Provider Cards */}
+      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
         {PROVIDER_PLANS.map((plan) => {
           const status = getProviderStatus(plan.provider)
           const isConfigured = status?.configured || false
@@ -235,30 +235,30 @@ export function MultiProviderApiKeySettings() {
           return (
             <Card
               key={plan.provider}
-              className={`relative transition-all duration-300 hover:shadow-lg ${
+              className={`relative bg-[var(--sidebar-color)] border-[var(--border-color)] transition-all duration-300 hover:shadow-lg ${
                 plan.popular
-                  ? 'ring-2 ring-purple-500/20 bg-gradient-to-br from-purple-50 to-purple-100'
+                  ? 'ring-2 ring-[var(--primary-color)]/30'
                   : isConfigured
-                  ? 'ring-2 ring-green-500/20 bg-gradient-to-br from-green-50/50 to-emerald-50/50'
-                  : 'hover:shadow-md'
+                  ? 'ring-2 ring-green-500/30'
+                  : ''
               }`}
             >
               {plan.popular && !isConfigured && (
-                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
-                  <Badge className="bg-purple-600 text-white text-xs px-3 py-1">
+                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10">
+                  <Badge className="bg-[var(--primary-color)] text-white text-xs px-3 py-1">
                     Most Popular
                   </Badge>
                 </div>
               )}
               
               {isConfigured ? (
-                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10">
                   <Badge className="bg-green-600 text-white text-xs px-3 py-1">
                     Connected
                   </Badge>
                 </div>
               ) : (
-                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10">
                   <Badge className="bg-gray-500 text-white text-xs px-3 py-1">
                     Not Connected
                   </Badge>
@@ -267,7 +267,7 @@ export function MultiProviderApiKeySettings() {
               
               <CardHeader className="text-center pb-2">
                 <div className="flex items-center justify-between mb-2">
-                  <CardTitle className="text-base flex items-center gap-2">
+                  <CardTitle className="text-base flex items-center gap-2 text-[var(--text-primary)]">
                     {plan.name}
                     {isConfigured && (
                       <CheckCircle className="w-4 h-4 text-green-500" />
@@ -277,35 +277,25 @@ export function MultiProviderApiKeySettings() {
                     variant="ghost"
                     size="sm"
                     onClick={() => window.open(plan.documentationUrl, '_blank')}
-                    className="opacity-60 hover:opacity-100 p-1"
+                    className="opacity-60 hover:opacity-100 p-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                   >
                     <ExternalLink className="w-3 h-3" />
                   </Button>
                 </div>
                 
-                <CardDescription className="text-xs mb-3">
+                <CardDescription className="text-xs mb-3 text-[var(--text-secondary)]">
                   {plan.description}
                 </CardDescription>
               </CardHeader>
               
               <CardContent className="pt-2">
-                {/* Features List */}
-                <ul className="space-y-2 mb-4">
-                  {plan.features.map((feature, featureIndex) => (
-                    <li key={featureIndex} className="flex items-start gap-2 text-xs">
-                      <Check className="h-3 w-3 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
                 {/* API Key Management Section */}
                 {isConfigured && !isEditing ? (
                   /* Connected State */
                   <div className="space-y-3">
-                    <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-3 rounded-lg text-center">
-                      <Zap className="w-4 h-4 mx-auto mb-1" />
-                      <p className="text-xs font-medium">Unlimited Access Active</p>
+                    <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 p-3 rounded-lg text-center">
+                      <Zap className="w-4 h-4 mx-auto mb-1 text-green-500" />
+                      <p className="text-xs font-medium text-green-600">Unlimited Access Active</p>
                     </div>
                     
                     <div className="flex gap-2">
@@ -313,10 +303,10 @@ export function MultiProviderApiKeySettings() {
                         variant="outline"
                         size="sm"
                         onClick={() => setEditingProvider(plan.provider)}
-                        className="flex-1 text-xs"
+                        className="flex-1 text-xs border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--hover-color)]"
                       >
                         <Edit className="w-3 h-3 mr-1" />
-                        Update
+                        Update Key
                       </Button>
                       <Button
                         variant="destructive"
@@ -334,7 +324,7 @@ export function MultiProviderApiKeySettings() {
                     </div>
                     
                     {status?.last_validated && (
-                      <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
+                      <p className="text-xs text-[var(--text-secondary)] text-center flex items-center justify-center gap-1">
                         <CheckCircle className="w-3 h-3" />
                         Connected: {new Date(status.last_validated).toLocaleDateString()}
                       </p>
@@ -354,9 +344,9 @@ export function MultiProviderApiKeySettings() {
                             ...prev, 
                             [plan.provider]: e.target.value 
                           }))}
-                          className={`text-xs transition-colors ${
-                            !isValidFormat ? "border-red-300 focus:border-red-500" : 
-                            currentKey ? "border-green-300 focus:border-green-500" : ""
+                          className={`text-xs placeholder:text-xs py-1 h-8 lg:h-8 bg-[var(--input-color)] border-[var(--border-color)] text-[var(--text-primary)] transition-colors w-full ${
+                            !isValidFormat ? "border-red-500 focus:border-red-500" : 
+                            currentKey ? "border-green-500 focus:border-green-500" : ""
                           }`}
                           disabled={loading || savingProvider === plan.provider}
                         />
@@ -366,7 +356,7 @@ export function MultiProviderApiKeySettings() {
                             type="button"
                             variant="ghost"
                             size="sm"
-                            className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 h-6 w-6"
+                            className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 h-6 w-6 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                             onClick={() => setShowKeys(prev => ({ 
                               ...prev, 
                               [plan.provider]: !prev[plan.provider] 
@@ -383,7 +373,7 @@ export function MultiProviderApiKeySettings() {
 
                       {/* Validation Message */}
                       {currentKey && !isValidFormat && (
-                        <p className="text-xs text-red-600 flex items-center gap-1">
+                        <p className="text-xs text-red-500 flex items-center gap-1">
                           <AlertCircle className="w-3 h-3" />
                           Invalid format. Should{plan.keyFormat.prefix && ` start with "${plan.keyFormat.prefix}" and`} be at least {plan.keyFormat.minLength} characters.
                         </p>
@@ -402,7 +392,7 @@ export function MultiProviderApiKeySettings() {
                         }
                         size="sm"
                         className={`flex-1 text-xs ${
-                          plan.popular ? "" : "bg-primary"
+                          plan.popular ? "bg-[var(--primary-color)] hover:bg-[var(--primary-color)]/90" : "bg-[var(--primary-color)] hover:bg-[var(--primary-color)]/90"
                         }`}
                       >
                         {savingProvider === plan.provider ? (
@@ -422,7 +412,7 @@ export function MultiProviderApiKeySettings() {
                             setApiKeys(prev => ({ ...prev, [plan.provider]: '' }))
                             setShowKeys(prev => ({ ...prev, [plan.provider]: false }))
                           }}
-                          className="text-xs px-3"
+                          className="text-xs px-3 border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--hover-color)]"
                         >
                           Cancel
                         </Button>
@@ -437,35 +427,35 @@ export function MultiProviderApiKeySettings() {
       </div>
 
       {/* Security Info Section */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+      <Card className="bg-[var(--sidebar-color)] border-[var(--border-color)]">
         <CardContent className="pt-6">
           <div className="grid gap-6 md:grid-cols-3">
             <div className="text-center">
-              <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] rounded-full flex items-center justify-center">
                 <Shield className="w-6 h-6 text-white" />
               </div>
-              <h4 className="text-sm font-medium mb-2">Bank-Grade Security</h4>
-              <p className="text-sm text-muted-foreground">
+              <h4 className="text-sm font-medium mb-2 text-[var(--text-primary)]">Bank-Grade Security</h4>
+              <p className="text-sm text-[var(--text-secondary)]">
                 Your API keys are encrypted with AES-256 encryption before storage. We never see your raw keys.
               </p>
             </div>
             
             <div className="text-center">
-              <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] rounded-full flex items-center justify-center">
                 <Zap className="w-6 h-6 text-white" />
               </div>
-              <h4 className="text-sm font-medium mb-2">Unlimited Usage</h4>
-              <p className="text-sm text-muted-foreground">
+              <h4 className="text-sm font-medium mb-2 text-[var(--text-primary)]">Unlimited Usage</h4>
+              <p className="text-sm text-[var(--text-secondary)]">
                 Your own API keys provide unlimited system quota and bypass all daily limits automatically.
               </p>
             </div>
             
             <div className="text-center">
-              <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] rounded-full flex items-center justify-center">
                 <Activity className="w-6 h-6 text-white" />
               </div>
-              <h4 className="text-sm font-medium mb-2">Smart Routing</h4>
-              <p className="text-sm text-muted-foreground">
+              <h4 className="text-sm font-medium mb-2 text-[var(--text-primary)]">Smart Routing</h4>
+              <p className="text-sm text-[var(--text-secondary)]">
                 Our system automatically selects the best provider based on your query complexity and context.
               </p>
             </div>

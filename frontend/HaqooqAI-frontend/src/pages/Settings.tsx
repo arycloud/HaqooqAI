@@ -62,8 +62,8 @@ export function Settings() {
       name: 'Groq',
       model: 'Qwen3:32B',
       speed: 'Ultra Fast',
-      speedRating: 5,
-      contextLength: '6k for the default system key',
+      speedRating: 4,
+      contextLength: '6k context',
       dailyLimit: '5 quries',
       costPer1kTokens: 'Free',
       features: ['Fastest inference', 'Cost effective', 'Default provider'],
@@ -77,7 +77,7 @@ export function Settings() {
       model: 'Gemini 2.0 Flash Lite',
       speed: 'Fast',
       speedRating: 4,
-      contextLength: '50k tokens',
+      contextLength: '50k context',
       dailyLimit: 'BYOK dependent',
       costPer1kTokens: 'Free limitted access',
       features: ['Massive context', 'Complex reasoning', 'Multimodal support'],
@@ -90,7 +90,7 @@ export function Settings() {
       name: 'OpenAI',
       model: 'GPT-5',
       speed: 'Moderate',
-      speedRating: 3,
+      speedRating: 4,
       contextLength: '128,000',
       dailyLimit: 'BYOK only',
       costPer1kTokens: 'Price on their Platform',
@@ -105,7 +105,7 @@ export function Settings() {
   return (
     <div className="h-full flex flex-col bg-[var(--background-color)]">
       {/* Header Section - Fixed at top */}
-      <div className="container mx-auto px-6 py-6 max-w-5xl flex-shrink-0">
+      <div className="container mx-auto px-6 py-6 max-w-7xl flex-shrink-0">
         <div className="text-center">
           <h1 className="text-3xl font-bold mb-2 text-[var(--text-primary)]">Settings</h1>
           <p className="text-[var(--text-secondary)]">
@@ -116,8 +116,8 @@ export function Settings() {
 
       {/* Main Tabs Layout - Scrollable content */}
       <Tabs defaultValue="api-keys" className="flex flex-col flex-1 min-h-0">
-        <div className="container mx-auto px-6 max-w-5xl flex-shrink-0">
-          <TabsList className="grid w-full grid-cols-4 max-w-2xl mx-auto bg-[var(--input-color)] border-[var(--border-color)]">
+        <div className="container mx-auto px-6 max-w-7xl flex-shrink-0">
+          <TabsList className="grid w-full grid-cols-4 max-w-3xl mx-auto bg-[var(--input-color)] border-[var(--border-color)]">
             <TabsTrigger value="api-keys" className="flex items-center gap-2 text-[var(--text-secondary)] data-[state=active]:text-[var(--text-primary)] data-[state=active]:bg-[var(--hover-color)]">
               <span className="material-symbols-outlined text-base">vpn_key</span>
               API Keys
@@ -139,23 +139,21 @@ export function Settings() {
 
         {/* API Keys Tab */}
         <TabsContent value="api-keys" className="flex-1 overflow-y-auto">
-          <div className="container mx-auto px-6 max-w-5xl py-8">
+          <div className="container mx-auto px-6 max-w-7xl py-8">
             <MultiProviderApiKeySettings />
           </div>
         </TabsContent>
 
         {/* Quota Tab */}
         <TabsContent value="quota" className="flex-1 overflow-y-auto">
-          <div className="container mx-auto px-6 max-w-5xl py-8">
+          <div className="container mx-auto px-6 max-w-7xl py-8">
             <QuotaDisplay />
           </div>
         </TabsContent>
 
-
-
         {/* AI Providers Tab */}
         <TabsContent value="providers" className="flex-1 overflow-y-auto">
-          <div className="container mx-auto px-6 max-w-5xl py-8">
+          <div className="container mx-auto px-6 max-w-7xl py-8">
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold mb-2 text-[var(--text-primary)]">AI Provider Information</h2>
               <p className="text-[var(--text-secondary)]">
@@ -164,7 +162,7 @@ export function Settings() {
             </div>
 
             {/* Provider Cards - Same design as key management */}
-            <div className="grid gap-6 md:grid-cols-3">
+            <div className="grid gap-6 md:gap-8 lg:gap-10 md:grid-cols-3 pb-20">
               {providerInfo.map((provider, index) => {
                 const configuredProvider = routingStats?.providers && Array.isArray(routingStats.providers) 
                   ? routingStats.providers.find((p: any) => 
@@ -205,70 +203,70 @@ export function Settings() {
                       </div>
                     )}
                     
-                    <CardHeader className="text-center pb-2">
-                      <div className="flex items-center justify-between mb-2">
-                        <CardTitle className="text-base text-[var(--text-primary)]">{provider.name}</CardTitle>
+                    <CardHeader className="text-center pb-3">
+                      <div className="flex items-center justify-between mb-3">
+                        <CardTitle className="text-lg text-[var(--text-primary)]">{provider.name}</CardTitle>
                         <div className={`h-3 w-3 rounded-full ${provider.color}`} />
                       </div>
                       
-                      <CardDescription className="text-xs mb-3 text-[var(--text-secondary)]">
+                      <CardDescription className="text-sm mb-2 text-[var(--text-secondary)]">
                         {provider.description}
                       </CardDescription>
                     </CardHeader>
                     
-                    <CardContent className="pt-2">
+                    <CardContent className="pt-3">
                       {/* Features List */}
-                      <ul className="space-y-2 mb-4">
+                      <ul className="space-y-3 mb-5">
                         {provider.features.map((feature, featureIndex) => (
-                          <li key={featureIndex} className="flex items-start gap-2 text-xs">
-                            <span className="material-symbols-outlined text-green-500 text-sm mt-0.5 flex-shrink-0">check_circle</span>
+                          <li key={featureIndex} className="flex items-start gap-3 text-sm">
+                            <span className="material-symbols-outlined text-green-500 text-base mt-0.5 flex-shrink-0">check_circle</span>
                             <span className="text-[var(--text-secondary)]">{feature}</span>
                           </li>
                         ))}
                       </ul>
                       
                       {/* Specifications */}
-                      <div className="space-y-2 mb-4">
-                        <div className="flex justify-between text-xs">
+                      <div className="space-y-3 mb-5">
+                        <div className="flex justify-between text-sm">
                           <span className="text-[var(--text-secondary)]">Model:</span>
-                          <span className="font-mono text-[var(--text-primary)]">{provider.model}</span>
+                          <span className="font-mono text-xs text-[var(--text-primary)]">{provider.model}</span>
                         </div>
-                        <div className="flex justify-between text-xs">
+                        <div className="flex justify-between text-sm">
                           <span className="text-[var(--text-secondary)]">Context:</span>
-                          <span className="font-mono text-[var(--text-primary)]">{provider.contextLength} tokens</span>
+                          <span className="font-mono text-xs text-[var(--text-primary)]">{provider.contextLength} tokens</span>
                         </div>
-                        <div className="flex justify-between text-xs">
+                        <div className="flex justify-between text-sm">
                           <span className="text-[var(--text-secondary)]">Daily Limit:</span>
                           <span className="text-[var(--text-primary)]">{provider.dailyLimit}</span>
                         </div>
-                        <div className="flex justify-between text-xs">
+                        <div className="flex justify-between text-sm">
                           <span className="text-[var(--text-secondary)]">Cost:</span>
-                          <span className="font-mono text-[var(--text-primary)]">{provider.costPer1kTokens}</span>
+                          <span className="font-mono text-xs text-[var(--text-primary)]">{provider.costPer1kTokens}</span>
                         </div>
-                        <div className="flex justify-between text-xs">
+                        <div className="flex justify-between text-sm">
                           <span className="text-[var(--text-secondary)]">Speed:</span>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-2">
                             <div className="flex">
                               {[...Array(5)].map((_, i) => (
                                 <div
                                   key={i}
-                                  className={`h-1.5 w-1.5 rounded-full mr-0.5 ${
+                                  className={`h-2 w-2 rounded-full mr-1 ${
                                     i < provider.speedRating ? 'bg-green-500' : 'bg-gray-200'
                                   }`}
                                 />
                               ))}
                             </div>
-                            <span className="text-xs text-[var(--text-secondary)]">{provider.speed}</span>
+                            <span className="text-sm text-[var(--text-secondary)]">{provider.speed}</span>
                           </div>
                         </div>
                       </div>
                       
                       {/* Use Cases */}
-                      <div className="border-t border-[var(--border-color)] pt-3">
-                        <h4 className="text-xs font-medium mb-2 text-[var(--text-primary)]">Best Use Cases</h4>
-                        <div className="flex flex-wrap gap-1">
+                      <div className="border-t border-[var(--border-color)] pt-4">
+                        <h4 className="text-sm font-medium mb-3 text-[var(--text-primary)]">Best Use Cases</h4>
+                        <div className="flex flex-wrap gap-2">
                           {provider.useCases.map((useCase, i) => (
-                            <Badge key={i} variant="secondary" className="text-xs px-1 py-0 bg-[var(--input-color)] text-[var(--text-secondary)] border-[var(--border-color)]">
+                            <Badge key={i} variant="secondary" className="text-xs px-2 py-1 bg-[var(--input-color)] text-[var(--text-secondary)] border-[var(--border-color)]">
                               {useCase}
                             </Badge>
                           ))}

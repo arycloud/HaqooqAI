@@ -63,41 +63,42 @@ export function QuotaDisplay() {
   const hasAnyApiKey = configuredProviders.length > 0
 
   return (
-    <Card>
+    <Card className="bg-[var(--sidebar-color)] border-[var(--border-color)]">
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+        <CardTitle className="flex items-center justify-between text-[var(--text-primary)]">
           Usage & Quota
           {quota?.unlimited && (
-            <Badge variant="default">Unlimited</Badge>
+            <Badge variant="default" className="bg-green-600">Unlimited</Badge>
           )}
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-[var(--text-secondary)]">
           Current usage limits and API key status
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mr-3" />
-            <span className="text-muted-foreground">Loading usage information...</span>
+            <div className="w-6 h-6 border-2 border-[var(--primary-color)] border-t-transparent rounded-full animate-spin mr-3" />
+            <span className="text-[var(--text-secondary)]">Loading usage information...</span>
           </div>
         ) : error ? (
           <div className="text-center py-6">
             <div className="text-amber-600 mb-2">
               ⚠️ {error}
             </div>
-            <button 
+            <Button 
               onClick={loadQuotaInfo}
-              className="text-sm text-blue-600 hover:underline"
+              variant="outline"
+              className="border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--hover-color)]"
             >
               Try again
-            </button>
+            </Button>
           </div>
         ) : quota ? (
           <>
             {/* Main Quota Display */}
             <div className="space-y-3">
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-sm text-[var(--text-primary)]">
                 <span>Daily Queries</span>
                 <span>
                   {quota.unlimited 
@@ -114,7 +115,7 @@ export function QuotaDisplay() {
                 />
               )}
               
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-[var(--text-secondary)]">
                 {quota.unlimited 
                   ? 'You have unlimited access with your API keys'
                   : `Resets at: ${formatResetTime(quota.reset_at)}`
@@ -124,13 +125,13 @@ export function QuotaDisplay() {
 
             {/* Provider-Specific Quota Information */}
             {quota.provider_quotas && Object.keys(quota.provider_quotas).length > 0 && (
-              <div className="space-y-3 pt-4 border-t">
-                <h4 className="font-medium text-sm">Provider-Specific Quotas</h4>
+              <div className="space-y-3 pt-4 border-t border-[var(--border-color)]">
+                <h4 className="font-medium text-sm text-[var(--text-primary)]">Provider-Specific Quotas</h4>
                 {Object.entries(quota.provider_quotas).map(([provider, providerQuota]) => {
                   const typedQuota = providerQuota as { remaining: number; limit: number; reset_at: string }
                   return (
                     <div key={provider} className="space-y-2">
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-sm text-[var(--text-primary)]">
                         <span>{PROVIDER_DISPLAY_NAMES[provider as keyof typeof PROVIDER_DISPLAY_NAMES] || provider}</span>
                         <span>{typedQuota.remaining} / {typedQuota.limit} remaining</span>
                       </div>
@@ -145,10 +146,10 @@ export function QuotaDisplay() {
             )}
 
             {/* API Key Status */}
-            <div className="pt-4 border-t">
+            <div className="pt-4 border-t border-[var(--border-color)]">
               <div className="flex justify-between items-center mb-3">
-                <h4 className="font-medium text-sm">API Key Status</h4>
-                <Badge variant={hasAnyApiKey ? "default" : "outline"}>
+                <h4 className="font-medium text-sm text-[var(--text-primary)]">API Key Status</h4>
+                <Badge variant={hasAnyApiKey ? "default" : "outline"} className={hasAnyApiKey ? "bg-green-600" : ""}>
                   {hasAnyApiKey ? `${configuredProviders.length} Configured` : 'None'}
                 </Badge>
               </div>
@@ -157,15 +158,15 @@ export function QuotaDisplay() {
                 <div className="grid grid-cols-1 gap-2">
                   {configuredProviders.map((provider) => (
                     <div key={provider.provider} className="flex justify-between items-center text-sm">
-                      <span>{PROVIDER_DISPLAY_NAMES[provider.provider as keyof typeof PROVIDER_DISPLAY_NAMES]}</span>
-                      <Badge variant={provider.valid ? "default" : "destructive"} className="text-xs">
+                      <span className="text-[var(--text-primary)]">{PROVIDER_DISPLAY_NAMES[provider.provider as keyof typeof PROVIDER_DISPLAY_NAMES]}</span>
+                      <Badge variant={provider.valid ? "default" : "destructive"} className={`text-xs ${provider.valid ? "bg-green-600" : ""}`}>
                         {provider.valid ? 'Valid' : 'Invalid'}
                       </Badge>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-[var(--text-secondary)]">
                   No API keys configured. Add your own keys for unlimited access.
                 </p>
               )}
@@ -173,15 +174,16 @@ export function QuotaDisplay() {
           </>
         ) : (
           <div className="text-center py-6">
-            <div className="text-muted-foreground mb-2">
+            <div className="text-[var(--text-secondary)] mb-2">
               Unable to load quota information. Please check your connection.
             </div>
-            <button 
+            <Button 
               onClick={loadQuotaInfo}
-              className="text-sm text-blue-600 hover:underline"
+              variant="outline"
+              className="border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--hover-color)]"
             >
               Retry
-            </button>
+            </Button>
           </div>
         )}
       </CardContent>

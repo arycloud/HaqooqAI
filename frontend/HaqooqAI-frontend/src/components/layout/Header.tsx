@@ -43,23 +43,21 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps) {
           onClick={onMenuClick}
           className="mr-4 w-12 h-12 lg:w-14 lg:h-14 hover:bg-[var(--hover-color)] transition-all duration-200 rounded-xl"
         >
-          <Menu className="w-6 h-6 lg:w-7 lg:h-7" />
+          <Menu className="w-6 h-6 lg:w-7 lg:h-7 text-white" />
         </Button>
 
-        {!sidebarOpen && (
-          <div className="flex items-center space-x-4">
-            <Link to="/" className="text-xl font-bold hidden md:block">
-              <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-2xl bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-lg lg:text-xl">H</span>
-              </div>
-            </Link>
-            <Link to="/" className="text-xl font-bold hidden md:block">
-              <h1 className="text-2xl lg:text-3xl font-bold text-[var(--text-primary)]">
-                HaqooqAI
-              </h1>
-            </Link>
-          </div>
-        )}
+        <div className="flex items-center space-x-4">
+          <Link to="/" className="text-xl font-bold hidden md:block">
+            <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-2xl bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-lg lg:text-xl">H</span>
+            </div>
+          </Link>
+          <Link to="/" className="text-xl font-bold hidden md:block">
+            <h1 className="text-2xl lg:text-3xl font-bold text-white">
+              HaqooqAI
+            </h1>
+          </Link>
+        </div>
       </div>
 
       {/* Right side with larger elements */}
@@ -97,7 +95,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps) {
             align="end"
             className="w-64 p-2 bg-[var(--sidebar-color)] border border-[var(--border-color)] shadow-xl rounded-xl"
           >
-            <div className="px-3 py-3 bg-gradient-to-r from-[var(--primary-color)]/10 to-[var(--secondary-color)]/10 rounded-lg mb-2">
+            <div className="px-3 py-3 bg-[var(--input-color)] rounded-lg mb-2">
               <p className="text-sm font-semibold text-[var(--text-primary)]">{user?.username}</p>
               {user?.email && (
                 <p className="text-xs text-[var(--text-secondary)] mt-1">{user.email}</p>
@@ -108,7 +106,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps) {
 
             <DropdownMenuItem
               onClick={handleSettings}
-              className="rounded-lg px-3 py-2.5 hover:bg-[var(--primary-color)]/20 transition-colors duration-200"
+              className="rounded-lg px-3 py-2.5 hover:bg-[var(--hover-color)] focus:bg-[var(--hover-color)] transition-colors duration-200"
             >
               <Settings className="w-4 h-4 mr-3 text-[var(--text-secondary)]" />
               <span className="font-medium text-[var(--text-primary)]">Settings</span>
@@ -118,10 +116,10 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps) {
 
             <DropdownMenuItem
               onClick={handleLogout}
-              className="rounded-lg px-3 py-2.5 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors duration-200"
+              className="rounded-lg px-3 py-2.5 hover:bg-[var(--hover-color)] focus:bg-[var(--hover-color)] transition-colors duration-200"
             >
-              <LogOut className="w-4 h-4 mr-3" />
-              <span className="font-medium">Sign out</span>
+              <LogOut className="w-4 h-4 mr-3 text-[var(--text-secondary)]" />
+              <span className="font-medium text-[var(--text-primary)]">Sign out</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
