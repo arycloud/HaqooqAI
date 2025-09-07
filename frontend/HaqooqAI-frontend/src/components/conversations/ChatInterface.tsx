@@ -41,11 +41,11 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
 
   // Determine loader type (passed to CyclingLoader)
   const loaderType = useMemo(() => {
-    if (analyzingLoading) return 'analyzing'
-    if (setupLoading || isCreatingConversation) return 'setup'
-    if (fetchingLoading) return 'messages'
-    return 'general'
-  }, [analyzingLoading, setupLoading, fetchingLoading, isCreatingConversation])
+  if (analyzingLoading) return 'analyzing'
+  if (setupLoading || isCreatingConversation) return 'setup'
+  if (fetchingLoading) return 'messages'
+  return 'general'
+}, [analyzingLoading, setupLoading, fetchingLoading, isCreatingConversation])
 
   // Current conversation messages array
   const conversationMessages = currentConversationId ? messages[currentConversationId] || [] : []
@@ -205,26 +205,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
             {error && <ErrorDisplay error={error} onRetry={handleRetryMessage} />}
 
             {/* CENTERED LOADER for initial conversation load (no message bubbles) */}
-            {showCenteredLoader && (
-              <div className="flex flex-col items-center justify-center w-full py-20">
-                <div className="mb-8">
-                  <LogoCircle size={112} />
-                </div>
-
-                <h3 className="text-2xl font-semibold text-[var(--text-primary)] opacity-90 mb-2">
-                  {setupLoading || isCreatingConversation ? 'Setting up the conversation…' : 'Loading conversation…'}
-                </h3>
-                <p className="text-sm text-[var(--text-secondary)] mb-6">
-                  {setupLoading || isCreatingConversation
-                    ? 'Gearing up the conversation for you...'
-                    : 'Loading chat history...'}
-                </p>
-
-                <div className="w-full max-w-md">
-                  <CyclingLoader type={loaderType} />
-                </div>
-              </div>
-            )}
+            {showCenteredLoader && <CyclingLoader type={loaderType} />}
 
             {/* When no messages (and not loading) show the empty prompt cards */}
             {conversationMessages.length === 0 &&
