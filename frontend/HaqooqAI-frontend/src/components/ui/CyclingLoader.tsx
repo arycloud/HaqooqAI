@@ -60,10 +60,10 @@ export function CyclingLoader({ type = 'general' }: CyclingLoaderProps) {
         
       </p> */}
       <TextShimmer
-              className="text-lg font-semibold text-[var(--text-primary)] mb-2"
+              className="text-lg font-semibold mb-2"
               duration={2}>
               {main}
-            </TextShimmer>
+      </TextShimmer>
 
       {/* Sub message */}
       {/* <p className="text-sm text-[var(--text-secondary)]">

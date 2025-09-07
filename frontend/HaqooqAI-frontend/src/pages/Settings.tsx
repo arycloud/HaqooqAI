@@ -82,7 +82,7 @@ export function Settings() {
       costPer1kTokens: 'Free limitted access',
       features: ['Massive context', 'Complex reasoning', 'Multimodal support'],
       color: 'bg-blue-500',
-      description: 'Advanced AI with enormous context windows, ideal for complex documents and long conversations.',
+      description: 'Advanced AI with enormous context windows, ideal for complex & long conversations.',
       strengths: ['Large context', 'Multimodal', 'Complex reasoning'],
       useCases: ['Document analysis', 'Long conversations', 'Complex queries']
     },
