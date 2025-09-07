@@ -256,7 +256,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
         </div>
 
         {/* Input */}
-        <div className="flex-shrink-0 w-full">
+        <div className="sticky bottom-0 bg-[var(--background-color)] border-t border-[var(--border-color)] p-3">
           <MessageInputNew
             onSendMessage={handleSendMessage}
             disabled={
