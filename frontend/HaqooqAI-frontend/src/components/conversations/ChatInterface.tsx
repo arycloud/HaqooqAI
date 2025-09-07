@@ -93,7 +93,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
   }
 
   return (
-    <div className="relative flex size-full min-h-screen bg-[var(--background-color)] group/design-root overflow-x-hidden">
+    <div className="flex flex-col h-full max-h-screen bg-[var(--background-color)] group/design-root overflow-hidden">
       {/* Sidebar with overlay */}
       {sidebarOpen && (
         <>
@@ -110,8 +110,8 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
       )}
 
       {/* Main Chat Area */}
-      <main className={cn(
-        "flex-1 flex flex-col h-full transition-all duration-500 ease-in-out",
+      <div className={cn(
+        "flex flex-col flex-1 h-full transition-all duration-500 ease-in-out overflow-hidden",
         sidebarOpen ? "lg:ml-80" : ""
       )}>
         {/* Header */}
@@ -146,7 +146,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
         </header>
 
         {/* Content Area - Fixed structure to ensure input stays at bottom */}
-        <div className="flex flex-col flex-1 min-h-0">
+        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
           {/* Scrollable Messages Area */}
           <div 
             ref={scrollContainerRef}
@@ -269,14 +269,14 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
         </div>
 
         {/* Message Input - Always at the bottom with flex-shrink-0 */}
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 w-full">
           <MessageInputNew
             onSendMessage={handleSendMessage}
             disabled={fetchingLoading || isCreatingConversation || setupLoading || analyzingLoading}
             placeholder="Ask a sample legal question..."
           />
         </div>
-      </main>
+      </div>
     </div>
   )
 }
