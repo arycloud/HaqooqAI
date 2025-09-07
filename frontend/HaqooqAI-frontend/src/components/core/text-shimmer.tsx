@@ -11,12 +11,14 @@ export function TextShimmer({ children, className, duration = 2 }: TextShimmerPr
   return (
     <span
       className={cn(
-        "relative inline-block bg-gradient-to-r from-gray-300 via-white to-gray-300 bg-[length:200%_100%] text-transparent bg-clip-text animate-text-shimmer-ltr",
+        "relative inline-block font-medium text-transparent bg-clip-text",
+        "bg-gradient-to-r from-gray-400 via-white to-gray-400 bg-[length:200%_100%]",
+        "animate-text-shimmer-ltr",
         className
       )}
       style={{ animationDuration: `${duration}s` }}
     >
       {children}
     </span>
-  )
+  );
 }

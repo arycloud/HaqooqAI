@@ -139,4 +139,5 @@
 
 .animate-text-shimmer-ltr {
   animation: text-shimmer-ltr 2s linear infinite;
+  background-size: 200% 100%;
 }
