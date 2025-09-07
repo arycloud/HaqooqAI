@@ -95,11 +95,10 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
     setShowConfirm(true)
   }
 
-  const confirmDelete = async () => {
+    const confirmDelete = async () => {
     if (deleteTarget) {
       try {
-        await deleteConversation(deleteTarget)
-        refreshConversations()
+        await deleteConversation(deleteTarget)  // ✅ hook handles UI + API
       } catch (err) {
         console.error('Failed to delete conversation', err)
       }

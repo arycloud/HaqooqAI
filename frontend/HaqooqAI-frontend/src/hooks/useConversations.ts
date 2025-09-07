@@ -108,6 +108,7 @@ export const useConversations = () => {
     try {
       await conversationService.deleteConversation(conversationId)
 
+      // Optimistic update
       queryClient.setQueryData<Conversation[]>(userQueryKey, (old = []) =>
         old.filter((c) => c.id !== conversationId)
       )
@@ -119,6 +120,9 @@ export const useConversations = () => {
       }
 
       toast.success('Conversation deleted successfully')
+
+      // ✅ revalidate to ensure backend + frontend match
+      queryClient.invalidateQueries({ queryKey: userQueryKey })
     } catch (error) {
       toast.error('Failed to delete conversation')
       console.error(error)
