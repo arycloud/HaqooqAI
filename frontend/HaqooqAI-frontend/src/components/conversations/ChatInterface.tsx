@@ -131,11 +131,11 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
           </button>
         </header>
 
-        {/* Main Content Area - Flex column to ensure proper layout */}
+        {/* Content Area - Fixed structure to ensure input stays at bottom */}
         <div className="flex flex-col flex-1 min-h-0">
-          {/* Messages Area */}
+          {/* Scrollable Messages Area */}
           <div className="flex-1 overflow-y-auto p-6 scroll-container bg-[var(--background-color)]">
-            <div className="flex flex-col gap-8 max-w-4xl mx-auto">
+            <div className="flex flex-col gap-8 max-w-4xl mx-auto h-full">
               {error && (
                 <ErrorDisplay 
                   error={error} 
@@ -168,7 +168,8 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                 </div>
               )}
 
-              {conversationMessages.map((message) => (
+              {/* Show messages when available */}
+              {conversationMessages.length > 0 && conversationMessages.map((message) => (
                 <MessageBubbleNew
                   key={message.id}
                   message={message}
@@ -176,9 +177,9 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                 />
               ))}
 
-              {/* Show spinner only when loading */}
+              {/* Show spinner only when loading and no messages or when loading new messages */}
               {(fetchingLoading || setupLoading || analyzingLoading) && (
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-4 flex-1 justify-center items-center min-h-[400px]">
                   <div 
                     className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex-shrink-0"
                     style={{
@@ -249,7 +250,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
           )}
         </div>
 
-        {/* Message Input - Always at the bottom */}
+        {/* Message Input - Always at the bottom with flex-shrink-0 */}
         <div className="flex-shrink-0">
           <MessageInputNew
             onSendMessage={handleSendMessage}
