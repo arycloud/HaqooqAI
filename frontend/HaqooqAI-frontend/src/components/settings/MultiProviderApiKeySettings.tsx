@@ -303,7 +303,7 @@ export function MultiProviderApiKeySettings() {
                         variant="outline"
                         size="sm"
                         onClick={() => setEditingProvider(plan.provider)}
-                        className="flex-1 text-xs border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--hover-color)]"
+                        className="flex-1 text-xs border-[var(--border-color)] bg-[var(--primary-color)] text-[var(--text-primary)] hover:bg-[var(--hover-color)]"
                       >
                         <Edit className="w-3 h-3 mr-1" />
                         Update Key
