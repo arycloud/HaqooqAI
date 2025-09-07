@@ -4,7 +4,7 @@ export interface Message {
   id: string;
   conversation_id: string;
   role: 'user' | 'assistant';
-  content:  | AIResponse;
+  content:  string | AIResponse;
   sources?: Source[];
   created_at: string;
   routing_info?: {
