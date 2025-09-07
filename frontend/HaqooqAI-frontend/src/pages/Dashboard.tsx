@@ -5,7 +5,6 @@ import { useConversations } from '@/hooks/useConversations'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { LegalPromptCards } from '@/components/legal/LegalPromptCards'
 import { Conversation } from '@/types/conversation'
 
 export function Dashboard() {

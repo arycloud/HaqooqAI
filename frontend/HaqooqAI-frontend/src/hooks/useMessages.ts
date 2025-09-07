@@ -137,21 +137,26 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
       const aiResponse = await aiService.askQuestion(content, githubId, convId)
 
       // Create assistant message via backend
-      const assistantMessage = await conversationService.createMessage(
+      await conversationService.createMessage(
         convId,
         'assistant',
         aiResponse.response,
         aiResponse.sources
       )
-      // Add routing information to the message if available
-      if (aiResponse.routing_info) {
-        (assistantMessage as any).routing_info = aiResponse.routing_info
-      }
 
-      setMessages(prev => ({
-        ...prev,
-        [convId]: dedupeMessages([...(prev[convId] || []), assistantMessage]),
-      }))
+      // Reload messages from backend to avoid duplicates
+      if (activeConversationRef.current === convId) {
+        await loadMessages(convId)
+      }
+      // Add routing information to the message if available
+      // if (aiResponse.routing_info) {
+      //   (assistantMessage as any).routing_info = aiResponse.routing_info
+      // }
+
+      // setMessages(prev => ({
+      //   ...prev,
+      //   [convId]: dedupeMessages([...(prev[convId] || []), assistantMessage]),
+      // }))
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to send message'
       console.error('Message sending error:', err)
