@@ -6,7 +6,7 @@ import { CyclingLoader } from '@/components/ui/CyclingLoader'
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay'
 import { useMessages } from '@/hooks/useMessages'
 import { useConversations } from '@/hooks/useConversations'
-import { SidebarNew } from '@/components/layout/SidebarNew'
+import SidebarNew from '@/components/layout/SidebarNew'
 import { cn } from '@/lib/utils'
 
 interface ChatInterfaceProps {

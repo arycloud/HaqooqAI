@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useLocation, Outlet } from 'react-router-dom'
-import { SidebarNew } from './SidebarNew'
+import SidebarNew from './SidebarNew'
 import { Header } from './Header'
 import { cn } from '@/lib/utils'
 
