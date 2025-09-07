@@ -145,7 +145,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
               
               {/* Show welcome content only when there are no messages and not loading */}
               {conversationMessages.length === 0 && !fetchingLoading && !setupLoading && !analyzingLoading && (
-                <div className="flex items-center justify-center h-full min-h-[500px]">
+                <div className="flex items-center justify-center h-full">
                   <div className="text-center space-y-8 max-w-md mx-auto px-6">
                     {/* HaqooqAI Logo with glow effect */}
                     <div className="relative">
@@ -179,7 +179,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
 
               {/* Show spinner only when loading and no messages or when loading new messages */}
               {(fetchingLoading || setupLoading || analyzingLoading) && (
-                <div className="flex items-start gap-4 flex-1 justify-center items-center min-h-[400px]">
+                <div className="flex items-start gap-4">
                   <div 
                     className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex-shrink-0"
                     style={{
