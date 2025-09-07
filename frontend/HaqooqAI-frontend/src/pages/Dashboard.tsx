@@ -124,7 +124,7 @@ export function Dashboard() {
           </div>
 
           {/* Enhanced Legal Prompt Cards with larger elements */}
-          <div className="slide-up">
+          {/* <div className="slide-up">
             <div className="text-center mb-12 lg:mb-16">
               <h2 className="text-4xl lg:text-5xl xl:text-6xl font-bold bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)] bg-clip-text text-transparent mb-4 lg:mb-6">
                 Popular Legal Questions
@@ -134,7 +134,7 @@ export function Dashboard() {
               </p>
             </div>
             <LegalPromptCards onPromptSelect={handlePromptSelect} />
-          </div>
+          </div> */}
 
           {/* Enhanced Recent Conversations with larger elements */}
           {!loading && conversations.length > 0 && (

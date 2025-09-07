@@ -49,14 +49,14 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps) {
         {!sidebarOpen && (
           <div className="flex items-center space-x-4">
             <Link to="/" className="text-xl font-bold hidden md:block">
-            <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-lg lg:text-xl">H</span>
-            </div>
+              <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-2xl bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-lg lg:text-xl">H</span>
+              </div>
             </Link>
             <Link to="/" className="text-xl font-bold hidden md:block">
-            <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-              HaqooqAI
-            </h1>
+              <h1 className="text-2xl lg:text-3xl font-bold text-[var(--text-primary)]">
+                HaqooqAI
+              </h1>
             </Link>
           </div>
         )}
@@ -108,7 +108,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps) {
 
             <DropdownMenuItem
               onClick={handleSettings}
-              className="rounded-lg px-3 py-2.5 hover:bg-[var(--hover-color)] transition-colors duration-200"
+              className="rounded-lg px-3 py-2.5 hover:bg-[var(--primary-color)]/20 transition-colors duration-200"
             >
               <Settings className="w-4 h-4 mr-3 text-[var(--text-secondary)]" />
               <span className="font-medium text-[var(--text-primary)]">Settings</span>
@@ -118,7 +118,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps) {
 
             <DropdownMenuItem
               onClick={handleLogout}
-              className="rounded-lg px-3 py-2.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200"
+              className="rounded-lg px-3 py-2.5 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors duration-200"
             >
               <LogOut className="w-4 h-4 mr-3" />
               <span className="font-medium">Sign out</span>

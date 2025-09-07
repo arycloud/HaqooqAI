@@ -164,25 +164,6 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                       Ask any question about Pakistani law and get instant, accurate answers with citations
                     </p>
                   </div>
-                  
-                  {/* Sample Topics with shimmer effect */}
-                  <div className="grid grid-cols-1 gap-3 mt-8">
-                    <div className="p-4 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 backdrop-blur-sm rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer">
-                      <p className="text-sm text-[var(--text-primary)] animate-shimmer">
-                        💼 Corporate Law Questions
-                      </p>
-                    </div>
-                    <div className="p-4 bg-gradient-to-r from-pink-500/10 to-purple-500/10 backdrop-blur-sm rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer">
-                      <p className="text-sm text-[var(--text-primary)] animate-shimmer" style={{ animationDelay: '0.5s' }}>
-                        🏠 Property & Real Estate
-                      </p>
-                    </div>
-                    <div className="p-4 bg-gradient-to-r from-indigo-500/10 to-blue-500/10 backdrop-blur-sm rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer">
-                      <p className="text-sm text-[var(--text-primary)] animate-shimmer" style={{ animationDelay: '1s' }}>
-                        ⚖️ Constitutional Law
-                      </p>
-                    </div>
-                  </div>
                 </div>
               </div>
             )}
@@ -217,6 +198,32 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
             )}
           </div>
         </div>
+
+        {/* Sample Legal Questions - Display when no messages */}
+        {conversationMessages.length === 0 && !fetchingLoading && (
+          <div className="max-w-4xl mx-auto px-6 pb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+              <div 
+                className="p-3 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 backdrop-blur-sm rounded-lg border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer"
+                onClick={() => handleSendMessage("What are the legal requirements for property purchase in Pakistan?")}
+              >
+                <p className="text-xs text-[var(--text-primary)]">💼 Property Purchase</p>
+              </div>
+              <div 
+                className="p-3 bg-gradient-to-r from-pink-500/10 to-purple-500/10 backdrop-blur-sm rounded-lg border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer"
+                onClick={() => handleSendMessage("How do I register a marriage in Pakistan?")}
+              >
+                <p className="text-xs text-[var(--text-primary)]">❤️ Marriage Registration</p>
+              </div>
+              <div 
+                className="p-3 bg-gradient-to-r from-indigo-500/10 to-blue-500/10 backdrop-blur-sm rounded-lg border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer"
+                onClick={() => handleSendMessage("What documents are needed to start a business in Pakistan?")}
+              >
+                <p className="text-xs text-[var(--text-primary)]">🏢 Business Registration</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Message Input */}
         <MessageInputNew
