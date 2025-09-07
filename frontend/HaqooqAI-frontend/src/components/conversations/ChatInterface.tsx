@@ -211,7 +211,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                   </div>
                   <div className="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 p-4 rounded-xl flex-1">
                     <p className="text-purple-300 text-sm font-bold leading-tight mb-2">HaqooqAI</p>
-                    <CyclingLoader />
+                    <CyclingLoader type="analyzing" />
                   </div>
                 </div>
               )}
