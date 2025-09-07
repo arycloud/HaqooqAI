@@ -151,38 +151,6 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
           </div>
         </div>
 
-        {/* Primary actions */}
-        <div className="px-4 pb-3">
-          <button
-            onClick={handleNewChat}
-            className="group flex w-full items-center justify-center gap-2 rounded-xl h-10 px-4 text-sm font-semibold text-white transition hover:opacity-95"
-            style={{ background: 'var(--gradient-primary)' }}
-          >
-            <Plus className="w-4 h-4" />
-            New Chat
-          </button>
-
-          {/* Static quick-nav (visual parity only; routes unchanged) */}
-          <div className="mt-4 grid grid-cols-4 gap-2 text-[12px] text-[var(--text-secondary)]">
-            <div className="flex flex-col items-center gap-1 rounded-lg py-2 hover:bg-[var(--hover-color)] cursor-default">
-              <Clock3 className="w-4 h-4" /><span>Recent</span>
-            </div>
-            <div className="flex flex-col items-center gap-1 rounded-lg py-2 hover:bg-[var(--hover-color)] cursor-default">
-              <Star className="w-4 h-4" /><span>Starred</span>
-            </div>
-            <div className="flex flex-col items-center gap-1 rounded-lg py-2 hover:bg-[var(--hover-color)] cursor-default">
-              <FolderOpen className="w-4 h-4" /><span>Templates</span>
-            </div>
-            <button
-              onClick={() => navigate('/settings')}
-              className="flex flex-col items-center gap-1 rounded-lg py-2 hover:bg-[var(--hover-color)]"
-              title="Settings"
-            >
-              <Settings className="w-4 h-4" /><span>Settings</span>
-            </button>
-          </div>
-        </div>
-
         {/* Conversations list */}
         <div className="flex-grow overflow-y-auto pr-2 pl-4 pb-4">
           <nav className="flex flex-col gap-2">
@@ -265,6 +233,37 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
             )}
           </nav>
         </div>
+
+        {/* Bottom actions */}
+      <div className="mt-auto px-4 pb-4 flex items-center justify-around border-t border-[var(--border-color)] pt-4">
+        <button
+          onClick={() => navigate('/dashboard')}
+          className="p-2 rounded-lg hover:bg-[var(--hover-color)]"
+          title="Dashboard"
+        >
+          <span className="material-symbols-outlined text-[var(--accent-color)]">dashboard</span>
+        </button>
+
+        <button
+          onClick={() => navigate('/settings')}
+          className="p-2 rounded-lg hover:bg-[var(--hover-color)]"
+          title="Settings"
+        >
+          <span className="material-symbols-outlined text-[var(--accent-color)]">settings</span>
+        </button>
+
+        <button
+          onClick={() => {
+            localStorage.clear()
+            navigate('/login')
+          }}
+          className="p-2 rounded-lg hover:bg-[var(--hover-color)]"
+          title="Logout"
+        >
+          <span className="material-symbols-outlined text-red-500">logout</span>
+        </button>
+      </div>
+
       </aside>
 
       {/* Confirmation Modal */}
@@ -297,6 +296,8 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
           </div>
         </div>
       )}
+
+
     </>
   )
 }

@@ -36,10 +36,10 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
 
   const loaderType = useMemo(() => {
     if (analyzingLoading) return 'analyzing'
-    if (setupLoading) return 'setup'
+    if (setupLoading || isCreatingConversation) return 'setup'
     if (fetchingLoading) return 'messages'
     return 'general'
-  }, [analyzingLoading, setupLoading, fetchingLoading])
+  }, [analyzingLoading, setupLoading, fetchingLoading, isCreatingConversation])
 
   const conversationMessages = currentConversationId ? messages[currentConversationId] || [] : []
 
@@ -147,13 +147,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
 
               {showConversationLoader && (
                 <div className="flex items-center gap-4">
-                  <div
-                    className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex-shrink-0"
-                    style={{ background: 'var(--gradient-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  >
-                    <span className="material-symbols-outlined text-base">balance</span>
-                  </div>
-                  <div className="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 p-4 rounded-xl flex-1 border hairline">
+                  <div className="bg-gradient-to-r from-purple-500 to-indigo-500 p-4 rounded-xl flex-1">
                     <p className="text-purple-300 text-sm font-bold leading-tight mb-2">HaqooqAI</p>
                     <CyclingLoader type={loaderType} />
                   </div>
@@ -220,14 +214,10 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                   <MessageBubbleNew key={message.id} message={message} isLoading={false} />
                 ))}
 
+              {/* Analyzing Loader */}
               {analyzingLoading && (
-                <div className="flex items-start gap-3 mt-2">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'var(--gradient-primary)' }}>
-                    <span className="material-symbols-outlined text-white text-sm">hourglass_top</span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-[var(--hover-color)] text-sm text-[var(--text-secondary)] italic">
-                    Analyzing your query...
-                  </div>
+                <div className="w-full flex items-center">
+                  <CyclingLoader type="analyzing" />
                 </div>
               )}
 
