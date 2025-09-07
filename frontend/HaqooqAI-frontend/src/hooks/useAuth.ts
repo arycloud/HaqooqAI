@@ -1,16 +1,27 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { User } from '@/types/auth'
+import toast from 'react-hot-toast'
 import { authService } from '@/services/backend/authService'
 import { STORAGE_KEYS } from '@/utils/constants'
-import toast from 'react-hot-toast'
+import { useAuthStore } from '@/store/authStore'
+import { User } from '@/types/auth'
 
 export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
   const location = useLocation()
+
+  // Zustand store values
+  const {
+    user,
+    setUser,
+    reset,
+    isAuthenticated,
+    setError,
+    setLoading,
+  } = useAuthStore()
+
+  const [error, _setError] = useState<string | null>(null) // local error mirror
+  const [loading, _setLoading] = useState(true) // local loading mirror
 
   useEffect(() => {
     initializeAuth()
@@ -22,6 +33,8 @@ export const useAuth = () => {
   const initializeAuth = async () => {
     try {
       setLoading(true)
+      _setLoading(true)
+      _setError(null)
       setError(null)
 
       // Handle OAuth callback
@@ -47,13 +60,14 @@ export const useAuth = () => {
 
       // Fallback: check stored token/session
       const token = authService.getStoredToken()
-      if (token) {
+      if (token && !user) {
         await validateSession(token)
       }
     } catch (err) {
       handleAuthError(err instanceof Error ? err.message : 'Authentication failed')
     } finally {
       setLoading(false)
+      _setLoading(false)
     }
   }
 
@@ -68,7 +82,6 @@ export const useAuth = () => {
       if (!authenticatedUser) throw new Error('No user data received from GitHub')
 
       setUser(authenticatedUser)
-      authService.storeUser(authenticatedUser)
 
       // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname)
@@ -92,7 +105,6 @@ export const useAuth = () => {
       const auth = await authService.validateToken(token)
       if (auth?.user) {
         setUser(auth.user)
-        authService.storeUser(auth.user)
       }
     } catch (tokenError) {
       const errorMessage =
@@ -116,12 +128,11 @@ export const useAuth = () => {
             toast.error('Connection issues detected. Some features may be limited.')
           }
         } else {
-          authService.logout()
+          reset()
           navigate('/login', { replace: true })
         }
       } else {
-        // Invalid token — force logout
-        authService.logout()
+        reset()
         navigate('/login', { replace: true })
       }
     }
@@ -131,15 +142,15 @@ export const useAuth = () => {
    * Unified Error Handling
    * --------------------------- */
   const handleAuthError = (message: string, redirectToLogin = false) => {
+    _setError(message)
     setError(message)
     toast.error(message)
     console.error('Auth Error:', message)
 
-    // Clean URL
     window.history.replaceState({}, document.title, location.pathname)
 
     if (redirectToLogin) {
-      authService.logout()
+      reset()
       navigate('/login', { replace: true })
     }
   }
@@ -160,32 +171,32 @@ export const useAuth = () => {
   const logout = async () => {
     try {
       setLoading(true)
+      _setLoading(true)
       await authService.logout()
-      setUser(null)
-      setError(null)
+      reset()
       navigate('/login', { replace: true })
       toast.success('Logged out successfully')
     } catch (err) {
       handleAuthError(err instanceof Error ? err.message : 'Logout failed')
     } finally {
       setLoading(false)
+      _setLoading(false)
     }
   }
 
   const updateUser = (updatedUser: User) => {
     setUser(updatedUser)
-    authService.storeUser(updatedUser)
   }
 
   const refreshAuth = async () => {
     try {
       setLoading(true)
+      _setLoading(true)
       const session = await authService.checkExistingSession()
       if (session?.user) {
         setUser(session.user)
-        authService.storeUser(session.user)
       } else {
-        setUser(null)
+        reset()
         navigate('/login', { replace: true })
       }
     } catch (err) {
@@ -193,9 +204,10 @@ export const useAuth = () => {
         err instanceof Error ? err.message : 'Failed to refresh authentication',
         true
       )
-      setUser(null)
+      reset()
     } finally {
       setLoading(false)
+      _setLoading(false)
     }
   }
 
@@ -207,6 +219,6 @@ export const useAuth = () => {
     logout,
     updateUser,
     refreshAuth,
-    isAuthenticated: !!user,
+    isAuthenticated,
   }
 }
