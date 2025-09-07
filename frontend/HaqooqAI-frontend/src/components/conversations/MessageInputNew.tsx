@@ -15,20 +15,19 @@ export function MessageInputNew({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
-    // nice-to-have: focus on mount (desktop only)
-    if (window.matchMedia('(pointer:fine)').matches) {
+    // focus on desktop for convenience
+    if (typeof window !== 'undefined' && window.matchMedia('(pointer:fine)').matches) {
       textareaRef.current?.focus()
     }
   }, [])
 
   const handleSubmit = (e?: React.FormEvent | React.KeyboardEvent) => {
     e?.preventDefault()
-    if (message.trim() && !disabled) {
-      onSendMessage(message.trim())
+    const trimmed = message.trim()
+    if (trimmed && !disabled) {
+      onSendMessage(trimmed)
       setMessage('')
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto'
-      }
+      if (textareaRef.current) textareaRef.current.style.height = 'auto'
     }
   }
 
@@ -44,13 +43,13 @@ export function MessageInputNew({
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
       const scrollHeight = textareaRef.current.scrollHeight
-      textareaRef.current.style.height = Math.min(scrollHeight, 180) + 'px'
+      textareaRef.current.style.height = Math.min(scrollHeight, 150) + 'px'
     }
   }
 
   return (
-    <div className="p-3 sm:p-4 bg-[var(--sidebar-color)]">
-      <div className="max-w-3xl sm:max-w-4xl mx-auto">
+    <div className="p-3 bg-[var(--sidebar-color)] border-t border-[var(--border-color)]">
+      <div className="max-w-4xl mx-auto">
         <form onSubmit={handleSubmit} className="relative">
           <textarea
             ref={textareaRef}
@@ -61,18 +60,18 @@ export function MessageInputNew({
             disabled={disabled}
             rows={2}
             className="w-full resize-none rounded-xl text-[var(--text-primary)] bg-[var(--input-color)] border border-[var(--border-color)] min-h-[56px] placeholder:text-[var(--text-secondary)] pl-4 pr-28 py-3 focus:ring-2 focus:ring-[var(--primary-color)] focus:outline-none transition-all duration-200"
-            style={{ minHeight: '56px', maxHeight: '180px' }}
+            style={{ minHeight: '56px', maxHeight: '150px' }}
           />
           <button
             type="submit"
             disabled={disabled || !message.trim()}
-            className="absolute right-2 top-1/2 -translate-y-1/2 flex min-w-20 cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)] text-white text-sm font-medium leading-normal hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            className="absolute right-3 top-1/2 -translate-y-1/2 flex min-w-24 cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)] text-white text-sm font-medium leading-normal hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="truncate">Send</span>
             <span className="material-symbols-outlined ml-2 text-base">send</span>
           </button>
         </form>
-        <p className="text-[var(--text-secondary)] text-[11px] sm:text-xs font-normal leading-normal pt-2 px-2 text-center">
+        <p className="text-[var(--text-secondary)] text-xs font-normal leading-normal pt-2 px-2 text-center">
           AI Assistant can make mistakes. Consider checking important information.
         </p>
       </div>

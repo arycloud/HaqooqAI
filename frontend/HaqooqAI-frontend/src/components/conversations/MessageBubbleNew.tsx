@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { Message } from '@/types/message'
 import { cn } from '@/lib/utils'
@@ -14,112 +14,147 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
 
   const isUser = message.role === 'user'
 
-  // Generate initials for fallback avatar
-  const getUserInitials = (user: any) => {
-    if (user?.username) return user.username.charAt(0).toUpperCase()
-    if (user?.email) return user.email.charAt(0).toUpperCase()
+  // Parse timestamp safely
+  const timestamp = useMemo(() => {
+    try {
+      return message.created_at ? new Date(message.created_at) : new Date()
+    } catch {
+      return new Date()
+    }
+  }, [message.created_at])
+
+  const timeLabel = useMemo(() => {
+    return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }, [timestamp])
+
+  const getUserInitials = (u: any) => {
+    if (u?.username) return u.username.charAt(0).toUpperCase()
+    if (u?.email) return u.email.charAt(0).toUpperCase()
     return 'U'
   }
 
-  const getAvatarContent = () => {
-    if (isUser) {
-      if (user?.avatar_url) {
-        return (
-          <div
-            className="w-9 h-9 rounded-full bg-center bg-cover flex-shrink-0"
-            style={{ backgroundImage: `url("${user.avatar_url}")` }}
-          />
-        )
-      }
-      return (
-        <div className="w-9 h-9 rounded-full flex items-center justify-center bg-[var(--primary-color)] text-white font-bold">
-          {getUserInitials(user)}
-        </div>
-      )
+  const userAvatarStyle = useMemo(() => {
+    if (user?.avatar_url) {
+      return {
+        backgroundImage: `url("${user.avatar_url}")`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      } as React.CSSProperties
     }
-
-    return (
-      <div className="w-9 h-9 rounded-full flex items-center justify-center bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)] text-white">
-        <span className="material-symbols-outlined text-base">balance</span>
-      </div>
-    )
-  }
+    return undefined
+  }, [user?.avatar_url])
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(message.content)
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      setTimeout(() => setCopied(false), 1800)
     } catch (error) {
       console.error('Failed to copy text:', error)
     }
   }
 
   return (
-    <div
-      className={cn(
-        "flex w-full gap-3",
-        isUser ? "justify-end text-right" : "justify-start text-left"
+    <div className={cn("flex w-full mb-4", isUser ? "justify-end" : "justify-start")}>
+      {/* Left side (assistant avatar) */}
+      {!isUser && (
+        <div className="flex-shrink-0 mr-2">
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm"
+            style={{ background: 'linear-gradient(135deg,var(--primary-color),var(--secondary-color))' }}
+            aria-hidden
+          >
+            <span className="material-symbols-outlined text-sm">balance</span>
+          </div>
+        </div>
       )}
-    >
-      {/* Left (Assistant) / Right (User) alignment */}
-      {!isUser && getAvatarContent()}
 
-      <div className={cn("flex flex-col max-w-[70%]")}>
-        {/* Header: name + timestamp */}
-        <div
-          className={cn(
-            "flex items-center mb-1 text-xs font-medium",
-            isUser ? "justify-end text-pink-400" : "justify-start text-purple-400"
-          )}
-        >
-          {!isUser && <span>{'HaqooqAI'}</span>}
-          <span className="mx-2 text-[var(--text-secondary)] text-[11px]">
-            {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </span>
-          {isUser && <span>{'You'}</span>}
+      <div className={cn("flex flex-col max-w-[78%]", isUser ? "items-end" : "items-start")}>
+        {/* Compact header: name + time */}
+        <div className={cn("flex items-center gap-2 mb-1 w-full", isUser ? "justify-end" : "justify-start")}>
+          {/* Name */}
+          <div className={cn("text-xs font-medium", isUser ? "text-pink-400" : "text-purple-400")}>
+            {isUser ? "You" : "HaqooqAI"}
+          </div>
+          {/* Dot separator */}
+          <div className="text-[11px] text-[var(--text-secondary)] select-none">
+            •
+          </div>
+          {/* Time */}
+          <div className="text-[11px] text-[var(--text-secondary)]">
+            {timeLabel}
+          </div>
         </div>
 
         {/* Bubble */}
         <div
           className={cn(
-            "p-3 rounded-2xl shadow-sm",
+            "relative px-4 py-3 rounded-2xl leading-relaxed text-sm break-words shadow-sm",
             isUser
-              ? "bg-gradient-to-r from-pink-500 to-purple-500 text-white"
-              : "bg-[var(--hover-color)] text-[var(--text-primary)]"
+              ? "bg-[var(--primary-color)] text-white rounded-br-lg"
+              : "bg-[var(--sidebar-color)] text-[var(--text-primary)] border border-[var(--border-color)]"
           )}
+          title={timestamp.toLocaleString()}
         >
-          <div className="text-sm leading-relaxed whitespace-pre-line">
+          {/* message content */}
+          <div className="whitespace-pre-wrap">
             {message.content}
           </div>
 
-          {/* Actions (only for assistant) */}
+          {/* action row for assistant */}
           {!isUser && (
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-2 mt-3">
               <button
                 onClick={handleCopy}
-                className="p-1.5 rounded-lg text-slate-400 hover:bg-[var(--background-color)] hover:text-[var(--text-primary)] transition-colors"
-                title={copied ? "Copied!" : "Copy message"}
+                className="p-1 rounded-md text-slate-400 hover:text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition"
+                title={copied ? "Copied!" : "Copy"}
               >
                 <span className="material-symbols-outlined text-sm">
                   {copied ? 'check' : 'content_copy'}
                 </span>
               </button>
-              <button className="p-1.5 rounded-lg text-slate-400 hover:bg-[var(--background-color)] hover:text-[var(--text-primary)] transition-colors">
+
+              <button className="p-1 rounded-md text-slate-400 hover:text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition" title="Helpful">
                 <span className="material-symbols-outlined text-sm">thumb_up</span>
               </button>
-              <button className="p-1.5 rounded-lg text-slate-400 hover:bg-[var(--background-color)] hover:text-[var(--text-primary)] transition-colors">
+
+              <button className="p-1 rounded-md text-slate-400 hover:text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition" title="Not helpful">
                 <span className="material-symbols-outlined text-sm">thumb_down</span>
               </button>
-              <button className="p-1.5 rounded-lg text-slate-400 hover:bg-[var(--background-color)] hover:text-[var(--text-primary)] transition-colors">
+
+              <button className="p-1 rounded-md text-slate-400 hover:text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition" title="Regenerate">
                 <span className="material-symbols-outlined text-sm">refresh</span>
               </button>
             </div>
           )}
         </div>
+
+        {/* timestamp below (subtle) */}
+        <div className={cn("text-[11px] text-[var(--text-secondary)] mt-1", isUser ? "text-right" : "text-left")}>
+          {timeLabel}
+        </div>
       </div>
 
-      {isUser && getAvatarContent()}
+      {/* Right side (user avatar) */}
+      {isUser && (
+        <div className="flex-shrink-0 ml-2">
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center font-semibold text-white"
+            style={userAvatarStyle ? userAvatarStyle : { backgroundColor: 'var(--primary-color)' }}
+            aria-hidden
+          >
+            {!user?.avatar_url && getInitials(userAvatarStyle ? {} : user)}
+            {user?.avatar_url ? null : null}
+          </div>
+        </div>
+      )}
     </div>
   )
+}
+
+// small helper to avoid repetition (keeps linter happy)
+function getInitials(u: any) {
+  if (u?.username) return u.username.charAt(0).toUpperCase()
+  if (u?.email) return u.email.charAt(0).toUpperCase()
+  return 'U'
 }

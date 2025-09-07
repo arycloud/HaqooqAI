@@ -45,43 +45,37 @@ const LOADING_MESSAGES: Record<LoaderType, string[]> = {
 
 export function CyclingLoader({ type = 'general' }: CyclingLoaderProps) {
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
-  const messages = LOADING_MESSAGES[type]
+  const messages = LOADING_MESSAGES[type] ?? LOADING_MESSAGES.general
 
+  // reset when type changes
   useEffect(() => {
-    setCurrentMessageIndex(0) // reset when type changes
+    setCurrentMessageIndex(0)
   }, [type])
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentMessageIndex((prev) => (prev + 1) % messages.length)
+      setCurrentMessageIndex((p) => (p + 1) % messages.length)
     }, 2000)
     return () => clearInterval(interval)
   }, [messages.length])
 
   return (
-    <div className="flex items-center gap-3 py-1" aria-live="polite" aria-busy="true">
-      {/* Spinner */}
+    <div className="flex items-center space-x-4 py-2 px-0">
       <div className="relative flex-shrink-0">
         <div className="relative">
-          <span className="material-symbols-outlined text-[var(--primary-color)] text-lg animate-pulse">balance</span>
+          <span className="material-symbols-outlined text-[var(--primary-color)] text-base animate-pulse">balance</span>
           <div className="absolute inset-0 w-5 h-5 border-2 border-[var(--primary-color)] border-t-transparent rounded-full animate-spin" />
         </div>
-        <div className="absolute inset-0 w-5 h-5 bg-[var(--primary-color)]/20 rounded-full blur-[2px] animate-pulse" />
+        <div className="absolute inset-0 w-5 h-5 bg-[var(--primary-color)]/20 rounded-full blur-sm animate-pulse" />
       </div>
 
-      {/* Text-only shimmer */}
       <div className="flex-1">
-        <TextShimmer
-          className="text-sm sm:text-base text-[var(--text-secondary)] font-medium"
-          duration={1.5}
-          key={`shimmer-${type}-${currentMessageIndex}`}
-        >
+        <TextShimmer className="text-sm text-[var(--text-secondary)] font-medium" duration={1.5} key={`shimmer-${type}-${currentMessageIndex}`}>
           {messages[currentMessageIndex]}
         </TextShimmer>
       </div>
 
-      {/* Dots */}
-      <div className="hidden sm:flex items-center gap-1">
+      <div className="flex items-center space-x-1">
         <div className="w-1.5 h-1.5 bg-[var(--primary-color)] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
         <div className="w-1.5 h-1.5 bg-[var(--secondary-color)] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
         <div className="w-1.5 h-1.5 bg-[var(--primary-color)] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
