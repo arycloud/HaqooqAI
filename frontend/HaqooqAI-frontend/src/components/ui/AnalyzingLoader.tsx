@@ -31,7 +31,7 @@ export function AnalyzingLoader() {
 
       {/* Shimmer text */}
       <TextShimmer
-        className="font-semibold text-lg"
+        className="text-lg"
         duration={2}
         key={stepIndex}
       >

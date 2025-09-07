@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { TextShimmer } from '../core/text-shimmer';
 
 export type LoaderType = 'analyzing' | 'setup' | 'fetching' | 'general' | 'messages'
 
@@ -55,9 +56,14 @@ export function CyclingLoader({ type = 'general' }: CyclingLoaderProps) {
       </div>
 
       {/* Main message */}
-      <p className="text-lg font-semibold text-[var(--text-primary)] mb-2">
-        {main}
-      </p>
+      {/* <p className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+        
+      </p> */}
+      <TextShimmer
+              className="text-lg font-semibold text-[var(--text-primary)] mb-2"
+              duration={2}>
+              {main}
+            </TextShimmer>
 
       {/* Sub message */}
       {/* <p className="text-sm text-[var(--text-secondary)]">
