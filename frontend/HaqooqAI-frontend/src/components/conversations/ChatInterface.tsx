@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { MessageBubbleNew } from './MessageBubbleNew'
 import { MessageInputNew } from './MessageInputNew'
@@ -21,6 +21,8 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
   const [isNewConversation, setIsNewConversation] = useState(!conversationId)
   const [isCreatingConversation, setIsCreatingConversation] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const {
     messages,
@@ -31,6 +33,18 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
     sendMessage,
     refreshMessages,
   } = useMessages(currentConversationId, isNewConversation)
+
+  // Scroll to bottom function
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
+  // Scroll to bottom when messages change or loading state changes
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages, fetchingLoading, setupLoading, analyzingLoading, currentConversationId])
 
   useEffect(() => {
     if (conversationId && conversationId !== currentConversationId) {
@@ -134,7 +148,10 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
         {/* Content Area - Fixed structure to ensure input stays at bottom */}
         <div className="flex flex-col flex-1 min-h-0">
           {/* Scrollable Messages Area */}
-          <div className="flex-1 overflow-y-auto p-6 scroll-container bg-[var(--background-color)]">
+          <div 
+            ref={scrollContainerRef}
+            className="flex-1 overflow-y-auto p-6 scroll-container bg-[var(--background-color)]"
+          >
             <div className="flex flex-col gap-8 max-w-4xl mx-auto">
               {error && (
                 <ErrorDisplay 
@@ -198,6 +215,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                   </div>
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </div>
           </div>
 
