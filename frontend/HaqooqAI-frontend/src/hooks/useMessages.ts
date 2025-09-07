@@ -6,6 +6,16 @@ import { conversationService } from '@/services/backend/conversationService'
 import { aiService } from '@/services/backend/aiService'
 import { authService } from '@/services/backend/authService'
 import toast from 'react-hot-toast'
+import { AIResponse } from "@/types/api"
+
+
+// import { useState, useEffect, useRef } from "react"
+// import { useAuth } from "@/hooks/useAuth"
+// import { useConversations } from "@/hooks/useConversations"
+// import { conversationService } from "@/services/conversationService"
+// import { aiService } from "@/services/aiService"
+// import { toast } from "sonner"
+ // Make sure AIResponse is exported from your types
 
 export const useMessages = (conversationId?: string, isNewConversation = false) => {
   const { user } = useAuth()
@@ -33,7 +43,7 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
   /** Deduplicate messages by ID */
   const dedupeMessages = (list: Message[]) => {
     const seen = new Set<string>()
-    return list.filter(msg => {
+    return list.filter((msg) => {
       if (seen.has(msg.id)) return false
       seen.add(msg.id)
       return true
@@ -55,15 +65,16 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
         await conversationService.getConversationWithMessages(convId)
 
       if (activeConversationRef.current === convId) {
-        setMessages(prev => ({
+        setMessages((prev) => ({
           ...prev,
           [convId]: dedupeMessages(conversationMessages),
         }))
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load messages'
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load messages"
       setError(errorMessage)
-      console.error('Failed to load messages:', err)
+      console.error("Failed to load messages:", err)
     } finally {
       if (isNewConversation) {
         setSetupLoading(false)
@@ -76,7 +87,7 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
   /** Send message and trigger AI response */
   const sendMessage = async (convId: string, content: string): Promise<void> => {
     try {
-      if (!convId) throw new Error('No conversation selected')
+      if (!convId) throw new Error("No conversation selected")
 
       setAnalyzingLoading(true)
       setError(null)
@@ -86,8 +97,8 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
       if (!currentUser?.github_id) {
         const session = await authService.checkExistingSession()
         if (!session?.user) {
-          console.error('Authentication error:', { user })
-          throw new Error('Please ensure you are properly logged in')
+          console.error("Authentication error:", { user })
+          throw new Error("Please ensure you are properly logged in")
         }
         currentUser = session.user
       }
@@ -97,29 +108,33 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
       const tempUserMessage: Message = {
         id: `temp-${Date.now()}`,
         conversation_id: convId,
-        role: 'user',
+        role: "user",
         content,
         created_at: new Date().toISOString(),
       }
-      setMessages(prev => ({
+      setMessages((prev) => ({
         ...prev,
         [convId]: dedupeMessages([...(prev[convId] || []), tempUserMessage]),
       }))
 
       // Create user message in backend
-      const userMessage = await conversationService.createMessage(convId, 'user', content)
+      const userMessage = await conversationService.createMessage(
+        convId,
+        "user",
+        content
+      )
 
       // Replace temp message with actual saved one
-      setMessages(prev => ({
+      setMessages((prev) => ({
         ...prev,
         [convId]: dedupeMessages([
-          ...(prev[convId] || []).filter(m => m.id !== tempUserMessage.id),
+          ...(prev[convId] || []).filter((m) => m.id !== tempUserMessage.id),
           userMessage,
         ]),
       }))
 
       // Update conversation title if first message
-      setMessages(prev => {
+      setMessages((prev) => {
         const current = prev[convId] || []
         if (current.length === 1) {
           updateConversationTitle(convId, content)
@@ -127,37 +142,61 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
         return prev
       })
 
-      console.log('Sending AI request with:', { content, github_id: githubId })
+      console.log("Sending AI request with:", { content, github_id: githubId })
 
-      // Ask AI — backend is responsible for creating assistant message
-      await aiService.askQuestion(content, githubId, convId)
+      // Ask AI — backend returns structured AIResponse
+      const aiResponse: AIResponse = await aiService.askQuestion(
+        content,
+        githubId,
+        convId
+      )
 
-      // Reload messages (includes assistant response from backend)
-      if (activeConversationRef.current === convId) {
-        await loadMessages(convId)
+      // Create assistant message with structured content
+      const assistantMessage: Message = {
+        id: `assistant-${Date.now()}`,
+        conversation_id: convId,
+        role: "assistant",
+        content: aiResponse,
+        created_at: new Date().toISOString(),
       }
+
+      setMessages((prev) => ({
+        ...prev,
+        [convId]: dedupeMessages([...(prev[convId] || []), assistantMessage]),
+      }))
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to send message'
-      console.error('Message sending error:', err)
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to send message"
+      console.error("Message sending error:", err)
       setError(errorMessage)
 
-      // Enhanced error handling for multi-provider system
-      if (errorMessage.includes('Invalid Groq API key')) {
-        toast.error('Issue with Groq API key. Please check your settings or try another provider.')
-      } else if (errorMessage.includes('Invalid Gemini API key')) {
-        toast.error('Issue with Gemini API key. Please check your settings.')
-      } else if (errorMessage.includes('Invalid OpenAI API key')) {
-        toast.error('Issue with OpenAI API key. Please check your settings.')
-      } else if (errorMessage.includes('authenticated')) {
-        toast.error('Session expired. Please log in again.')
-      } else if (errorMessage.includes('Service temporarily unavailable')) {
-        toast.error('The AI service is temporarily unavailable. Try again later or use your own API key.')
-      } else if (errorMessage.includes('quota exceeded')) {
-        toast.error('Daily quota exceeded. Please add your own API key for unlimited queries.')
-      } else if (errorMessage.includes('All providers unavailable')) {
-        toast.error('All AI providers are currently unavailable. Please try again later.')
-      } else if (errorMessage.includes('Provider routing failed')) {
-        toast.error('Unable to route your query to an available provider. Please try again.')
+      // Enhanced error handling
+      if (errorMessage.includes("Invalid Groq API key")) {
+        toast.error(
+          "Issue with Groq API key. Please check your settings or try another provider."
+        )
+      } else if (errorMessage.includes("Invalid Gemini API key")) {
+        toast.error("Issue with Gemini API key. Please check your settings.")
+      } else if (errorMessage.includes("Invalid OpenAI API key")) {
+        toast.error("Issue with OpenAI API key. Please check your settings.")
+      } else if (errorMessage.includes("authenticated")) {
+        toast.error("Session expired. Please log in again.")
+      } else if (errorMessage.includes("Service temporarily unavailable")) {
+        toast.error(
+          "The AI service is temporarily unavailable. Try again later or use your own API key."
+        )
+      } else if (errorMessage.includes("quota exceeded")) {
+        toast.error(
+          "Daily quota exceeded. Please add your own API key for unlimited queries."
+        )
+      } else if (errorMessage.includes("All providers unavailable")) {
+        toast.error(
+          "All AI providers are currently unavailable. Please try again later."
+        )
+      } else if (errorMessage.includes("Provider routing failed")) {
+        toast.error(
+          "Unable to route your query to an available provider. Please try again."
+        )
       } else {
         toast.error(errorMessage)
       }
@@ -171,9 +210,10 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
   /** Delete message (future API) */
   const deleteMessage = async (_messageId: string): Promise<void> => {
     try {
-      toast.success('Message deleted')
+      toast.success("Message deleted")
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete message'
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to delete message"
       toast.error(errorMessage)
       throw err
     }
@@ -182,10 +222,11 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
   /** Clear all messages in conversation */
   const clearConversationMessages = async (convId: string): Promise<void> => {
     try {
-      setMessages(prev => ({ ...prev, [convId]: [] }))
-      toast.success('Conversation cleared')
+      setMessages((prev) => ({ ...prev, [convId]: [] }))
+      toast.success("Conversation cleared")
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to clear conversation'
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to clear conversation"
       toast.error(errorMessage)
       throw err
     }
@@ -200,6 +241,9 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
     sendMessage,
     deleteMessage,
     clearConversationMessages,
-    refreshMessages: conversationId ? () => loadMessages(conversationId) : undefined,
+    refreshMessages: conversationId
+      ? () => loadMessages(conversationId)
+      : undefined,
   }
 }
+

@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react'
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import { useAuth } from '@/hooks/useAuth'
 import { Message } from '@/types/message'
 import { cn } from '@/lib/utils'
@@ -8,17 +10,21 @@ interface MessageBubbleNewProps {
   isLoading?: boolean
 }
 
-export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNewProps) {
+export function MessageBubbleNew({ message, isLoading = false }: any) {
   const { user } = useAuth()
   const [copied, setCopied] = useState(false)
-  const isUser = message.role === 'user'
+  const isUser = message.role === "user"
 
   const timestamp = useMemo(() => {
-    try { return message.created_at ? new Date(message.created_at) : new Date() } catch { return new Date() }
+    try {
+      return message.created_at ? new Date(message.created_at) : new Date()
+    } catch {
+      return new Date()
+    }
   }, [message.created_at])
 
   const timeLabel = useMemo(
-    () => timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    () => timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     [timestamp]
   )
 
@@ -26,8 +32,8 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
     if (user?.avatar_url) {
       return {
         backgroundImage: `url("${user.avatar_url}")`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
+        backgroundSize: "cover",
+        backgroundPosition: "center",
       } as React.CSSProperties
     }
     return undefined
@@ -35,19 +41,68 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(message.content)
+      await navigator.clipboard.writeText(
+        typeof message.content === "string"
+          ? message.content
+          : (message.content as AIResponse).response
+      )
       setCopied(true)
       setTimeout(() => setCopied(false), 1600)
-    } catch (error) { console.error('Failed to copy text:', error) }
+    } catch (error) {
+      console.error("Failed to copy text:", error)
+    }
+  }
+
+  const renderAssistantContent = (content: string | AIResponse) => {
+    if (typeof content === "string") {
+      return (
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+      )
+    }
+
+    const disclaimer =
+      "⚠️ This response is for informational purposes only and does not constitute legal advice."
+
+    return (
+      <div className="space-y-4">
+        {/* Main response */}
+        <div className="prose prose-sm dark:prose-invert max-w-none">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {content.response}
+          </ReactMarkdown>
+        </div>
+
+        {/* Sources */}
+        {content.sources?.length > 0 && (
+          <div className="p-3 rounded-md bg-[var(--hover-color)]/40 border border-[var(--border-color)] text-sm">
+            <div className="font-semibold mb-2">Sources</div>
+            <ul className="list-disc list-inside space-y-1">
+              {content.sources.map((src, idx) => (
+                <li key={idx} className="text-[var(--text-secondary)]">
+                  {src.title ? `${src.title} (${src.url})` : src.url}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Disclaimer */}
+        <div className="p-3 rounded-md bg-amber-100 text-amber-800 text-xs border border-amber-300">
+          {disclaimer}
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className={cn("flex w-full mb-4", isUser ? "justify-end" : "justify-start")}>
+    <div
+      className={cn("flex w-full mb-4", isUser ? "justify-end" : "justify-start")}
+    >
       {!isUser && (
         <div className="flex-shrink-0 mr-2">
           <div
             className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm"
-            style={{ background: 'var(--gradient-primary)' }}
+            style={{ background: "var(--gradient-primary)" }}
             aria-hidden
           >
             <span className="material-symbols-outlined text-sm">balance</span>
@@ -55,23 +110,42 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
         </div>
       )}
 
-      <div className={cn("flex flex-col max-w-[78%]", isUser ? "items-end" : "items-start")}>
-        <div className={cn("mb-1 w-full flex items-center gap-2", isUser ? "justify-end" : "justify-start")}>
-          <div className={cn("text-[11px] font-medium", isUser ? "text-pink-300" : "text-purple-300")}>
+      <div
+        className={cn(
+          "flex flex-col max-w-[78%]",
+          isUser ? "items-end" : "items-start"
+        )}
+      >
+        <div
+          className={cn(
+            "mb-1 w-full flex items-center gap-2",
+            isUser ? "justify-end" : "justify-start"
+          )}
+        >
+          <div
+            className={cn(
+              "text-[11px] font-medium",
+              isUser ? "text-pink-300" : "text-purple-300"
+            )}
+          >
             {isUser ? "You" : "HaqooqAI"}
           </div>
         </div>
 
         <div
-            className={cn(
-              "relative px-4 py-3 rounded-2xl leading-relaxed text-lg break-words shadow-sm",
-              isUser
-                ? "bg-[var(--primary-color)] text-white rounded-br-lg"
-                : "panel border hairline text-[var(--text-primary)]"
-            )}
-            title={timestamp.toLocaleString()}
-          >
+          className={cn(
+            "relative px-4 py-3 rounded-2xl leading-relaxed text-lg break-words shadow-sm",
+            isUser
+              ? "bg-[var(--primary-color)] text-white rounded-br-lg"
+              : "panel border hairline text-[var(--text-primary)]"
+          )}
+          title={timestamp.toLocaleString()}
+        >
+          {isUser ? (
             <div className="whitespace-pre-wrap">{message.content}</div>
+          ) : (
+            renderAssistantContent(message.content)
+          )}
 
           {!isUser && (
             <div className="flex items-center gap-2 mt-3">
@@ -81,23 +155,37 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
                 title={copied ? "Copied!" : "Copy"}
               >
                 <span className="material-symbols-outlined text-sm">
-                  {copied ? 'check' : 'content_copy'}
+                  {copied ? "check" : "content_copy"}
                 </span>
               </button>
-              <button className="p-1 rounded-md text-slate-400 hover:text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition" title="Helpful">
+              <button
+                className="p-1 rounded-md text-slate-400 hover:text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition"
+                title="Helpful"
+              >
                 <span className="material-symbols-outlined text-sm">thumb_up</span>
               </button>
-              <button className="p-1 rounded-md text-slate-400 hover:text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition" title="Not helpful">
+              <button
+                className="p-1 rounded-md text-slate-400 hover:text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition"
+                title="Not helpful"
+              >
                 <span className="material-symbols-outlined text-sm">thumb_down</span>
               </button>
-              <button className="p-1 rounded-md text-slate-400 hover:text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition" title="Regenerate">
+              <button
+                className="p-1 rounded-md text-slate-400 hover:text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition"
+                title="Regenerate"
+              >
                 <span className="material-symbols-outlined text-sm">refresh</span>
               </button>
             </div>
           )}
         </div>
 
-        <div className={cn("text-[10px] text-[var(--text-secondary)] mt-1", isUser ? "text-right" : "text-left")}>
+        <div
+          className={cn(
+            "text-[10px] text-[var(--text-secondary)] mt-1",
+            isUser ? "text-right" : "text-left"
+          )}
+        >
           {timeLabel}
         </div>
       </div>
@@ -106,7 +194,11 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
         <div className="flex-shrink-0 ml-2">
           <div
             className="w-9 h-9 rounded-full flex items-center justify-center font-semibold text-white"
-            style={userAvatarStyle ? userAvatarStyle : { background: 'var(--gradient-primary)' }}
+            style={
+              userAvatarStyle
+                ? userAvatarStyle
+                : { background: "var(--gradient-primary)" }
+            }
             aria-hidden
           >
             {!user?.avatar_url && getInitials(user)}
@@ -120,5 +212,5 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
 function getInitials(u: any) {
   if (u?.username) return u.username.charAt(0).toUpperCase()
   if (u?.email) return u.email.charAt(0).toUpperCase()
-  return 'U'
+  return "U"
 }
