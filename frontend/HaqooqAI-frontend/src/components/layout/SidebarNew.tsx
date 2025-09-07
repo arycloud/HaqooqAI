@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Plus, Edit2, Trash2, X } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Star, Clock3, FolderOpen, Settings, MessageSquare } from 'lucide-react'
 import { useConversations } from '@/hooks/useConversations'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
@@ -43,12 +43,12 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
       }
     }
     return {
-      backgroundColor: 'var(--primary-color)',
+      background: 'var(--gradient-primary)',
       color: 'white',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      fontWeight: 'bold',
+      fontWeight: 700,
       fontSize: '14px'
     }
   }, [user])
@@ -95,10 +95,10 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
     setShowConfirm(true)
   }
 
-    const confirmDelete = async () => {
+  const confirmDelete = async () => {
     if (deleteTarget) {
       try {
-        await deleteConversation(deleteTarget)  // ✅ hook handles UI + API
+        await deleteConversation(deleteTarget)
       } catch (err) {
         console.error('Failed to delete conversation', err)
       }
@@ -113,30 +113,25 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
   }
 
   const isActive = (id: string) => location.pathname === `/chat/${id}`
-
   const formatDate = (d?: string) => {
     if (!d) return ''
-    try {
-      return new Date(d).toLocaleDateString()
-    } catch {
-      return ''
-    }
+    try { return new Date(d).toLocaleDateString() } catch { return '' }
   }
 
   if (!isOpen) return null
 
   return (
     <>
-      <aside className="fixed left-0 top-0 flex flex-col w-80 h-full bg-[var(--sidebar-color)] border-r border-[var(--border-color)] p-4 z-40">
-        {/* Profile */}
-        <div className="flex items-center gap-3 mb-6">
+      <aside className="fixed left-0 top-0 z-40 flex h-full w-80 flex-col panel border-r hairline">
+        {/* Brand + Profile */}
+        <div className="flex items-center gap-3 px-4 pt-4 pb-3">
           <div className="rounded-full w-10 h-10 flex-shrink-0" style={avatarStyle}>
             {!user?.avatar_url && initials && <span>{initials}</span>}
           </div>
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0">
             {displayName ? (
               <>
-                <h1 className="text-[var(--text-primary)] text-base font-medium leading-normal truncate">
+                <h1 className="text-[var(--text-primary)] text-base font-medium truncate">
                   {displayName}
                 </h1>
                 {user?.email && user?.username && (
@@ -152,21 +147,52 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
           </div>
         </div>
 
+        {/* Primary actions */}
+        <div className="px-4 pb-3">
+          <button
+            onClick={handleNewChat}
+            className="group flex w-full items-center justify-center gap-2 rounded-xl h-10 px-4 text-sm font-semibold text-white transition hover:opacity-95"
+            style={{ background: 'var(--gradient-primary)' }}
+          >
+            <Plus className="w-4 h-4" />
+            New Chat
+          </button>
+
+          {/* Static quick-nav (visual parity only; routes unchanged) */}
+          <div className="mt-4 grid grid-cols-4 gap-2 text-[12px] text-[var(--text-secondary)]">
+            <div className="flex flex-col items-center gap-1 rounded-lg py-2 hover:bg-[var(--hover-color)] cursor-default">
+              <Clock3 className="w-4 h-4" /><span>Recent</span>
+            </div>
+            <div className="flex flex-col items-center gap-1 rounded-lg py-2 hover:bg-[var(--hover-color)] cursor-default">
+              <Star className="w-4 h-4" /><span>Starred</span>
+            </div>
+            <div className="flex flex-col items-center gap-1 rounded-lg py-2 hover:bg-[var(--hover-color)] cursor-default">
+              <FolderOpen className="w-4 h-4" /><span>Templates</span>
+            </div>
+            <button
+              onClick={() => navigate('/settings')}
+              className="flex flex-col items-center gap-1 rounded-lg py-2 hover:bg-[var(--hover-color)]"
+              title="Settings"
+            >
+              <Settings className="w-4 h-4" /><span>Settings</span>
+            </button>
+          </div>
+        </div>
+
         {/* Conversations list */}
-        <div className="flex-grow overflow-y-auto scroll-container pr-2">
+        <div className="flex-grow overflow-y-auto pr-2 pl-4 pb-4">
           <nav className="flex flex-col gap-2">
             {loading && (!conversations || conversations.length === 0) ? (
               <div className="py-2 space-y-2">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-10 rounded-md bg-[var(--hover-color)]/50 animate-pulse" />
+                  <div key={i} className="h-10 rounded-lg bg-[var(--hover-color)]/50 animate-pulse" />
                 ))}
               </div>
             ) : error ? (
               <div className="text-sm text-red-400 p-3">Failed to load conversations</div>
             ) : conversations.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-[var(--text-secondary)] text-sm">No conversations yet</p>
-                <p className="text-[var(--text-secondary)] text-xs mt-1">Start a new chat below</p>
+              <div className="text-center py-8 text-[var(--text-secondary)] text-sm">
+                No conversations yet
               </div>
             ) : (
               <>
@@ -176,37 +202,37 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
                     <div
                       key={conversation.id}
                       className={cn(
-                        "flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full transition-colors duration-150 group",
-                        active
-                          ? "bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)] text-white"
-                          : "hover:bg-[var(--hover-color)]"
+                        "group flex items-center gap-2 rounded-xl px-2 py-2 transition-colors",
+                        active ? "bg-[var(--hover-color)]/80 ring-1 ring-brand" : "hover:bg-[var(--hover-color)]"
                       )}
                     >
                       <button
                         onClick={() => handleConversationClick(conversation.id)}
                         className="flex-1 flex items-center gap-3 text-left"
                       >
-                        <span
-                          className={cn(
-                            "material-symbols-outlined text-base",
-                            active ? "text-white" : "text-slate-400"
-                          )}
+                        <div className={cn(
+                          "shrink-0 w-8 h-8 rounded-lg flex items-center justify-center",
+                          active ? "" : "bg-[var(--input-color)]"
+                        )}
+                          style={active ? { background: 'var(--gradient-primary)' } : {}}
                         >
-                          chat_bubble
-                        </span>
+                          <MessageSquare className={cn("w-4 h-4", active ? "text-white" : "text-slate-300")} />
+                        </div>
 
-                        <div className="flex items-center justify-between p-2 rounded-lg bg-gradient-to-r from-purple-500 to-blue-500">
-                          <span className="truncate max-w-[180px] text-white text-sm">
-                            {conversation.title}
-                          </span>
-                          <p className="text-xs text-[var(--text-secondary)] truncate">
-                            {formatDate(conversation.updated_at || conversation.created_at)}
-                          </p>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="truncate text-sm text-white max-w-[160px]">
+                              {conversation.title || 'Untitled'}
+                            </span>
+                            <span className="text-[10px] text-[var(--text-secondary)]">
+                              {formatDate(conversation.updated_at || conversation.created_at)}
+                            </span>
+                          </div>
                         </div>
                       </button>
 
-                      {/* Actions */}
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Row actions */}
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => handleRename(conversation.id, conversation.title || 'Untitled')}
                           className="p-1 rounded hover:bg-[var(--hover-color)]"
@@ -235,44 +261,14 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
             )}
           </nav>
         </div>
-
-        {/* Bottom actions */}
-        <div className="mt-auto pt-4">
-          <button
-            onClick={handleNewChat}
-            className="flex w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-10 px-4 bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)] text-[var(--text-primary)] text-sm font-bold leading-normal transition-opacity hover:opacity-90"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="truncate">New Chat</span>
-          </button>
-
-          {/* Icons only */}
-          <div className="mt-4 flex items-center justify-center gap-6">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="p-2 rounded-lg hover:bg-[var(--hover-color)]"
-              title="Dashboard"
-            >
-              <span className="material-symbols-outlined text-[var(--accent-color)]">dashboard</span>
-            </button>
-
-            <button
-              onClick={() => navigate('/settings')}
-              className="p-2 rounded-lg hover:bg-[var(--hover-color)]"
-              title="Settings"
-            >
-              <span className="material-symbols-outlined text-[var(--accent-color)]">settings</span>
-            </button>
-          </div>
-        </div>
       </aside>
 
       {/* Confirmation Modal */}
       {showConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-[var(--sidebar-color)] rounded-lg shadow-lg p-6 w-80">
+          <div className="panel rounded-xl shadow-lg p-6 w-80 border hairline">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-[var(--text-primary)]">Delete Conversation</h2>
+              <h2 className="text-base font-semibold">Delete Conversation</h2>
               <button onClick={cancelDelete} className="text-[var(--text-secondary)] hover:text-white">
                 <X size={18} />
               </button>

@@ -15,7 +15,6 @@ export function MessageInputNew({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
-    // focus on desktop for convenience
     if (typeof window !== 'undefined' && window.matchMedia('(pointer:fine)').matches) {
       textareaRef.current?.focus()
     }
@@ -48,7 +47,7 @@ export function MessageInputNew({
   }
 
   return (
-    <div className="p-3 bg-[var(--sidebar-color)] border-t border-[var(--border-color)]">
+    <div className="p-3 panel border-t hairline">
       <div className="max-w-4xl mx-auto">
         <form onSubmit={handleSubmit} className="relative">
           <textarea
@@ -59,19 +58,20 @@ export function MessageInputNew({
             placeholder={placeholder}
             disabled={disabled}
             rows={2}
-            className="w-full resize-none rounded-xl text-[var(--text-primary)] bg-[var(--input-color)] border border-[var(--border-color)] min-h-[56px] placeholder:text-[var(--text-secondary)] pl-4 pr-28 py-3 focus:ring-2 focus:ring-[var(--primary-color)] focus:outline-none transition-all duration-200"
+            className="w-full resize-none rounded-xl text-[var(--text-primary)] bg-[var(--input-color)] border hairline min-h-[56px] placeholder:text-[var(--text-secondary)] pl-4 pr-28 py-3 focus:ring-2 focus:ring-[var(--primary-color)]/60 focus:outline-none transition-all duration-200"
             style={{ minHeight: '56px', maxHeight: '150px' }}
           />
           <button
             type="submit"
             disabled={disabled || !message.trim()}
-            className="absolute right-3 top-1/2 -translate-y-1/2 flex min-w-24 cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)] text-white text-sm font-medium leading-normal hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            className="absolute right-3 top-1/2 -translate-y-1/2 flex min-w-24 items-center justify-center rounded-lg h-10 px-4 text-white text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ background: 'var(--gradient-primary)' }}
           >
             <span className="truncate">Send</span>
             <span className="material-symbols-outlined ml-2 text-base">send</span>
           </button>
         </form>
-        <p className="text-[var(--text-secondary)] text-xs font-normal leading-normal pt-2 px-2 text-center">
+        <p className="text-[var(--text-secondary)] text-xs pt-2 px-2 text-center">
           AI Assistant can make mistakes. Consider checking important information.
         </p>
       </div>

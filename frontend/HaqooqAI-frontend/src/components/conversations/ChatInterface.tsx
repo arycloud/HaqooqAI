@@ -49,13 +49,8 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
     }
   }
 
-  useEffect(() => {
-    scrollToBottom('auto')
-  }, [currentConversationId])
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [conversationMessages.length, fetchingLoading, setupLoading, analyzingLoading])
+  useEffect(() => { scrollToBottom('auto') }, [currentConversationId])
+  useEffect(() => { scrollToBottom() }, [conversationMessages.length, fetchingLoading, setupLoading, analyzingLoading])
 
   useEffect(() => {
     if (conversationId && conversationId !== currentConversationId) {
@@ -95,66 +90,53 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
     }
   }
 
-  const handleRetryMessage = () => {
-    if (refreshMessages) refreshMessages()
-  }
+  const handleRetryMessage = () => { if (refreshMessages) refreshMessages() }
 
   const showConversationLoader =
     conversationMessages.length === 0 &&
     (fetchingLoading || setupLoading || analyzingLoading || isCreatingConversation)
 
   return (
-    <div className="flex flex-col min-h-screen bg-[var(--background-color)] group/design-root">
+    <div className="flex flex-col min-h-screen bg-[var(--background-color)]">
       {/* Sidebar overlay (mobile) */}
       {sidebarOpen && (
         <>
-          <div
-            className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
+          <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
           <div className="relative z-40">
             <SidebarNew isOpen={true} />
           </div>
         </>
       )}
 
-      {/* Main area */}
-      <div
-        className={cn(
-          "flex flex-col flex-1 h-full transition-all duration-500 ease-in-out overflow-hidden",
-          sidebarOpen ? "lg:ml-80" : ""
-        )}
-      >
-        {/* Navbar */}
-        <header className="flex items-center justify-between p-4 border-b border-[var(--border-color)] flex-shrink-0 bg-[var(--sidebar-color)]/30 backdrop-blur-sm">
+      {/* Main */}
+      <div className={cn(
+        "flex flex-col flex-1 h-full transition-all duration-500 ease-in-out overflow-hidden",
+        sidebarOpen ? "lg:ml-80" : ""
+      )}>
+        {/* Top bar */}
+        <header className="flex items-center justify-between px-4 py-3 border-b hairline bg-[var(--sidebar-color)]/40 backdrop-blur-sm">
           <div className="flex items-center gap-3">
-            {!sidebarOpen ? (
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="w-8 h-8 hover:bg-[var(--hover-color)] rounded-lg flex items-center justify-center"
-                title="Open sidebar"
-              >
-                <span className="material-symbols-outlined text-[var(--text-primary)] text-xl">menu</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="w-8 h-8 hover:bg-[var(--hover-color)] rounded-lg flex items-center justify-center"
-                title="Close sidebar"
-              >
-                <span className="material-symbols-outlined text-[var(--text-primary)] text-xl">close</span>
-              </button>
-            )}
-            <h2 className="text-[var(--text-primary)] text-xl font-bold leading-tight">HaqooqAI Legal Assistant</h2>
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="w-9 h-9 hover:bg-[var(--hover-color)] rounded-lg flex items-center justify-center"
+              title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+            >
+              <span className="material-symbols-outlined text-[var(--text-primary)] text-xl">
+                {sidebarOpen ? 'close' : 'menu'}
+              </span>
+            </button>
+            <h2 className="text-[var(--text-primary)] text-lg font-semibold">HaqooqAI Legal Assistant</h2>
           </div>
 
-          <button className="flex min-w-[84px] items-center justify-center gap-2 rounded-lg h-8 px-4 bg-[var(--hover-color)] text-[var(--text-primary)] text-sm font-medium hover:bg-opacity-80">
+          <button
+            className="flex min-w-[84px] items-center justify-center gap-2 rounded-lg h-8 px-4 text-[var(--text-primary)] text-sm font-medium hover:bg-[var(--hover-color)]"
+          >
             <span className="material-symbols-outlined text-base">share</span>
             <span className="truncate">Share</span>
           </button>
         </header>
 
-        {/* Messages area */}
+        {/* Messages */}
         <div className="flex flex-col flex-1 min-h-0">
           <div
             ref={scrollContainerRef}
@@ -167,24 +149,18 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                 <div className="flex items-center gap-4">
                   <div
                     className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex-shrink-0"
-                    style={{
-                      background: 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))',
-                      color: 'white',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
+                    style={{ background: 'var(--gradient-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
                     <span className="material-symbols-outlined text-base">balance</span>
                   </div>
-                  <div className="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 p-4 rounded-xl flex-1">
+                  <div className="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 p-4 rounded-xl flex-1 border hairline">
                     <p className="text-purple-300 text-sm font-bold leading-tight mb-2">HaqooqAI</p>
                     <CyclingLoader type={loaderType} />
                   </div>
                 </div>
               )}
 
-              {/* Welcome cards */}
+              {/* Empty state prompt cards */}
               {conversationMessages.length === 0 &&
                 !fetchingLoading &&
                 !setupLoading &&
@@ -192,67 +168,46 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                 !isCreatingConversation && (
                   <div className="pt-8">
                     <div className="text-center mb-6">
-                      <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
-                        Try asking about:
-                      </h3>
-                      <p className="text-sm text-[var(--text-secondary)]">
-                        Click on any question to get started
-                      </p>
+                      <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Try asking about:</h3>
+                      <p className="text-sm text-[var(--text-secondary)]">Click on any question to get started</p>
                     </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                       <div
-                        className="p-4 bg-gradient-to-r from-purple-500/15 to-indigo-500/15 rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
-                        onClick={() =>
-                          handleSendMessage("What are the legal requirements for property purchase in Pakistan?")
-                        }
+                        className="p-4 bg-gradient-to-r from-purple-500/15 to-indigo-500/15 rounded-xl border hairline hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
+                        onClick={() => handleSendMessage("What are the legal requirements for property purchase in Pakistan?")}
                       >
                         <div className="flex items-start gap-2">
                           <span className="material-symbols-outlined text-purple-400 mt-0.5">home</span>
                           <div className="text-left">
-                            <h4 className="font-semibold text-[var(--text-primary)] text-sm">
-                              Property Purchase
-                            </h4>
-                            <p className="text-xs text-[var(--text-secondary)] mt-1">
-                              Legal documents and procedures for buying property
-                            </p>
+                            <h4 className="font-semibold text-[var(--text-primary)] text-sm">Property Purchase</h4>
+                            <p className="text-xs text-[var(--text-secondary)] mt-1">Legal documents and procedures for buying property</p>
                           </div>
                         </div>
                       </div>
 
                       <div
-                        className="p-4 bg-gradient-to-r from-pink-500/15 to-purple-500/15 rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
-                        onClick={() =>
-                          handleSendMessage("How do I register a marriage in Pakistan?")
-                        }
+                        className="p-4 bg-gradient-to-r from-pink-500/15 to-purple-500/15 rounded-xl border hairline hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
+                        onClick={() => handleSendMessage("How do I register a marriage in Pakistan?")}
                       >
                         <div className="flex items-start gap-2">
                           <span className="material-symbols-outlined text-pink-400 mt-0.5">favorite</span>
                           <div className="text-left">
-                            <h4 className="font-semibold text-[var(--text-primary)] text-sm">
-                              Marriage Registration
-                            </h4>
-                            <p className="text-xs text-[var(--text-secondary)] mt-1">
-                              Required documents and process for marriage
-                            </p>
+                            <h4 className="font-semibold text-[var(--text-primary)] text-sm">Marriage Registration</h4>
+                            <p className="text-xs text-[var(--text-secondary)] mt-1">Required documents and process for marriage</p>
                           </div>
                         </div>
                       </div>
 
                       <div
-                        className="p-4 bg-gradient-to-r from-indigo-500/15 to-blue-500/15 rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
-                        onClick={() =>
-                          handleSendMessage("What documents are needed to start a business in Pakistan?")
-                        }
+                        className="p-4 bg-gradient-to-r from-indigo-500/15 to-blue-500/15 rounded-xl border hairline hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
+                        onClick={() => handleSendMessage("What documents are needed to start a business in Pakistan?")}
                       >
                         <div className="flex items-start gap-2">
                           <span className="material-symbols-outlined text-blue-400 mt-0.5">business</span>
                           <div className="text-left">
-                            <h4 className="font-semibold text-[var(--text-primary)] text-sm">
-                              Business Registration
-                            </h4>
-                            <p className="text-xs text-[var(--text-secondary)] mt-1">
-                              Steps and documents required to register a business
-                            </p>
+                            <h4 className="font-semibold text-[var(--text-primary)] text-sm">Business Registration</h4>
+                            <p className="text-xs text-[var(--text-secondary)] mt-1">Steps and documents required to register a business</p>
                           </div>
                         </div>
                       </div>
@@ -264,9 +219,10 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                 conversationMessages.map((message) => (
                   <MessageBubbleNew key={message.id} message={message} isLoading={false} />
                 ))}
-                {analyzingLoading && (
+
+              {analyzingLoading && (
                 <div className="flex items-start gap-3 mt-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'var(--gradient-primary)' }}>
                     <span className="material-symbols-outlined text-white text-sm">hourglass_top</span>
                   </div>
                   <div className="p-3 rounded-xl bg-[var(--hover-color)] text-sm text-[var(--text-secondary)] italic">
@@ -274,6 +230,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                   </div>
                 </div>
               )}
+
               <div ref={messagesEndRef} />
             </div>
           </div>

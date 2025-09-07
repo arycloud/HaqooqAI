@@ -11,27 +11,16 @@ interface MessageBubbleNewProps {
 export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNewProps) {
   const { user } = useAuth()
   const [copied, setCopied] = useState(false)
-
   const isUser = message.role === 'user'
 
-  // Parse timestamp safely
   const timestamp = useMemo(() => {
-    try {
-      return message.created_at ? new Date(message.created_at) : new Date()
-    } catch {
-      return new Date()
-    }
+    try { return message.created_at ? new Date(message.created_at) : new Date() } catch { return new Date() }
   }, [message.created_at])
 
-  const timeLabel = useMemo(() => {
-    return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  }, [timestamp])
-
-  const getUserInitials = (u: any) => {
-    if (u?.username) return u.username.charAt(0).toUpperCase()
-    if (u?.email) return u.email.charAt(0).toUpperCase()
-    return 'U'
-  }
+  const timeLabel = useMemo(
+    () => timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    [timestamp]
+  )
 
   const userAvatarStyle = useMemo(() => {
     if (user?.avatar_url) {
@@ -48,20 +37,17 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
     try {
       await navigator.clipboard.writeText(message.content)
       setCopied(true)
-      setTimeout(() => setCopied(false), 1800)
-    } catch (error) {
-      console.error('Failed to copy text:', error)
-    }
+      setTimeout(() => setCopied(false), 1600)
+    } catch (error) { console.error('Failed to copy text:', error) }
   }
 
   return (
     <div className={cn("flex w-full mb-4", isUser ? "justify-end" : "justify-start")}>
-      {/* Left side (assistant avatar) */}
       {!isUser && (
         <div className="flex-shrink-0 mr-2">
           <div
             className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm"
-            style={{ background: 'linear-gradient(135deg,var(--primary-color),var(--secondary-color))' }}
+            style={{ background: 'var(--gradient-primary)' }}
             aria-hidden
           >
             <span className="material-symbols-outlined text-sm">balance</span>
@@ -70,30 +56,23 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
       )}
 
       <div className={cn("flex flex-col max-w-[78%]", isUser ? "items-end" : "items-start")}>
-        {/* Compact header: name + time */}
-        <div className={cn("flex items-center gap-2 mb-1 w-full", isUser ? "justify-end" : "justify-start")}>
-          {/* Name */}
-          <div className={cn("text-xs font-medium", isUser ? "text-pink-400" : "text-purple-400")}>
+        <div className={cn("mb-1 w-full flex items-center gap-2", isUser ? "justify-end" : "justify-start")}>
+          <div className={cn("text-[11px] font-medium", isUser ? "text-pink-300" : "text-purple-300")}>
             {isUser ? "You" : "HaqooqAI"}
           </div>
         </div>
 
-        {/* Bubble */}
         <div
           className={cn(
             "relative px-4 py-3 rounded-2xl leading-relaxed text-sm break-words shadow-sm",
             isUser
               ? "bg-[var(--primary-color)] text-white rounded-br-lg"
-              : "bg-[var(--sidebar-color)] text-[var(--text-primary)] border border-[var(--border-color)]"
+              : "panel border hairline text-[var(--text-primary)]"
           )}
           title={timestamp.toLocaleString()}
         >
-          {/* message content */}
-          <div className="whitespace-pre-wrap">
-            {message.content}
-          </div>
+          <div className="whitespace-pre-wrap">{message.content}</div>
 
-          {/* action row for assistant */}
           {!isUser && (
             <div className="flex items-center gap-2 mt-3">
               <button
@@ -105,15 +84,12 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
                   {copied ? 'check' : 'content_copy'}
                 </span>
               </button>
-
               <button className="p-1 rounded-md text-slate-400 hover:text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition" title="Helpful">
                 <span className="material-symbols-outlined text-sm">thumb_up</span>
               </button>
-
               <button className="p-1 rounded-md text-slate-400 hover:text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition" title="Not helpful">
                 <span className="material-symbols-outlined text-sm">thumb_down</span>
               </button>
-
               <button className="p-1 rounded-md text-slate-400 hover:text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition" title="Regenerate">
                 <span className="material-symbols-outlined text-sm">refresh</span>
               </button>
@@ -121,22 +97,19 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
           )}
         </div>
 
-        {/* timestamp below (subtle) */}
-        <div className={cn("text-[11px] text-[var(--text-secondary)] mt-1", isUser ? "text-right" : "text-left")}>
+        <div className={cn("text-[10px] text-[var(--text-secondary)] mt-1", isUser ? "text-right" : "text-left")}>
           {timeLabel}
         </div>
       </div>
 
-      {/* Right side (user avatar) */}
       {isUser && (
         <div className="flex-shrink-0 ml-2">
           <div
             className="w-9 h-9 rounded-full flex items-center justify-center font-semibold text-white"
-            style={userAvatarStyle ? userAvatarStyle : { backgroundColor: 'var(--primary-color)' }}
+            style={userAvatarStyle ? userAvatarStyle : { background: 'var(--gradient-primary)' }}
             aria-hidden
           >
-            {!user?.avatar_url && getInitials(userAvatarStyle ? {} : user)}
-            {user?.avatar_url ? null : null}
+            {!user?.avatar_url && getInitials(user)}
           </div>
         </div>
       )}
@@ -144,7 +117,6 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
   )
 }
 
-// small helper to avoid repetition (keeps linter happy)
 function getInitials(u: any) {
   if (u?.username) return u.username.charAt(0).toUpperCase()
   if (u?.email) return u.email.charAt(0).toUpperCase()
