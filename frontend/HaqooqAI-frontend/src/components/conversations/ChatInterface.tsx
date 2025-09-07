@@ -134,8 +134,33 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
 
             {/* Centered Loader when opening/loading a conversation */}
             {showCenteredLoader && (
-              <div className="flex flex-col items-center justify-center flex-1 py-20">
+              <div className="flex flex-col items-center justify-center flex-1 py-20 space-y-8">
+                {/* Big Logo */}
+                <div className="flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 shadow-lg">
+                  <img src="/logo.svg" alt="HaqooqAI Logo" className="w-16 h-16" />
+                </div>
+
+                {/* Loader */}
                 <CyclingLoader type={loaderType} />
+
+                {/* Shimmer Messages */}
+                <div className="w-full max-w-md space-y-4 mt-6">
+                  {loaderType === 'setup' && (
+                    <>
+                      <div className="h-4 w-3/4 bg-[var(--hover-color)]/40 rounded animate-pulse" />
+                      <div className="h-4 w-2/3 bg-[var(--hover-color)]/30 rounded animate-pulse" />
+                      <div className="h-4 w-1/2 bg-[var(--hover-color)]/20 rounded animate-pulse" />
+                    </>
+                  )}
+
+                  {loaderType === 'messages' && (
+                    <>
+                      <div className="h-4 w-full bg-[var(--hover-color)]/40 rounded animate-pulse" />
+                      <div className="h-4 w-5/6 bg-[var(--hover-color)]/30 rounded animate-pulse" />
+                      <div className="h-4 w-2/3 bg-[var(--hover-color)]/20 rounded animate-pulse" />
+                    </>
+                  )}
+                </div>
               </div>
             )}
 
@@ -241,15 +266,23 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
 
             {/* Analyzing loader (as message bubble, after sending) */}
             {analyzingLoading && (
-              <div className="flex items-start gap-3 mt-2">
-                <div className="bg-gradient-to-r from-purple-500 to-indigo-500 p-3 rounded-xl flex-1">
-                  <p className="text-purple-300 text-sm font-bold leading-tight mb-2">
-                    HaqooqAI
-                  </p>
-                  <CyclingLoader type="analyzing" />
-                </div>
+            <div className="flex flex-col items-center justify-center py-12 space-y-8">
+              {/* Big Logo */}
+              <div className="flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 shadow-lg">
+                <img src="/logo.svg" alt="HaqooqAI Logo" className="w-12 h-12" />
               </div>
-            )}
+
+              {/* Loader */}
+              <CyclingLoader type="analyzing" />
+
+              {/* Shimmer text effect */}
+              <div className="w-full max-w-md space-y-4 mt-6">
+                <div className="h-4 w-3/4 bg-[var(--hover-color)]/40 rounded animate-pulse" />
+                <div className="h-4 w-2/3 bg-[var(--hover-color)]/30 rounded animate-pulse" />
+                <div className="h-4 w-1/2 bg-[var(--hover-color)]/20 rounded animate-pulse" />
+              </div>
+            </div>
+          )}
 
             <div ref={messagesEndRef} />
           </div>
