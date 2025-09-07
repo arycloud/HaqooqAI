@@ -1,54 +1,85 @@
-import { useConversations } from '@/hooks/useConversations'
-import { useAuth } from '@/hooks/useAuth'
-import { Conversation } from '@/types/conversation'
-import { Home, Settings } from 'lucide-react'
-import { Link } from 'react-router-dom'
+// src/components/layout/SidebarNew.tsx
+import React from "react"
+import { PlusCircle } from "lucide-react"
+import { useConversations } from "@/hooks/useConversations"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 
-export default function Sidebar() {
-  const { user } = useAuth()
-  const { conversations, isLoading } = useConversations(user)
+interface SidebarNewProps {
+  activeConversationId?: string | null
+  onSelectConversation: (id: string) => void
+}
+
+const SidebarNew: React.FC<SidebarNewProps> = ({
+  activeConversationId,
+  onSelectConversation,
+}) => {
+  const {
+    conversations,
+    loading,
+    error,
+    createConversation,
+    refreshing,
+  } = useConversations()
 
   return (
-    <aside className="w-72 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col">
+    <aside className="flex flex-col w-64 bg-white border-r shadow-sm">
       {/* Header */}
-      <div className="p-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-800">
-        <h2 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
-          Chats
-        </h2>
-        <div className="flex items-center gap-3">
-          <Link to="/dashboard" title="Dashboard">
-            <Home className="w-5 h-5 text-gray-500 hover:text-primary transition-colors" />
-          </Link>
-          <Link to="/settings" title="Settings">
-            <Settings className="w-5 h-5 text-gray-500 hover:text-primary transition-colors" />
-          </Link>
-        </div>
+      <div className="flex items-center justify-between px-4 py-3 border-b">
+        <h2 className="text-lg font-semibold">Conversations</h2>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => createConversation()}
+        >
+          <PlusCircle className="w-5 h-5" />
+        </Button>
       </div>
 
       {/* Conversations list */}
       <div className="flex-1 overflow-y-auto">
-        {isLoading ? (
-          <div className="p-4 text-gray-400">Loading...</div>
-        ) : conversations.length === 0 ? (
-          <div className="p-4 text-gray-400">No conversations yet</div>
-        ) : (
-          conversations.map((conv: Conversation) => (
-            <div
-              key={conv.id}
-              className="p-3 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer border-b border-gray-100 dark:border-gray-800"
-            >
-              <p className="font-medium text-gray-900 dark:text-gray-100 truncate">
-                {conv.title || 'Untitled'}
-              </p>
-              <p className="text-xs text-gray-500">
-                {conv.updated_at
-                  ? new Date(conv.updated_at).toLocaleString()
-                  : 'No activity'}
-              </p>
-            </div>
-          ))
+        {loading && (
+          <div className="p-4 text-sm text-gray-500">Loading...</div>
         )}
+        {error && (
+          <div className="p-4 text-sm text-red-500">
+            Failed to load conversations
+          </div>
+        )}
+        {!loading && !error && conversations.length === 0 && (
+          <div className="p-4 text-sm text-gray-500">
+            No conversations yet. Start a new one!
+          </div>
+        )}
+        <ul className="space-y-1 p-2">
+          {conversations.map((conv) => (
+            <li key={conv.id}>
+              <button
+                onClick={() => onSelectConversation(conv.id)}
+                className={cn(
+                  "w-full flex items-center px-3 py-2 rounded-lg text-sm transition",
+                  activeConversationId === conv.id
+                    ? "bg-blue-100 text-blue-700 font-medium"
+                    : "hover:bg-gray-100 text-gray-700"
+                )}
+              >
+                <span className="truncate">
+                  {conv.title || "Untitled"}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
+
+      {/* Refreshing indicator */}
+      {refreshing && (
+        <div className="p-2 text-xs text-gray-400 text-center">
+          Refreshing...
+        </div>
+      )}
     </aside>
   )
 }
+
+export default SidebarNew
