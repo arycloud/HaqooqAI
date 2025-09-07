@@ -39,7 +39,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           {/* <LoadingSpinner size="lg" className="mx-auto mb-4" /> */}
-          <InitialLoader />
+          {/* <InitialLoader /> */}
           <p className="text-gray-600">
             {isProcessingOAuth() ? 'Completing authentication...' : 'Loading...'}
           </p>
