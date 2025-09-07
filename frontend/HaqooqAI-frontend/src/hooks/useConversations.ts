@@ -65,12 +65,15 @@ export const useConversations = () => {
       const conversationTitle = title || 'New Conversation'
       const conversation = await conversationService.createConversation(conversationTitle)
 
+      // Optimistic cache update
       queryClient.setQueryData<Conversation[]>(userQueryKey, (old = []) => [
         conversation,
         ...old,
       ])
-
       useConversationStore.getState().addConversation(conversation)
+
+      // 🔑 Ensure backend sync
+      await queryClient.invalidateQueries({ queryKey: userQueryKey })
 
       return conversation
     } catch (err) {
@@ -112,7 +115,6 @@ export const useConversations = () => {
       queryClient.setQueryData<Conversation[]>(userQueryKey, (old = []) =>
         old.filter((c) => c.id !== conversationId)
       )
-
       useConversationStore.getState().removeConversation(conversationId)
 
       if (location.pathname === `/chat/${conversationId}`) {
@@ -121,13 +123,15 @@ export const useConversations = () => {
 
       toast.success('Conversation deleted successfully')
 
-      // ✅ revalidate to ensure backend + frontend match
-      queryClient.invalidateQueries({ queryKey: userQueryKey })
+      // 🔑 Ensure backend sync
+      await queryClient.invalidateQueries({ queryKey: userQueryKey })
     } catch (error) {
       toast.error('Failed to delete conversation')
       console.error(error)
     }
   }
+
+  
 
   // ====== Fetch single conversation ======
   const getConversation = async (conversationId: string): Promise<Conversation | null> => {

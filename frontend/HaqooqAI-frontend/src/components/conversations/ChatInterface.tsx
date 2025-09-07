@@ -264,7 +264,16 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                 conversationMessages.map((message) => (
                   <MessageBubbleNew key={message.id} message={message} isLoading={false} />
                 ))}
-
+                {analyzingLoading && (
+                <div className="flex items-start gap-3 mt-2">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-white text-sm">hourglass_top</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-[var(--hover-color)] text-sm text-[var(--text-secondary)] italic">
+                    Analyzing your query...
+                  </div>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
           </div>

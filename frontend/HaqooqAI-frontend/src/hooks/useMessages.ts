@@ -29,6 +29,15 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
     }
   }, [conversationId])
 
+  const dedupeMessages = (list: Message[]) => {
+    const seen = new Set<string>()
+    return list.filter(msg => {
+      if (seen.has(msg.id)) return false
+      seen.add(msg.id)
+      return true
+    })
+  }
+
   const loadMessages = async (convId: string) => {
     if (!convId) return
     
@@ -45,7 +54,10 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
 
       // Only update if still on the same conversation
       if (activeConversationRef.current === convId) {
-        setMessages(prev => ({ ...prev, [convId]: conversationMessages }))
+        setMessages(prev => ({
+          ...prev,
+          [convId]: dedupeMessages(conversationMessages),
+        }))
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load messages'
@@ -92,7 +104,7 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
 
       setMessages(prev => ({
         ...prev,
-        [convId]: [...(prev[convId] || []), tempUserMessage],
+        [convId]: dedupeMessages([...(prev[convId] || []), tempUserMessage]),
       }))
 
       // Create user message in backend
@@ -104,10 +116,10 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
 
       setMessages(prev => ({
         ...prev,
-        [convId]: [
+        [convId]: dedupeMessages([
           ...(prev[convId] || []).filter(m => m.id !== tempUserMessage.id),
           userMessage,
-        ],
+        ]),
       }))
 
       // Update title if this is the very first message
@@ -138,7 +150,7 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
 
       setMessages(prev => ({
         ...prev,
-        [convId]: [...(prev[convId] || []), assistantMessage],
+        [convId]: dedupeMessages([...(prev[convId] || []), assistantMessage]),
       }))
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to send message'

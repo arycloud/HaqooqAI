@@ -195,15 +195,10 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
                           chat_bubble
                         </span>
 
-                        <div className="flex-1 min-w-0">
-                          <p
-                            className={cn(
-                              "text-sm font-medium truncate",
-                              active ? "text-white" : "text-slate-200"
-                            )}
-                          >
-                            {conversation.title || 'Untitled'}
-                          </p>
+                        <div className="flex items-center justify-between p-2 rounded-lg bg-gradient-to-r from-purple-500 to-blue-500">
+                          <span className="truncate max-w-[180px] text-white text-sm">
+                            {conversation.title}
+                          </span>
                           <p className="text-xs text-[var(--text-secondary)] truncate">
                             {formatDate(conversation.updated_at || conversation.created_at)}
                           </p>
