@@ -1,46 +1,467 @@
-import React, { useState } from "react"
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Trash2, Save, Eye, EyeOff, ExternalLink, CheckCircle, Zap, Shield, Plus, Edit, AlertCircle, Activity, Check } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
+import { aiService } from '@/services/backend/aiService'
+import { ProviderStatus } from '@/types/api'
+import { LLM_PROVIDERS, PROVIDER_DISPLAY_NAMES, PROVIDER_KEY_FORMATS } from '@/utils/constants'
+import toast from 'react-hot-toast'
 
-interface Provider {
+interface ProviderPlan {
+  provider: 'groq' | 'gemini' | 'openai'
   name: string
-  key: string
+  price: string
+  description: string
+  features: string[]
+  popular?: boolean
+  ctaText: string
+  documentationUrl: string
+  keyFormat: {
+    prefix: string
+    minLength: number
+    placeholder: string
+  }
+  quota: {
+    daily: string
+    cost: string
+    context: string
+  }
 }
 
-export default function MultiProviderApiKeySettings() {
-  const [providers, setProviders] = useState<Provider[]>([
-    { name: "OpenAI", key: "" },
-    { name: "Anthropic", key: "" },
-  ])
+const PROVIDER_PLANS: ProviderPlan[] = [
+  {
+    provider: 'groq',
+    name: 'Groq',
+    price: 'Free',
+    description: 'Lightning-fast inference with Qwen3 models',
+    features: [
+      'Limitted daily requests',
+      'Ultra-fast inference',
+      '6K token context',
+      'Cost effective',
+      'System default provider'
+    ],
+    popular: true,
+    ctaText: 'Connect API Key',
+    documentationUrl: 'https://console.groq.com/keys',
+    keyFormat: PROVIDER_KEY_FORMATS.groq,
+    quota: {
+      daily: 'Limitted requests',
+      cost: 'Free',
+      context: '6K tokens'
+    }
+  },
+  {
+    provider: 'gemini',
+    name: 'Google Gemini',
+    price: '$0.075',
+    description: 'Advanced AI with massive context windows',
+    features: [
+      'Unlimited daily requests*',
+      'Massive 50k context',
+      'Multimodal support',
+      'Complex reasoning',
+      'Advanced capabilities'
+    ],
+    ctaText: 'Connect API Key',
+    documentationUrl: 'https://makersuite.google.com/app/apikey',
+    keyFormat: PROVIDER_KEY_FORMATS.gemini,
+    quota: {
+      daily: 'Unlimited*',
+      cost: 'Free for the upper mentioned limits',
+      context: '50k tokens'
+    }
+  },
+  {
+    provider: 'openai',
+    name: 'OpenAI',
+    price: '$10.00',
+    description: 'Industry-leading AI models, best for analysis',
+    features: [
+      'BYOK only access',
+      'Industry standard',
+      'High quality output',
+      '128K token context',
+      'Professional grade'
+    ],
+    ctaText: 'Connect API Key',
+    documentationUrl: 'https://platform.openai.com/api-keys',
+    keyFormat: PROVIDER_KEY_FORMATS.openai,
+    quota: {
+      daily: 'BYOK Only',
+      cost: 'Price on their platform',
+      context: '128K tokens'
+    }
+  }
+]
 
-  const handleChange = (idx: number, value: string) => {
-    const updated = [...providers]
-    updated[idx].key = value
-    setProviders(updated)
+export function MultiProviderApiKeySettings() {
+  const { user } = useAuth()
+  const [providers, setProviders] = useState<ProviderStatus[]>([])
+  const [apiKeys, setApiKeys] = useState<{ [key: string]: string }>({})
+  const [showKeys, setShowKeys] = useState<{ [key: string]: boolean }>({})
+  const [editingProvider, setEditingProvider] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [savingProvider, setSavingProvider] = useState<string | null>(null)
+  const [deletingProvider, setDeletingProvider] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (user?.github_id) {
+      loadProviderStatuses()
+    }
+  }, [user?.github_id])
+
+  const loadProviderStatuses = async () => {
+    if (!user?.github_id) return
+
+    try {
+      setLoading(true)
+      const statuses = await aiService.getProviderStatuses(String(user.github_id))
+      setProviders(statuses)
+    } catch (error) {
+      console.error('Failed to load provider statuses:', error)
+      toast.error('Failed to load API key statuses')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSaveApiKey = async (provider: 'groq' | 'gemini' | 'openai') => {
+    if (!user?.github_id || !apiKeys[provider]) return
+
+    try {
+      setSavingProvider(provider)
+      await aiService.saveProviderApiKey(String(user.github_id), provider, apiKeys[provider])
+      
+      // Clear the input field and exit editing mode
+      setApiKeys(prev => ({ ...prev, [provider]: '' }))
+      setShowKeys(prev => ({ ...prev, [provider]: false }))
+      setEditingProvider(null)
+      
+      toast.success(`${PROVIDER_DISPLAY_NAMES[provider]} API key saved successfully`, {
+        duration: 4000,
+        icon: '✅'
+      })
+      
+      // Reload provider statuses to update UI
+      await loadProviderStatuses()
+    } catch (error) {
+      console.error('Failed to save API key:', error)
+      
+      // More specific error messages
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      
+      if (errorMessage.includes('validation error') || errorMessage.includes('has_unlimited')) {
+        toast.error(`Backend validation issue detected. Please try again or contact support.`, {
+          duration: 6000,
+          icon: '⚠️'
+        })
+      } else if (errorMessage.includes('unauthorized') || errorMessage.includes('401')) {
+        toast.error('Authentication failed. Please refresh and try again.', {
+          duration: 5000,
+          icon: '🔒'
+        })
+      } else {
+        toast.error(`Failed to save ${PROVIDER_DISPLAY_NAMES[provider]} API key: ${errorMessage}`, {
+          duration: 5000,
+          icon: '❌'
+        })
+      }
+    } finally {
+      setSavingProvider(null)
+    }
+  }
+
+  const handleDeleteApiKey = async (provider: 'groq' | 'gemini' | 'openai') => {
+    if (!user?.github_id) return
+
+    try {
+      setDeletingProvider(provider)
+      await aiService.deleteProviderApiKey(String(user.github_id), provider)
+      
+      // Clear any editing state
+      setEditingProvider(null)
+      setApiKeys(prev => ({ ...prev, [provider]: '' }))
+      setShowKeys(prev => ({ ...prev, [provider]: false }))
+      
+      toast.success(`${PROVIDER_DISPLAY_NAMES[provider]} API key deleted`)
+      await loadProviderStatuses()
+    } catch (error) {
+      console.error('Failed to delete API key:', error)
+      toast.error(`Failed to delete ${PROVIDER_DISPLAY_NAMES[provider]} API key`)
+    } finally {
+      setDeletingProvider(null)
+    }
+  }
+
+  const validateApiKey = (provider: 'groq' | 'gemini' | 'openai', key: string): boolean => {
+    const plan = PROVIDER_PLANS.find(p => p.provider === provider)
+    if (!plan) return false
+
+    if (plan.keyFormat.prefix && !key.startsWith(plan.keyFormat.prefix)) {
+      return false
+    }
+
+    return key.length >= plan.keyFormat.minLength
+  }
+
+  const getProviderStatus = (provider: string): ProviderStatus | undefined => {
+    return providers.find(p => p.provider === provider)
   }
 
   return (
-    <div className="panel border hairline rounded-2xl p-5 shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-transform">
-      <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-3">
-        API Providers
-      </h2>
-      <div className="space-y-3">
-        {providers.map((provider, idx) => (
-          <div
-            key={provider.name}
-            className="rounded-xl border hairline bg-[var(--input-color)] p-3 shadow-sm hover:shadow-md transition"
-          >
-            <p className="text-xs text-[var(--text-secondary)] mb-1">
-              {provider.name}
-            </p>
-            <input
-              type="password"
-              value={provider.key}
-              onChange={(e) => handleChange(idx, e.target.value)}
-              placeholder={`Enter ${provider.name} key`}
-              className="w-full rounded-lg bg-[var(--sidebar-color)] border hairline px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]"
-            />
-          </div>
-        ))}
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="text-center max-w-2xl mx-auto">
+        <h2 className="text-2xl font-bold mb-2 text-[var(--text-primary)]">AI Provider API Keys</h2>
+        <p className="text-[var(--text-secondary)]">
+          Connect your API keys to unlock unlimited access and premium features.
+        </p>
       </div>
+
+      {/* Simplified Provider Cards */}
+      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
+        {PROVIDER_PLANS.map((plan) => {
+          const status = getProviderStatus(plan.provider)
+          const isConfigured = status?.configured || false
+          const isValid = status?.valid || false
+          const currentKey = apiKeys[plan.provider] || ''
+          const isValidFormat = currentKey ? validateApiKey(plan.provider, currentKey) : true
+          const isEditing = editingProvider === plan.provider
+
+          return (
+            <Card
+              key={plan.provider}
+              className={`relative bg-[var(--sidebar-color)] border-[var(--border-color)] shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-transform ${
+    plan.popular
+      ? 'ring-2 ring-[var(--primary-color)]/30'
+                  : isConfigured
+                  ? 'ring-2 ring-green-500/30'
+                  : ''
+              }`}
+            >
+              {plan.popular && !isConfigured && (
+                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10">
+                  <Badge className="bg-[var(--primary-color)] text-white text-xs px-3 py-1">
+                    Most Popular
+                  </Badge>
+                </div>
+              )}
+              
+              {isConfigured ? (
+                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10">
+                  <Badge className="bg-green-600 text-white text-xs px-3 py-1">
+                    Connected
+                  </Badge>
+                </div>
+              ) : (
+                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10">
+                  <Badge className="bg-gray-500 text-white text-xs px-3 py-1">
+                    Not Connected
+                  </Badge>
+                </div>
+              )}
+              
+              <CardHeader className="text-center pb-2">
+                <div className="flex items-center justify-between mb-2">
+                  <CardTitle className="text-base flex items-center gap-2 text-[var(--text-primary)]">
+                    {plan.name}
+                    {isConfigured && (
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                    )}
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => window.open(plan.documentationUrl, '_blank')}
+                    className="opacity-60 hover:opacity-100 p-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                  </Button>
+                </div>
+                
+                <CardDescription className="text-xs mb-3 text-[var(--text-secondary)]">
+                  {plan.description}
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent className="pt-2">
+                {/* API Key Management Section */}
+                {isConfigured && !isEditing ? (
+                  /* Connected State */
+                  <div className="space-y-3">
+                    <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 p-3 rounded-lg text-center">
+                      <Zap className="w-4 h-4 mx-auto mb-1 text-green-500" />
+                      <p className="text-xs font-medium text-green-600">Unlimited Access Active</p>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingProvider(plan.provider)}
+                        className="flex-1 text-xs border-[var(--border-color)] bg-[var(--primary-color)] text-[var(--text-primary)] hover:bg-[var(--hover-color)]"
+                      >
+                        <Edit className="w-3 h-3 mr-1" />
+                        Update Key
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteApiKey(plan.provider)}
+                        disabled={deletingProvider === plan.provider}
+                        className="px-3"
+                      >
+                        {deletingProvider === plan.provider ? (
+                          <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3 h-3" />
+                        )}
+                      </Button>
+                    </div>
+                    
+                    {status?.last_validated && (
+                      <p className="text-xs text-[var(--text-secondary)] text-center flex items-center justify-center gap-1">
+                        <CheckCircle className="w-3 h-3" />
+                        Connected: {new Date(status.last_validated).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  /* Not Connected or Editing State */
+                  <div className="space-y-3">
+                    {/* API Key Input */}
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Input
+                          type={showKeys[plan.provider] ? "text" : "password"}
+                          placeholder={plan.keyFormat.placeholder}
+                          value={currentKey}
+                          onChange={(e) => setApiKeys(prev => ({ 
+                            ...prev, 
+                            [plan.provider]: e.target.value 
+                          }))}
+                          className={`text-xs placeholder:text-xs py-1 h-8 lg:h-8 bg-[var(--input-color)] border-[var(--border-color)] text-[var(--text-primary)] transition-colors w-full ${
+                            !isValidFormat ? "border-red-500 focus:border-red-500" : 
+                            currentKey ? "border-green-500 focus:border-green-500" : ""
+                          }`}
+                          disabled={loading || savingProvider === plan.provider}
+                        />
+                        
+                        {currentKey && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 h-6 w-6 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                            onClick={() => setShowKeys(prev => ({ 
+                              ...prev, 
+                              [plan.provider]: !prev[plan.provider] 
+                            }))}
+                          >
+                            {showKeys[plan.provider] ? (
+                              <EyeOff className="w-3 h-3" />
+                            ) : (
+                              <Eye className="w-3 h-3" />
+                            )}
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Validation Message */}
+                      {currentKey && !isValidFormat && (
+                        <p className="text-xs text-red-500 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          Invalid format. Should{plan.keyFormat.prefix && ` start with "${plan.keyFormat.prefix}" and`} be at least {plan.keyFormat.minLength} characters.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleSaveApiKey(plan.provider)}
+                        disabled={
+                          !currentKey || 
+                          !isValidFormat || 
+                          loading || 
+                          savingProvider === plan.provider
+                        }
+                        size="sm"
+                        className={`flex-1 text-xs ${
+                          plan.popular ? "bg-[var(--primary-color)] hover:bg-[var(--primary-color)]/90" : "bg-[var(--primary-color)] hover:bg-[var(--primary-color)]/90"
+                        }`}
+                      >
+                        {savingProvider === plan.provider ? (
+                          <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin mr-1" />
+                        ) : (
+                          <Save className="w-3 h-3 mr-1" />
+                        )}
+                        {isEditing ? 'Update Key' : plan.ctaText}
+                      </Button>
+                      
+                      {isEditing && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingProvider(null)
+                            setApiKeys(prev => ({ ...prev, [plan.provider]: '' }))
+                            setShowKeys(prev => ({ ...prev, [plan.provider]: false }))
+                          }}
+                          className="text-xs px-3 border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--hover-color)]"
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+
+      {/* Security Info Section */}
+      <Card className="bg-[var(--sidebar-color)] border-[var(--border-color)] shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-transform">
+        <CardContent className="pt-6">
+          <div className="grid gap-6 md:grid-cols-3">
+            <div className="text-center">
+              <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] rounded-full flex items-center justify-center">
+                <Shield className="w-6 h-6 text-white" />
+              </div>
+              <h4 className="text-sm font-medium mb-2 text-[var(--text-primary)]">Bank-Grade Security</h4>
+              <p className="text-sm text-[var(--text-secondary)]">
+                Your API keys are encrypted with AES-256 encryption before storage. We never see your raw keys.
+              </p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] rounded-full flex items-center justify-center">
+                <Zap className="w-6 h-6 text-white" />
+              </div>
+              <h4 className="text-sm font-medium mb-2 text-[var(--text-primary)]">Unlimited Usage</h4>
+              <p className="text-sm text-[var(--text-secondary)]">
+                Your own API keys provide unlimited system quota and bypass all daily limits automatically.
+              </p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] rounded-full flex items-center justify-center">
+                <Activity className="w-6 h-6 text-white" />
+              </div>
+              <h4 className="text-sm font-medium mb-2 text-[var(--text-primary)]">Smart Routing</h4>
+              <p className="text-sm text-[var(--text-secondary)]">
+                Our system automatically selects the best provider based on your query complexity and context.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
