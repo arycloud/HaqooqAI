@@ -10,6 +10,7 @@ import toast from 'react-hot-toast'
 export const useMessages = (conversationId?: string, isNewConversation = false) => {
   const { user } = useAuth()
   const { updateConversationTitle } = useConversations()
+
   const [messages, setMessages] = useState<Record<string, Message[]>>({})
   const [fetchingLoading, setFetchingLoading] = useState(false)
   const [setupLoading, setSetupLoading] = useState(false)
@@ -29,6 +30,7 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
     }
   }, [conversationId])
 
+  /** Deduplicate messages by ID */
   const dedupeMessages = (list: Message[]) => {
     const seen = new Set<string>()
     return list.filter(msg => {
@@ -38,9 +40,9 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
     })
   }
 
+  /** Load messages for a conversation */
   const loadMessages = async (convId: string) => {
     if (!convId) return
-    
     try {
       if (isNewConversation) {
         setSetupLoading(true)
@@ -48,11 +50,10 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
         setFetchingLoading(true)
       }
       setError(null)
-      
+
       const { messages: conversationMessages } =
         await conversationService.getConversationWithMessages(convId)
 
-      // Only update if still on the same conversation
       if (activeConversationRef.current === convId) {
         setMessages(prev => ({
           ...prev,
@@ -72,6 +73,7 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
     }
   }
 
+  /** Send message and trigger AI response */
   const sendMessage = async (convId: string, content: string): Promise<void> => {
     try {
       if (!convId) throw new Error('No conversation selected')
@@ -89,11 +91,9 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
         }
         currentUser = session.user
       }
+      const githubId = String(currentUser!.github_id)
 
-      const activeUser = currentUser!
-      const githubId = String(activeUser.github_id)
-
-      // Temporary user message
+      // Optimistic: temporary user message
       const tempUserMessage: Message = {
         id: `temp-${Date.now()}`,
         conversation_id: convId,
@@ -101,19 +101,15 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
         content,
         created_at: new Date().toISOString(),
       }
-
       setMessages(prev => ({
         ...prev,
         [convId]: dedupeMessages([...(prev[convId] || []), tempUserMessage]),
       }))
 
       // Create user message in backend
-      const userMessage = await conversationService.createMessage(
-        convId,
-        'user',
-        content
-      )
+      const userMessage = await conversationService.createMessage(convId, 'user', content)
 
+      // Replace temp message with actual saved one
       setMessages(prev => ({
         ...prev,
         [convId]: dedupeMessages([
@@ -122,7 +118,7 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
         ]),
       }))
 
-      // Update title if this is the very first message
+      // Update conversation title if first message
       setMessages(prev => {
         const current = prev[convId] || []
         if (current.length === 1) {
@@ -133,30 +129,13 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
 
       console.log('Sending AI request with:', { content, github_id: githubId })
 
-      // Ask AI
-      const aiResponse = await aiService.askQuestion(content, githubId, convId)
+      // Ask AI — backend is responsible for creating assistant message
+      await aiService.askQuestion(content, githubId, convId)
 
-      // Create assistant message via backend
-      await conversationService.createMessage(
-        convId,
-        'assistant',
-        aiResponse.response,
-        aiResponse.sources
-      )
-
-      // Reload messages from backend to avoid duplicates
+      // Reload messages (includes assistant response from backend)
       if (activeConversationRef.current === convId) {
         await loadMessages(convId)
       }
-      // Add routing information to the message if available
-      // if (aiResponse.routing_info) {
-      //   (assistantMessage as any).routing_info = aiResponse.routing_info
-      // }
-
-      // setMessages(prev => ({
-      //   ...prev,
-      //   [convId]: dedupeMessages([...(prev[convId] || []), assistantMessage]),
-      // }))
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to send message'
       console.error('Message sending error:', err)
@@ -189,9 +168,9 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
     }
   }
 
+  /** Delete message (future API) */
   const deleteMessage = async (_messageId: string): Promise<void> => {
     try {
-      // TODO: Implement delete message in backend API
       toast.success('Message deleted')
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete message'
@@ -200,9 +179,9 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
     }
   }
 
+  /** Clear all messages in conversation */
   const clearConversationMessages = async (convId: string): Promise<void> => {
     try {
-      // TODO: Implement clear conversation messages in backend API
       setMessages(prev => ({ ...prev, [convId]: [] }))
       toast.success('Conversation cleared')
     } catch (err) {
