@@ -1,77 +1,43 @@
-import { useState, useEffect } from 'react'
-import { useLocation, Outlet } from 'react-router-dom'
-import SidebarNew from './SidebarNew'
-import { Header } from './Header'
+// src/components/layout/MainLayout.tsx
+import React, { useState } from 'react'
+import SidebarNew from './SidebarNew' // default import
 import { cn } from '@/lib/utils'
 
-export function MainLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false) // Start with sidebar closed
-  const location = useLocation()
+interface MainLayoutProps {
+  children: React.ReactNode
+}
 
-  // Handle sidebar state for all routes
-  useEffect(() => {
-    const isChatRoute = location.pathname.startsWith('/chat/')
-    if (!isChatRoute) {
-      // For non-chat routes, restore saved state or default to open
-      const savedState = localStorage.getItem('sidebar-open')
-      if (savedState !== null) {
-        setSidebarOpen(JSON.parse(savedState))
-      } else {
-        setSidebarOpen(true) // Default open for non-chat routes
-      }
-    }
-    // For chat routes, keep current state (don't force close)
-  }, [location.pathname])
-
-  // Save sidebar state for non-chat routes
-  useEffect(() => {
-    const isChatRoute = location.pathname.startsWith('/chat/')
-    if (!isChatRoute) {
-      localStorage.setItem('sidebar-open', JSON.stringify(sidebarOpen))
-    }
-  }, [sidebarOpen, location.pathname])
+export default function MainLayout({ children }: MainLayoutProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="h-screen flex bg-[var(--background-color)]">
-      {/* Sidebar only for non-chat routes */}
-      {!location.pathname.startsWith('/chat/') && (
-        <SidebarNew isOpen={sidebarOpen} />
+    <div className="flex h-screen bg-[var(--background-color)]">
+      {/* Desktop permanent sidebar */}
+      <div className={cn("hidden lg:block lg:w-80")}>
+        <SidebarNew isOpen={true} />
+      </div>
+
+      {/* Mobile togglable sidebar (overlays when open) */}
+      {sidebarOpen && (
+        <div className="lg:hidden fixed inset-0 z-40">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
+          <div className="relative w-80 h-full">
+            <SidebarNew isOpen={true} />
+          </div>
+        </div>
       )}
 
-      {/* Main content area */}
-      <div
-        className={cn(
-          "flex flex-col min-w-0 relative transition-all duration-500 ease-in-out",
-          !location.pathname.startsWith('/chat/') && sidebarOpen ? "ml-80 w-[calc(100%-320px)]" : "w-full"
-        )}
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(200,80,192,0.05)_1px,transparent_0)] [background-size:32px_32px] pointer-events-none" />
+      {/* Main content */}
+      <main className="flex-1 overflow-auto">
+        {/* top toolbar for mobile */}
+        <div className="lg:hidden p-3 border-b border-[var(--border-color)]">
+          <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 rounded-md hover:bg-[var(--hover-color)] transition">
+            <span className="material-symbols-outlined">menu</span>
+          </button>
+        </div>
 
-        {/* Conditionally render Header - hide for chat routes */}
-        {!location.pathname.startsWith('/chat/') && (
-          <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} sidebarOpen={sidebarOpen} />
-        )}
-
-        {/* Outlet for nested pages - pass sidebar controls to chat routes */}
-        <main
-          className={cn(
-            "flex-1 overflow-hidden relative z-10 transition-all duration-500 ease-in-out",
-            location.pathname.startsWith('/chat/') ? "" : "p-6 lg:p-8 xl:p-12"
-          )}
-        >
-          <div
-            className={cn(
-              "h-full transition-all duration-500 ease-in-out",
-              location.pathname.startsWith('/chat/')
-                ? "max-w-none w-full"
-                : "w-full max-w-none"
-            )}
-          >
-            {/* Standard outlet for all routes */}
-            <Outlet />
-          </div>
-        </main>
-      </div>
+        {children}
+      </main>
     </div>
   )
 }
