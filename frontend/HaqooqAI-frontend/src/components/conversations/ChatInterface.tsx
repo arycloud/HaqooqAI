@@ -10,7 +10,6 @@ import { useConversations } from '@/hooks/useConversations'
 import { Header } from '@/components/layout/Header'
 import { cn } from '@/lib/utils'
 import { AnalyzingLoader } from '../ui/AnalyzingLoader'
-import { TextShimmer } from '../core/text-shimmer'
 
 interface ChatInterfaceProps {
   conversationId?: string
@@ -275,10 +274,10 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
 
             {/* ANALYZING overlay (non-bubble): show while waiting for AI response after user submits */}
             {showAnalyzingOverlay && (
-            <div className="flex justify-start mt-6">
-              <AnalyzingLoader />
-            </div>
-          )}
+              <div className="flex justify-start mt-6">
+                <AnalyzingLoader />
+              </div>
+            )}
 
             <div ref={messagesEndRef} />
           </div>

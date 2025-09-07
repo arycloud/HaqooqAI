@@ -138,5 +138,5 @@
 }
 
 .animate-text-shimmer-ltr {
-  animation: text-shimmer-ltr linear infinite;
+  animation: text-shimmer-ltr 2s linear infinite;
 }

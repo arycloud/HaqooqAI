@@ -18,7 +18,7 @@ export function AnalyzingLoader() {
   useEffect(() => {
     const interval = setInterval(() => {
       setStepIndex((prev) => (prev + 1) % ANALYZING_STEPS.length)
-    }, 3000)
+    }, 2500)
     return () => clearInterval(interval)
   }, [])
 
@@ -26,21 +26,13 @@ export function AnalyzingLoader() {
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg max-w-md animate-in fade-in-50">
-      {/* Circular Spinner */}
-      <div className="relative flex-shrink-0">
-        <div className="w-6 h-6 border-2 border-[var(--primary-color)] border-t-transparent rounded-full animate-spin"></div>
-      </div>
+      {/* Spinner */}
+      <div className="w-6 h-6 border-2 border-[var(--primary-color)] border-t-transparent rounded-full animate-spin" />
 
-      {/* Shimmering Text */}
-      <div className="flex flex-col">
-        <TextShimmer
-          className="font-semibold text-lg text-[var(--text-primary)]"
-          duration={2}
-          key={`main-${stepIndex}`}
-        >
-          {step.main}
-        </TextShimmer>
-      </div>
+      {/* Shimmer text */}
+      <TextShimmer className="font-semibold text-lg" duration={2} key={stepIndex}>
+        {step.main}
+      </TextShimmer>
     </div>
   )
 }
