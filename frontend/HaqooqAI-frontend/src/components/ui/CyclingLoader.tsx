@@ -60,9 +60,9 @@ export function CyclingLoader({ type = 'general' }: CyclingLoaderProps) {
       </p>
 
       {/* Sub message */}
-      <p className="text-sm text-[var(--text-secondary)]">
+      {/* <p className="text-sm text-[var(--text-secondary)]">
         {sub}
-      </p>
+      </p> */}
     </div>
   )
 }

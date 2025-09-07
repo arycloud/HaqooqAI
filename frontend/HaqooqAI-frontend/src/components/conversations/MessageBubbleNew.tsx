@@ -63,15 +63,15 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
         </div>
 
         <div
-          className={cn(
-            "relative px-4 py-3 rounded-2xl leading-relaxed text-sm break-words shadow-sm",
-            isUser
-              ? "bg-[var(--primary-color)] text-white rounded-br-lg"
-              : "panel border hairline text-[var(--text-primary)]"
-          )}
-          title={timestamp.toLocaleString()}
-        >
-          <div className="whitespace-pre-wrap">{message.content}</div>
+            className={cn(
+              "relative px-4 py-3 rounded-2xl leading-relaxed text-base md:text-[17px] break-words shadow-sm",
+              isUser
+                ? "bg-[var(--primary-color)] text-white rounded-br-lg"
+                : "panel border hairline text-[var(--text-primary)]"
+            )}
+            title={timestamp.toLocaleString()}
+          >
+            <div className="whitespace-pre-wrap">{message.content}</div>
 
           {!isUser && (
             <div className="flex items-center gap-2 mt-3">

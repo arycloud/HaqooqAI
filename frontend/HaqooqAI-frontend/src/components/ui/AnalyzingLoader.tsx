@@ -14,25 +14,33 @@ export function AnalyzingLoader() {
   useEffect(() => {
     const interval = setInterval(() => {
       setStepIndex((prev) => (prev + 1) % ANALYZING_STEPS.length)
-    }, 2500) // change every 2.5s
+    }, 2500) // rotate every 2.5s
     return () => clearInterval(interval)
   }, [])
 
   const step = ANALYZING_STEPS[stepIndex]
 
   return (
-    <div className="flex items-start space-x-3 p-4 rounded-xl bg-[var(--bubble-assistant-bg)] shadow-md animate-in fade-in-50 slide-in-from-bottom-2">
-      {/* Spinner */}
-      <div className="relative flex-shrink-0 mt-1">
-        <div className="w-6 h-6 border-3 border-[var(--primary-color)] border-t-transparent rounded-full animate-spin" />
+    <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--bubble-assistant-bg)] shadow-lg max-w-md animate-in fade-in-50">
+      {/* Circular Spinner */}
+      <div className="relative flex-shrink-0">
+        <div className="w-6 h-6 border-2 border-[var(--primary-color)] border-t-transparent rounded-full animate-spin"></div>
       </div>
 
-      {/* Texts */}
+      {/* Shimmer Texts */}
       <div className="flex flex-col">
-        <TextShimmer className="font-medium text-[var(--text-primary)] text-sm" duration={1.5} key={`main-${stepIndex}`}>
+        <TextShimmer
+          className="font-semibold text-[15px] text-[var(--text-primary)]"
+          duration={1.8}
+          key={`main-${stepIndex}`}
+        >
           {step.main}
         </TextShimmer>
-        <TextShimmer className="text-sm text-[var(--text-secondary)] mt-1" duration={2} key={`sub-${stepIndex}`}>
+        <TextShimmer
+          className="text-[14px] text-[var(--text-secondary)] mt-1"
+          duration={2.2}
+          key={`sub-${stepIndex}`}
+        >
           {step.sub}
         </TextShimmer>
       </div>

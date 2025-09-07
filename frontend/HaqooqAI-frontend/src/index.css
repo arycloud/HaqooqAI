@@ -102,3 +102,13 @@
 
 /* Material Icons sizing match */
 .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20; }
+
+
+@keyframes text-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.animate-text-shimmer {
+  animation: text-shimmer linear infinite;
+}
