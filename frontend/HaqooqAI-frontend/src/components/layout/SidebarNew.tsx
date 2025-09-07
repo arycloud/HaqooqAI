@@ -116,11 +116,10 @@ export function SidebarNew({ isOpen }: SidebarNewProps) {
       <div className="flex-grow overflow-y-auto scroll-container pr-2">
         <nav className="flex flex-col gap-1">
           {loading ? (
-            // Only show spinner on first load with no cached data
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-2 border-[var(--primary-color)] border-t-transparent"></div>
-            </div>
-          ) : conversations.length === 0 ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-2 border-[var(--primary-color)] border-t-transparent"></div>
+              </div>
+            ) : conversations.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-[var(--text-secondary)] text-sm">No conversations yet</p>
               <p className="text-[var(--text-secondary)] text-xs mt-1">Start a new chat below</p>
