@@ -194,7 +194,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                 />
               ))}
 
-              {/* Show spinner only when loading and no messages or when loading new messages */}
+              {/* Show spinner only when loading */}
               {(fetchingLoading || setupLoading || analyzingLoading) && (
                 <div className="flex items-start gap-4">
                   <div 
@@ -215,60 +215,62 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                   </div>
                 </div>
               )}
+
+              {/* ✅ MOVED INSIDE: Sample Legal Questions — only show when no messages and NOT loading */}
+              {conversationMessages.length === 0 && !fetchingLoading && !setupLoading && !analyzingLoading && (
+                <div className="pt-8">
+                  <div className="text-center mb-6">
+                    <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Try asking about:</h3>
+                    <p className="text-sm text-[var(--text-secondary)]">Click on any question to get started</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <div 
+                      className="p-4 bg-gradient-to-r from-purple-500/15 to-indigo-500/15 backdrop-blur-sm rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
+                      onClick={() => handleSendMessage("What are the legal requirements for property purchase in Pakistan?")}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="material-symbols-outlined text-purple-400 mt-0.5">home</span>
+                        <div className="text-left">
+                          <h4 className="font-semibold text-[var(--text-primary)] text-sm">Property Purchase</h4>
+                          <p className="text-xs text-[var(--text-secondary)] mt-1">Legal documents and procedures for buying property in Pakistan</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div 
+                      className="p-4 bg-gradient-to-r from-pink-500/15 to-purple-500/15 backdrop-blur-sm rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
+                      onClick={() => handleSendMessage("How do I register a marriage in Pakistan?")}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="material-symbols-outlined text-pink-400 mt-0.5">favorite</span>
+                        <div className="text-left">
+                          <h4 className="font-semibold text-[var(--text-primary)] text-sm">Marriage Registration</h4>
+                          <p className="text-xs text-[var(--text-secondary)] mt-1">Required documents and process for marriage registration</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div 
+                      className="p-4 bg-gradient-to-r from-indigo-500/15 to-blue-500/15 backdrop-blur-sm rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
+                      onClick={() => handleSendMessage("What documents are needed to start a business in Pakistan?")}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="material-symbols-outlined text-blue-400 mt-0.5">business</span>
+                        <div className="text-left">
+                          <h4 className="font-semibold text-[var(--text-primary)] text-sm">Business Registration</h4>
+                          <p className="text-xs text-[var(--text-secondary)] mt-1">Steps and documents required to register a business</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Spacer for scroll-to-bottom */}
               <div ref={messagesEndRef} />
             </div>
           </div>
-
-          {/* Sample Legal Questions - Display only when no messages and not loading */}
-          {conversationMessages.length === 0 && !fetchingLoading && !setupLoading && !analyzingLoading && (
-            <div className="max-w-4xl mx-auto px-6 pb-4">
-              <div className="text-center mb-6">
-                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Try asking about:</h3>
-                <p className="text-sm text-[var(--text-secondary)]">Click on any question to get started</p>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                <div 
-                  className="p-4 bg-gradient-to-r from-purple-500/15 to-indigo-500/15 backdrop-blur-sm rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
-                  onClick={() => handleSendMessage("What are the legal requirements for property purchase in Pakistan?")}
-                >
-                  <div className="flex items-start gap-2">
-                    <span className="material-symbols-outlined text-purple-400 mt-0.5">home</span>
-                    <div className="text-left">
-                      <h4 className="font-semibold text-[var(--text-primary)] text-sm">Property Purchase</h4>
-                      <p className="text-xs text-[var(--text-secondary)] mt-1">Legal documents and procedures for buying property in Pakistan</p>
-                    </div>
-                  </div>
-                </div>
-                <div 
-                  className="p-4 bg-gradient-to-r from-pink-500/15 to-purple-500/15 backdrop-blur-sm rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
-                  onClick={() => handleSendMessage("How do I register a marriage in Pakistan?")}
-                >
-                  <div className="flex items-start gap-2">
-                    <span className="material-symbols-outlined text-pink-400 mt-0.5">favorite</span>
-                    <div className="text-left">
-                      <h4 className="font-semibold text-[var(--text-primary)] text-sm">Marriage Registration</h4>
-                      <p className="text-xs text-[var(--text-secondary)] mt-1">Required documents and process for marriage registration</p>
-                    </div>
-                  </div>
-                </div>
-                <div 
-                  className="p-4 bg-gradient-to-r from-indigo-500/15 to-blue-500/15 backdrop-blur-sm rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
-                  onClick={() => handleSendMessage("What documents are needed to start a business in Pakistan?")}
-                >
-                  <div className="flex items-start gap-2">
-                    <span className="material-symbols-outlined text-blue-400 mt-0.5">business</span>
-                    <div className="text-left">
-                      <h4 className="font-semibold text-[var(--text-primary)] text-sm">Business Registration</h4>
-                      <p className="text-xs text-[var(--text-secondary)] mt-1">Steps and documents required to register a business</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Message Input - Always at the bottom with flex-shrink-0 */}
+        {/* ✅ Input Field — Always visually at bottom */}
         <div className="flex-shrink-0 w-full">
           <MessageInputNew
             onSendMessage={handleSendMessage}
