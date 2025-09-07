@@ -31,7 +31,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 h-20 lg:h-24 bg-[var(--background-color)] border-b border-[var(--border-color)] flex items-center justify-between px-8 lg:px-12 relative z-20">
+    <header className="sticky top-0 h-20 lg:h-24 bg-[var(--background-color)] border-b border-[var(--border-color)] flex items-center justify-between px-8 lg:px-12 z-20">
       {/* Subtle gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent pointer-events-none" />
 
