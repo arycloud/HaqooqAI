@@ -34,9 +34,13 @@ export function AnalyzingLoader() {
 
       {/* Shimmer Texts */}
       <div className="flex flex-col">
-        <TextShimmer className="font-semibold text-[15px] text-white">
-        {step.main}
-        </TextShimmer>
+        <TextShimmer
+            className="font-semibold text-[15px]"
+            duration={1.8}
+            key={`main-${stepIndex}`}
+            >
+            {step.main}
+            </TextShimmer>
 
         {/* <TextShimmer
           className="text-[14px] text-[var(--text-secondary)] mt-1"

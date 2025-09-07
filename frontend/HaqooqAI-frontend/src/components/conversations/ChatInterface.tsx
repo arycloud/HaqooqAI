@@ -10,6 +10,7 @@ import { useConversations } from '@/hooks/useConversations'
 import { Header } from '@/components/layout/Header'
 import { cn } from '@/lib/utils'
 import { AnalyzingLoader } from '../ui/AnalyzingLoader'
+import { TextShimmer } from '../core/text-shimmer'
 
 interface ChatInterfaceProps {
   conversationId?: string
@@ -286,6 +287,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
         {/* Sticky input at bottom (always visible) */}
         <div className="sticky bottom-0 z-40 bg-[var(--background-color)] border-t border-[var(--border-color)] p-3 backdrop-blur-sm">
           <div className="max-w-4xl mx-auto">
+            <TextShimmer className="text-lg">🔥 Shimmer Test</TextShimmer>
             <MessageInputNew
               onSendMessage={handleSendMessage}
               disabled={fetchingLoading || isCreatingConversation || setupLoading || analyzingLoading}
