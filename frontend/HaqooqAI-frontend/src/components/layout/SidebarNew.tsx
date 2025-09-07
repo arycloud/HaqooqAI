@@ -54,7 +54,7 @@ export function SidebarNew({ isOpen }: SidebarNewProps) {
       // Extract name from email (before @)
       return user.email.split('@')[0]
     }
-    return 'User'
+    return ''
   }
 
   const handleNewChat = async () => {
