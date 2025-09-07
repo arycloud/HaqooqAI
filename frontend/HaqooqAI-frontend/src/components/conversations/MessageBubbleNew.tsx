@@ -64,7 +64,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
 
         <div
             className={cn(
-              "relative px-4 py-3 rounded-2xl leading-relaxed text-base md:text-[17px] break-words shadow-sm",
+              "relative px-4 py-3 rounded-2xl leading-relaxed text-lg break-words shadow-sm",
               isUser
                 ? "bg-[var(--primary-color)] text-white rounded-br-lg"
                 : "panel border hairline text-[var(--text-primary)]"

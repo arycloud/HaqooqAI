@@ -127,3 +127,16 @@
 
   animation: text-shimmer 2s infinite linear;
 }
+
+@keyframes text-shimmer-ltr {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-text-shimmer-ltr {
+  animation: text-shimmer-ltr linear infinite;
+}
