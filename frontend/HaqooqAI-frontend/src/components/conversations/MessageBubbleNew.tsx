@@ -83,7 +83,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
           className={cn(
             "prose prose-slate dark:prose-invert max-w-none",
             // Typography tuning
-            "prose-sm md:prose-base text-[17px]", // Increased font size
+            "prose-sm md:prose-base text-[17px]",
             "prose-headings:font-semibold prose-h2:mt-4 prose-h2:mb-2",
             "prose-p:leading-7 prose-li:leading-9",
             "prose-ul:my-2 prose-ol:my-2 prose-li:my-[2px]",

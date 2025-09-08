@@ -50,7 +50,7 @@ export function MessageInputNew({
 
   return (
     <div className="p-4 bg-[var(--background-color)] border-t border-[var(--border-color)]">  {/* Increased padding, neutral bg */}
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto"> // Changed from max-w-4xl to max-w-6xl
         <form onSubmit={handleSubmit} className="relative" aria-label="Message input form">
           <textarea
             ref={textareaRef}
