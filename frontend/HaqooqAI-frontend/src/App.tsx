@@ -8,7 +8,6 @@ import { Settings } from '@/pages/Settings'
 // import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { InitialLoader } from '@/components/ui/InitialLoader';
 import { MainLayout} from '@/components/layout/MainLayout'
-import { ConnectionStatus } from '@/components/ui/ConnectionStatus'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { useQueryClient } from '@tanstack/react-query'
 import { conversationService } from '@/services/backend/conversationService'
@@ -45,7 +44,7 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <ConnectionStatus />
+
       <Routes>
         <Route path="/login" element={<Login />} />
 
