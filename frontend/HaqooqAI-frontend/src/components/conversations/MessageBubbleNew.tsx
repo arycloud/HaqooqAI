@@ -20,7 +20,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
   const [copied, setCopied] = useState(false)
   const isUser = message.role === "user"
   const [showActions, setShowActions] = useState(false)  // New: Collapsed menu
-  const [showSources, setShowSources] = useState(false)  // New: Accordion for sources
+  const [showSources, setShowSources] = useState(false)
 
   const timestamp = useMemo(() => {
     try {
@@ -30,12 +30,10 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
     }
   }, [message.created_at])
 
-  const timeLabel = useMemo(() => {
-    const now = new Date()
-    const diff = now.getTime() - timestamp.getTime()
-    const mins = Math.floor(diff / 60000)
-    return mins < 1 ? 'Just now' : mins === 1 ? '1 min ago' : `${mins} mins ago`
-  }, [timestamp])
+  const timeLabel = useMemo(
+    () => timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    [timestamp]
+  )
 
   const userAvatarStyle = useMemo(() => {
     if (user?.avatar_url) {
@@ -69,7 +67,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
   const renderAssistantContent = (content: string | AIResponse) => {
     if (!isAIResponse(content)) {
       return (
-        <div className="prose prose-neutral max-w-none leading-6 font-inter">  {/* Inter, neutral prose */}
+        <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none leading-7">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{String(content ?? "")}</ReactMarkdown>
         </div>
       )
@@ -83,10 +81,10 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
         {/* Main response */}
         <div
           className={cn(
-            "prose prose-neutral max-w-none font-inter",
+            "prose prose-slate dark:prose-invert max-w-none",
             // Typography tuning
             "prose-sm md:prose-base",
-            "prose-headings:font-semibold prose-h2:mt-3 prose-h2:mb-1.5",
+            "prose-headings:font-semibold prose-h2:mt-4 prose-h2:mb-2",
             "prose-p:leading-7 prose-li:leading-7",
             "prose-ul:my-2 prose-ol:my-2 prose-li:my-[2px]",
             "prose-a:no-underline hover:prose-a:underline",
@@ -102,7 +100,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
           </ReactMarkdown>
         </div>
 
-        {/* Sources: New Accordion */}
+        {/* Sources */}
         {content.sources?.length > 0 && (
           <div className="rounded-lg border border-[var(--border-color)] bg-[var(--hover-color)] overflow-hidden">  {/* Card style */}
             <button
@@ -142,9 +140,9 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
           </div>
         )}
 
-        {/* Disclaimer: Inline pill */}
-        <div className="flex items-center gap-2 rounded-full border border-[var(--error)]/30 bg-[var(--error)]/10 px-3 py-1.5 text-xs text-[var(--text-primary)]" aria-label="Disclaimer">
-          <span className="material-symbols-outlined text-sm">info</span>  {/* Icon changed to info */}
+        {/* Disclaimer */}
+        <div className="flex items-start gap-2 rounded-xl border border-amber-300/60 bg-amber-50/90 px-4 py-3 text-[12.5px] md:text-sm text-amber-900">
+          <span className="material-symbols-outlined text-base md:text-[18px]">warning</span>
           <span>{disclaimer}</span>
         </div>
       </div>
@@ -155,9 +153,13 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
     <div className={cn("flex w-full mb-6", isUser ? "justify-end" : "justify-start")}>
       {/* Left: Assistant avatar */}
       {!isUser && (
-        <div className="flex-shrink-0 self-end">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[var(--primary-color)] text-white" aria-hidden>
-            <span className="material-symbols-outlined text-sm">balance</span>
+        <div className="flex-shrink-0 mr-3">
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-md"
+            style={{ background: "var(--gradient-primary)" }}
+            aria-hidden
+          >
+            <span className="material-symbols-outlined text-base">balance</span>
           </div>
         </div>
       )}
@@ -172,14 +174,19 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
         )}
       >
         {/* Sender label */}
-        <div className={cn("mb-1 text-xs font-medium tracking-tight", isUser ? "text-[var(--primary-color)]" : "text-[var(--secondary-color)]")}>
+        <div
+          className={cn(
+            "mb-2 text-[11px] font-semibold tracking-wide",
+            isUser ? "text-pink-400" : "text-purple-400"
+          )}
+        >
           {isUser ? "You" : "HaqooqAI"}
         </div>
 
         {/* Bubble */}
         <div
           className={cn(
-            "relative px-4 py-3 text-base leading-6 space-y-3 max-w-full",
+            "relative px-6 py-5 rounded-2xl leading-relaxed shadow-md text-[16px] tracking-[0.25px] space-y-4",
             isUser
               ? "bg-[var(--primary-color)]/90 text-white rounded-br-lg"
               : "bg-[var(--bubble-assistant-bg)] text-[var(--text-primary)] border border-[var(--border-color)]"
@@ -187,7 +194,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
           title={timestamp.toLocaleString()}
         >
           {isUser ? (
-            <div className="whitespace-pre-wrap font-inter">
+            <div className="whitespace-pre-wrap">
               {typeof message.content === "string"
                 ? message.content
                 : isAIResponse(message.content)
@@ -235,28 +242,6 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
           )}
         </div>
 
-        {/* Actions: Collapsed menu (new) */}
-        {!isUser && (
-                    <div className="absolute -top-8 right-0">  {/* Positioned above for space */}
-                      <button
-                        onClick={() => setShowActions(!showActions)}
-                        className="p-1.5 rounded-full text-[var(--text-secondary)] hover:text-[var(--primary-color)] hover:bg-[var(--hover-color)] transition"
-                        aria-label="Message actions"
-                        aria-expanded={showActions}
-                      >
-                        <span className="material-symbols-outlined text-sm">more_horiz</span>
-                      </button>
-                      {showActions && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[var(--sidebar-color)] rounded-lg shadow-lg border border-[var(--border-color)] py-2 z-10">
-                          <button onClick={handleCopy} className="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-color)] flex items-center gap-2">
-                            <span className="material-symbols-outlined text-sm">{copied ? "check" : "content_copy"}</span>
-                            {copied ? "Copied!" : "Copy"}
-                          </button>
-                          {/* Add thumbs/regenerate similarly */}
-                        </div>
-                      )}
-                    </div>
-        )}
         {/* Timestamp */}
         <div
           className={cn(
@@ -270,7 +255,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
 
       {/* Right: User avatar */}
       {isUser && (
-        <div className="flex-shrink-0 self-end">
+        <div className="flex-shrink-0 ml-3">
           <div
             className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-white shadow-md"
             style={userAvatarStyle ? userAvatarStyle : { background: "var(--gradient-primary)" }}

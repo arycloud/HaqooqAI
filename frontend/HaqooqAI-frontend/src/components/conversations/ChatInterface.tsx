@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import SidebarNew from '@/components/layout/SidebarNew'
 import { MessageBubbleNew } from '@/components/conversations/MessageBubbleNew'
 import { MessageInputNew } from '@/components/conversations/MessageInputNew'
+import { CyclingLoader } from '@/components/ui/CyclingLoader'
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay'
 import { useMessages } from '@/hooks/useMessages'
 import { useConversations } from '@/hooks/useConversations'
 import { Header } from '@/components/layout/Header'
 import { cn } from '@/lib/utils'
+import { AnalyzingLoader } from '../ui/AnalyzingLoader'
 
 interface ChatInterfaceProps {
   conversationId?: string
@@ -124,16 +126,49 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
   // We want to show an analyzing loader (non-bubble) below messages (not full-screen)
   const showAnalyzingOverlay = analyzingLoading && !showCenteredLoader
 
-  // New: Hero illustration for empty state (simple icon-based)
-  const HeroIllustration = () => (
-    <div className="w-24 h-24 mx-auto mb-6 flex items-center justify-center text-[var(--primary-color)]" aria-hidden>
-      <span className="material-symbols-outlined text-6xl">balance</span>
-    </div>
-  )
-
-  // Handle prompt click with keyboard support
-  const handlePromptClick = (prompt: string) => {
-    handleSendMessage(prompt)
+  // Small presentational logo + spinner element (matches design)
+  const LogoCircle = ({ size = 96 }: { size?: number }) => {
+    // Using CSS structure to mimic the circular spinner and colored arc
+    const px = size
+    return (
+      <div
+        className="relative flex items-center justify-center rounded-full"
+        style={{ width: px, height: px }}
+        aria-hidden
+      >
+        {/* Outer ring */}
+        <div
+          className="rounded-full flex items-center justify-center"
+          style={{
+            width: px,
+            height: px,
+            border: '5px solid rgba(255,255,255,0.07)',
+            boxSizing: 'border-box',
+          }}
+        />
+        {/* Colored arc (top-right) */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: '9999px',
+            background: 'conic-gradient(#ff6b6b 0deg, #ff6b6b 60deg, transparent 60deg 360deg)',
+            maskImage: 'linear-gradient(#000, #000)', // ensure full arc visible
+            transform: 'rotate(20deg)',
+            opacity: 1,
+          }}
+        />
+        {/* Inner hollow */}
+        <div
+          className="rounded-full bg-[var(--background-color)]"
+          style={{
+            width: px - 18,
+            height: px - 18,
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)',
+          }}
+        />
+      </div>
+    )
   }
 
   return (
@@ -161,22 +196,17 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
         {/* Messages container (scrollable) */}
         <div
           ref={scrollContainerRef}
-          className="flex flex-col flex-1 overflow-y-auto px-4 sm:px-6 bg-[var(--background-color)]"
+          className="flex flex-col flex-1 overflow-y-auto p-6 bg-[var(--background-color)]"
           style={{
             // give extra bottom padding so sticky input doesn't overlap last messages
-            paddingBottom: '100px',
+            paddingBottom: '140px',
           }}
         >
-          <div className="flex flex-col gap-4 max-w-3xl mx-auto w-full py-8">
+          <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full">
             {error && <ErrorDisplay error={error} onRetry={handleRetryMessage} />}
 
             {/* CENTERED LOADER for initial conversation load (no message bubbles) */}
-            {showCenteredLoader && (
-              <div className="flex flex-col items-center justify-center py-12" aria-label="Loading conversation">
-                <div className="w-12 h-12 border-4 border-[var(--primary-color)]/20 border-t-[var(--primary-color)] rounded-full animate-spin mb-4"></div>
-                <p className="text-[var(--text-secondary)]">Setting up conversation...</p>
-              </div>
-            )}
+            {showCenteredLoader && <CyclingLoader type={loaderType} />}
 
             {/* When no messages (and not loading) show the empty prompt cards */}
             {conversationMessages.length === 0 &&
@@ -184,77 +214,52 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
               !setupLoading &&
               !analyzingLoading &&
               !isCreatingConversation && (
-                <div className="text-center py-12">
-                  <HeroIllustration />
-                  <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2 font-inter">
-                    Welcome to HaqooqAI
-                  </h3>
-                  <p className="text-sm text-[var(--text-secondary)] mb-8 font-inter">
-                    Your legal assistant for Pakistan. Try asking about:
-                  </p>
-                  <div className="space-y-3 max-w-md mx-auto">
+                <div className="pt-8">
+                  <div className="text-center mb-6">
+                    <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+                      Try asking about:
+                    </h3>
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      Click on any question to get started
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                     <div
-                      className="prompt-card p-4 cursor-pointer transition-all duration-200"
-                      onClick={() => handlePromptClick("What are the legal requirements for property purchase in Pakistan?")}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          handlePromptClick("What are the legal requirements for property purchase in Pakistan?")
-                        }
-                      }}
-                      aria-label="Ask about property purchase"
+                      className="p-4 bg-gradient-to-r from-purple-500/15 to-indigo-500/15 rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
+                      onClick={() => handleSendMessage("What are the legal requirements for property purchase in Pakistan?")}
                     >
-                      <div className="flex items-start gap-3">
-                        <span className="material-symbols-outlined text-[var(--primary-color)] mt-0.5">home</span>
+                      <div className="flex items-start gap-2">
+                        <span className="material-symbols-outlined text-purple-400 mt-0.5">home</span>
                         <div className="text-left">
-                          <h4 className="font-semibold text-[var(--text-primary)] text-sm font-inter">Property Purchase</h4>
-                          <p className="text-xs text-[var(--text-secondary)] mt-1 font-inter">Legal documents and procedures for buying property</p>
+                          <h4 className="font-semibold text-[var(--text-primary)] text-sm">Property Purchase</h4>
+                          <p className="text-xs text-[var(--text-secondary)] mt-1">Legal documents and procedures for buying property</p>
                         </div>
                       </div>
                     </div>
 
                     <div
-                      className="prompt-card p-4 cursor-pointer transition-all duration-200"
-                      onClick={() => handlePromptClick("How do I register a marriage in Pakistan?")}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          handlePromptClick("How do I register a marriage in Pakistan?")
-                        }
-                      }}
-                      aria-label="Ask about marriage registration"
+                      className="p-4 bg-gradient-to-r from-pink-500/15 to-purple-500/15 rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
+                      onClick={() => handleSendMessage("How do I register a marriage in Pakistan?")}
                     >
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-2">
                         <span className="material-symbols-outlined text-pink-400 mt-0.5">favorite</span>
                         <div className="text-left">
-                          <h4 className="font-semibold text-[var(--text-primary)] text-sm font-inter">Marriage Registration</h4>
-                          <p className="text-xs text-[var(--text-secondary)] mt-1 font-inter">Required documents and process for marriage</p>
+                          <h4 className="font-semibold text-[var(--text-primary)] text-sm">Marriage Registration</h4>
+                          <p className="text-xs text-[var(--text-secondary)] mt-1">Required documents and process for marriage</p>
                         </div>
                       </div>
                     </div>
 
                     <div
-                      className="prompt-card p-4 cursor-pointer transition-all duration-200"
-                      onClick={() => handlePromptClick("What documents are needed to start a business in Pakistan?")}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          handlePromptClick("What documents are needed to start a business in Pakistan?")
-                        }
-                      }}
-                      aria-label="Ask about business registration"
+                      className="p-4 bg-gradient-to-r from-indigo-500/15 to-blue-500/15 rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
+                      onClick={() => handleSendMessage("What documents are needed to start a business in Pakistan?")}
                     >
-                      <div className="flex items-start gap-3">
-                        <span className="material-symbols-outlined text-[var(--secondary-color)] mt-0.5">business</span>
+                      <div className="flex items-start gap-2">
+                        <span className="material-symbols-outlined text-blue-400 mt-0.5">business</span>
                         <div className="text-left">
-                          <h4 className="font-semibold text-[var(--text-primary)] text-sm font-inter">Business Registration</h4>
-                          <p className="text-xs text-[var(--text-secondary)] mt-1 font-inter">Steps and documents required to register a business</p>
+                          <h4 className="font-semibold text-[var(--text-primary)] text-sm">Business Registration</h4>
+                          <p className="text-xs text-[var(--text-secondary)] mt-1">Steps and documents required to register a business</p>
                         </div>
                       </div>
                     </div>
@@ -269,11 +274,8 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
 
             {/* ANALYZING overlay (non-bubble): show while waiting for AI response after user submits */}
             {showAnalyzingOverlay && (
-              <div className="flex justify-start mt-4">
-                <div className="flex items-center gap-2 text-[var(--text-secondary)] font-inter" aria-label="AI is analyzing">
-                  <div className="w-5 h-5 border-2 border-[var(--primary-color)]/20 border-t-[var(--primary-color)] rounded-full animate-spin"></div>
-                  <span>AI is preparing response...</span>
-                </div>
+              <div className="flex justify-start mt-6">
+                <AnalyzingLoader />
               </div>
             )}
 
@@ -282,7 +284,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
         </div>
 
         {/* Sticky input at bottom (always visible) */}
-        <div className="sticky bottom-0 z-40 bg-[var(--background-color)] border-t border-[var(--border-color)]">
+        <div className="sticky bottom-0 z-40 bg-[var(--background-color)] border-t border-[var(--border-color)] p-3 backdrop-blur-sm">
           <div className="max-w-4xl mx-auto">
             <MessageInputNew
               onSendMessage={handleSendMessage}
