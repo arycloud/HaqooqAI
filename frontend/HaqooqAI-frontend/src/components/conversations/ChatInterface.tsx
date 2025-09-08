@@ -1,10 +1,15 @@
-import { useState, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import { MessageList } from './MessageList'
-import { MessageInput } from './MessageInput'
+import React, { useEffect, useState, useRef, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import SidebarNew from '@/components/layout/SidebarNew'
+import { MessageBubbleNew } from '@/components/conversations/MessageBubbleNew'
+import { MessageInputNew } from '@/components/conversations/MessageInputNew'
+import { CyclingLoader } from '@/components/ui/CyclingLoader'
+import { ErrorDisplay } from '@/components/ui/ErrorDisplay'
 import { useMessages } from '@/hooks/useMessages'
 import { useConversations } from '@/hooks/useConversations'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Header } from '@/components/layout/Header'
+import { cn } from '@/lib/utils'
+import { AnalyzingLoader } from '../ui/AnalyzingLoader'
 
 interface ChatInterfaceProps {
   conversationId?: string
@@ -13,108 +18,284 @@ interface ChatInterfaceProps {
 
 export function ChatInterface({ conversationId, initialPrompt }: ChatInterfaceProps) {
   const navigate = useNavigate()
-  const location = useLocation()
   const { createConversation } = useConversations()
-  const { messages, sendMessage, loading: messagesLoading } = useMessages(conversationId)
-  const [currentConversationId, setCurrentConversationId] = useState(conversationId)
+
+  // Local UI state
+  const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(conversationId)
+  const [isNewConversation, setIsNewConversation] = useState(!conversationId)
   const [isCreatingConversation, setIsCreatingConversation] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  // Detect if sidebar should be collapsed (for chat routes, sidebar is auto-collapsed)
-  const isChatRoute = location.pathname.startsWith('/chat/')
-  const sidebarOpen = !isChatRoute
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
-  // Update current conversation ID when the prop changes
-  useEffect(() => {
-    setCurrentConversationId(conversationId)
-  }, [conversationId])
+  // Messages hook
+  const {
+    messages,
+    fetchingLoading,
+    setupLoading,
+    analyzingLoading,
+    error,
+    sendMessage,
+    refreshMessages,
+  } = useMessages(currentConversationId, isNewConversation)
 
-  useEffect(() => {
-    if (initialPrompt && !conversationId) {
-      handleInitialPrompt()
-    }
-  }, [initialPrompt, conversationId])
+  // Determine loader type (passed to CyclingLoader)
+  const loaderType = useMemo(() => {
+  if (analyzingLoading) return 'analyzing'
+  if (setupLoading || isCreatingConversation) return 'setup'
+  if (fetchingLoading) return 'messages'
+  return 'general'
+}, [analyzingLoading, setupLoading, fetchingLoading, isCreatingConversation])
 
-  const handleInitialPrompt = async () => {
-    if (!initialPrompt) return
+  // Current conversation messages array
+  const conversationMessages = currentConversationId ? messages[currentConversationId] || [] : []
 
-    try {
-      setIsCreatingConversation(true)
-      const conversation = await createConversation('New Conversation')
-      setCurrentConversationId(conversation.id)
-      navigate(`/chat/${conversation.id}`, { replace: true })
-      
-      // Send the initial prompt
-      setTimeout(() => {
-        handleSendMessage(initialPrompt)
-      }, 100)
-    } catch (error) {
-      console.error('Failed to create conversation for initial prompt:', error)
-    } finally {
-      setIsCreatingConversation(false)
+  // Scroll helpers
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior })
     }
   }
 
+  useEffect(() => {
+    // When conversation changes, jump to bottom
+    scrollToBottom('auto')
+  }, [currentConversationId])
+
+  useEffect(() => {
+    // Keep view scrolled to bottom when messages change
+    scrollToBottom()
+  }, [conversationMessages.length, fetchingLoading, setupLoading, analyzingLoading])
+
+  useEffect(() => {
+    if (conversationId && conversationId !== currentConversationId) {
+      setCurrentConversationId(conversationId)
+      setIsNewConversation(false)
+    }
+  }, [conversationId, currentConversationId])
+
+  useEffect(() => {
+    if (initialPrompt && currentConversationId) {
+      handleSendMessage(initialPrompt)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPrompt, currentConversationId])
+
+  // Create conversation (used when sending first message without convId)
   const handleSendMessage = async (content: string) => {
     let targetConversationId = currentConversationId
 
-    // If no conversation exists, create one
     if (!targetConversationId) {
       try {
+        // Start local creation state immediately so UI can show "setup" loader
         setIsCreatingConversation(true)
         const conversation = await createConversation('New Conversation')
         targetConversationId = conversation.id
         setCurrentConversationId(conversation.id)
+        setIsNewConversation(true)
+        // navigate to new chat route
         navigate(`/chat/${conversation.id}`, { replace: true })
-      } catch (error) {
-        console.error('Failed to create conversation:', error)
+      } catch (err) {
+        console.error('Failed to create conversation:', err)
         return
       } finally {
+        // keep showing setup loader while messages are loaded by useMessages hook;
+        // but remove the local creation flag here to allow loaderType to rely on setupLoading
         setIsCreatingConversation(false)
       }
     }
 
     if (targetConversationId) {
       await sendMessage(targetConversationId, content)
+      requestAnimationFrame(() => scrollToBottom())
     }
   }
 
-  const conversationMessages = currentConversationId ? messages[currentConversationId] || [] : []
+  // Retry handler for errors
+  const handleRetryMessage = () => {
+    if (refreshMessages) refreshMessages()
+  }
 
-  if (isCreatingConversation) {
+  // Show centered loader only when there are NO messages and we're loading (initial open)
+  const showCenteredLoader =
+    conversationMessages.length === 0 &&
+    (fetchingLoading || setupLoading || isCreatingConversation)
+
+  // Show analyzing overlay when there are messages and AI is processing a submitted query
+  // We want to show an analyzing loader (non-bubble) below messages (not full-screen)
+  const showAnalyzingOverlay = analyzingLoading && !showCenteredLoader
+
+  // Small presentational logo + spinner element (matches design)
+  const LogoCircle = ({ size = 96 }: { size?: number }) => {
+    // Using CSS structure to mimic the circular spinner and colored arc
+    const px = size
     return (
-      <div className="h-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 p-8 lg:p-12">
-        <div className="text-center p-12 lg:p-16 rounded-3xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-2xl border border-gray-200/50 dark:border-slate-700/50 max-w-2xl">
-          <LoadingSpinner size="lg" className="mx-auto mb-8 lg:mb-10" />
-          <p className="text-2xl lg:text-3xl font-medium text-gray-700 dark:text-gray-300 mb-4">Creating conversation...</p>
-          <p className="text-lg lg:text-xl text-gray-500 dark:text-gray-400">Setting up your legal consultation</p>
-        </div>
+      <div
+        className="relative flex items-center justify-center rounded-full"
+        style={{ width: px, height: px }}
+        aria-hidden
+      >
+        {/* Outer ring */}
+        <div
+          className="rounded-full flex items-center justify-center"
+          style={{
+            width: px,
+            height: px,
+            border: '5px solid rgba(255,255,255,0.07)',
+            boxSizing: 'border-box',
+          }}
+        />
+        {/* Colored arc (top-right) */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: '9999px',
+            background: 'conic-gradient(#ff6b6b 0deg, #ff6b6b 60deg, transparent 60deg 360deg)',
+            maskImage: 'linear-gradient(#000, #000)', // ensure full arc visible
+            transform: 'rotate(20deg)',
+            opacity: 1,
+          }}
+        />
+        {/* Inner hollow */}
+        <div
+          className="rounded-full bg-[var(--background-color)]"
+          style={{
+            width: px - 18,
+            height: px - 18,
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)',
+          }}
+        />
       </div>
     )
   }
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-      {/* Enhanced Messages Area with better spacing */}
-      <div className="flex-1 overflow-hidden relative">
-        {/* Enhanced background pattern */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(139,92,246,0.03)_1px,transparent_0)] [background-size:48px_48px] pointer-events-none" />
+    <div className="flex flex-col min-h-screen bg-[var(--background-color)] group/design-root">
+      {/* Sidebar overlay (mobile) */}
+      {sidebarOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+          <div className="relative z-40">
+            <SidebarNew isOpen={true} />
+          </div>
+        </>
+      )}
 
-        <MessageList
-          messages={conversationMessages}
-          loading={messagesLoading}
-          conversationId={currentConversationId}
-          sidebarOpen={sidebarOpen}
-        />
-      </div>
+      {/* Main content - header is outside scroll area so it stays sticky */}
+      <div className={cn("flex flex-col flex-1 h-full transition-all duration-500 ease-in-out", sidebarOpen ? "lg:ml-80" : "")}>
+        {/* Header (sticky) */}
+        <header className="sticky top-0 z-30">
+          <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} sidebarOpen={sidebarOpen} />
+        </header>
 
-      {/* Enhanced Input Area with better spacing */}
-      <div className="border-t border-gray-200/50 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
-        <MessageInput
-          onSendMessage={handleSendMessage}
-          disabled={messagesLoading || isCreatingConversation}
-          sidebarOpen={sidebarOpen}
-        />
+        {/* Messages container (scrollable) */}
+        <div
+          ref={scrollContainerRef}
+          className="flex flex-col flex-1 overflow-y-auto p-6 bg-[var(--background-color)]"
+          style={{
+            // give extra bottom padding so sticky input doesn't overlap last messages
+            paddingBottom: '140px',
+          }}
+        >
+          <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full">
+            {error && <ErrorDisplay error={error} onRetry={handleRetryMessage} />}
+
+            {/* CENTERED LOADER for initial conversation load (no message bubbles) */}
+            {showCenteredLoader && <CyclingLoader type={loaderType} />}
+
+            {/* When no messages (and not loading) show the empty prompt cards */}
+            {conversationMessages.length === 0 &&
+              !fetchingLoading &&
+              !setupLoading &&
+              !analyzingLoading &&
+              !isCreatingConversation && (
+                <div className="pt-8">
+                  <div className="text-center mb-6">
+                    <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+                      Try asking about:
+                    </h3>
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      Click on any question to get started
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <div
+                      className="p-4 bg-gradient-to-r from-purple-500/15 to-indigo-500/15 rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
+                      onClick={() => handleSendMessage("What are the legal requirements for property purchase in Pakistan?")}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="material-symbols-outlined text-purple-400 mt-0.5">home</span>
+                        <div className="text-left">
+                          <h4 className="font-semibold text-[var(--text-primary)] text-sm">Property Purchase</h4>
+                          <p className="text-xs text-[var(--text-secondary)] mt-1">Legal documents and procedures for buying property</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      className="p-4 bg-gradient-to-r from-pink-500/15 to-purple-500/15 rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
+                      onClick={() => handleSendMessage("How do I register a marriage in Pakistan?")}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="material-symbols-outlined text-pink-400 mt-0.5">favorite</span>
+                        <div className="text-left">
+                          <h4 className="font-semibold text-[var(--text-primary)] text-sm">Marriage Registration</h4>
+                          <p className="text-xs text-[var(--text-secondary)] mt-1">Required documents and process for marriage</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      className="p-4 bg-gradient-to-r from-indigo-500/15 to-blue-500/15 rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
+                      onClick={() => handleSendMessage("What documents are needed to start a business in Pakistan?")}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="material-symbols-outlined text-blue-400 mt-0.5">business</span>
+                        <div className="text-left">
+                          <h4 className="font-semibold text-[var(--text-primary)] text-sm">Business Registration</h4>
+                          <p className="text-xs text-[var(--text-secondary)] mt-1">Steps and documents required to register a business</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            {/* Render existing messages as message bubbles (when any) */}
+            {conversationMessages.length > 0 && conversationMessages.map((message) => (
+              <MessageBubbleNew key={message.id} message={message} isLoading={false} />
+            ))}
+
+            {/* ANALYZING overlay (non-bubble): show while waiting for AI response after user submits */}
+            {showAnalyzingOverlay && (
+              <div className="flex justify-start mt-6">
+                <AnalyzingLoader />
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
+        </div>
+
+        {/* Sticky input at bottom (always visible) */}
+        <div className="sticky bottom-0 z-40 bg-[var(--background-color)] border-t border-[var(--border-color)] p-3 backdrop-blur-sm">
+          <div className="max-w-4xl mx-auto">
+            <MessageInputNew
+              onSendMessage={handleSendMessage}
+              disabled={fetchingLoading || isCreatingConversation || setupLoading || analyzingLoading}
+              placeholder="Ask a sample legal question..."
+            />
+          </div>
+        </div>
       </div>
     </div>
   )
 }
+
+// export default ChatInterface

@@ -1,10 +1,22 @@
+import { AIResponse } from "./api";
+
 export interface Message {
   id: string;
   conversation_id: string;
   role: 'user' | 'assistant';
-  content: string;
+  content:  string | AIResponse;
   sources?: Source[];
   created_at: string;
+  routing_info?: {
+    provider: string;
+    reason: string;
+    message_count: number;
+    query_tokens: number;
+    using_user_key: boolean;
+    estimated_cost?: number;
+  };
+  processing_time?: number;
+  query_id?: string;
 }
 
 export interface Source {

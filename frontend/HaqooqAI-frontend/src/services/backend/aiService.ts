@@ -1,6 +1,10 @@
 import axios from 'axios'
 import { BACKEND_URL, API_ENDPOINTS } from '@/utils/constants'
-import { QueryRequest, AIResponse, QuotaResponse } from '@/types/api'
+import { QueryRequest, AIResponse, QuotaResponse, MultiProviderApiKeyResponse,
+  MultiProviderApiKeyRequest,
+  ProviderStatus,
+  AllProvidersResponse
+ } from '@/types/api'
 import { authService } from './authService'
 
 export class AIService {
@@ -10,7 +14,12 @@ export class AIService {
   async askQuestion(
     query: string,
     userId: string,
-    groqApiKey?: string
+    conversationId: string,
+    apiKeys?: {
+      groq?: string;
+      gemini?: string;
+      openai?: string;
+    }
   ): Promise<AIResponse> {
     const githubToken = authService.getStoredToken()
     if (!githubToken) {
@@ -18,23 +27,30 @@ export class AIService {
     }
 
     try {
-      // Convert GitHub user ID to number (backend expects a number)
-      const parsedUserId = parseInt(userId, 10)
-      if (isNaN(parsedUserId) || parsedUserId <= 0) {
-        throw new Error('Invalid GitHub user ID')
-      }
-
-      // Prefer function arg groqApiKey, otherwise fallback to localStorage
-      const effectiveGroqKey = groqApiKey?.trim() || localStorage.getItem('groq_api_key')?.trim()
-
-      // Prepare the request data
       const requestData: QueryRequest = {
-        query: query.trim(),
-        user_id: parsedUserId,
+        query,
+        user_id: parseInt(userId),
+        conversation_id: conversationId,
       }
 
-      if (effectiveGroqKey) {
-        requestData.groq_api_key = effectiveGroqKey
+      // Add API keys if provided
+      if (apiKeys?.groq) {
+        requestData.groq_api_key = apiKeys.groq
+      }
+      if (apiKeys?.gemini) {
+        requestData.gemini_api_key = apiKeys.gemini
+      }
+      if (apiKeys?.openai) {
+        requestData.openai_api_key = apiKeys.openai
+      }
+
+      // Fallback to stored Groq key for backward compatibility
+      if (!apiKeys?.groq && !apiKeys?.gemini && !apiKeys?.openai) {
+        const storedUser = authService.getStoredUser()
+        const effectiveGroqKey = storedUser?.groq_api_key
+        if (effectiveGroqKey) {
+          requestData.groq_api_key = effectiveGroqKey
+        }
       }
 
       // Debug logging
@@ -42,6 +58,9 @@ export class AIService {
         query: requestData.query,
         user_id: requestData.user_id,
         has_groq_key: Boolean(requestData.groq_api_key),
+        has_gemini_key: Boolean(requestData.gemini_api_key),
+        has_openai_key: Boolean(requestData.openai_api_key),
+        conversation_id: requestData.conversation_id,
       })
 
       // Validation checks
@@ -133,10 +152,169 @@ export class AIService {
   }
 
   /**
-   * Save user's Groq API key
+   * Save API key for a specific provider
    */
+  async saveProviderApiKey(
+    userId: string, 
+    provider: 'groq' | 'gemini' | 'openai', 
+    apiKey: string
+  ): Promise<void> {
+    const githubToken = authService.getStoredToken()
+    if (!githubToken) {
+      throw new Error('No authentication token found')
+    }
+
+    try {
+      const response = await axios.post<MultiProviderApiKeyResponse>(
+        `${BACKEND_URL}${API_ENDPOINTS.USER_API_KEYS}`,
+        {
+          provider,
+          api_key: apiKey,
+          github_token: githubToken,
+          user_id: parseInt(userId),
+        } as MultiProviderApiKeyRequest,
+        {
+          headers: {
+            'Authorization': `Bearer ${githubToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+
+      if (response.data.status !== 'success') {
+        throw new Error(response.data.message || 'Failed to save API key')
+      }
+    } catch (error) {
+      console.error('Failed to save API key:', error)
+      
+      // Handle specific backend validation errors
+      if (axios.isAxiosError(error) && error.response?.status === 500) {
+        const errorData = error.response?.data
+        
+        // Check if it's a Pydantic validation error but the key was actually saved
+        if (errorData?.detail?.includes?.('validation error') || 
+            (typeof errorData === 'string' && errorData.includes('validation error')) ||
+            errorData?.detail?.includes?.('has_unlimited') ||
+            errorData?.detail?.includes?.('Field required')) {
+          
+          console.warn('Backend validation error detected, verifying if API key was saved...', {
+            provider,
+            errorDetail: errorData?.detail,
+            responseStatus: error.response?.status
+          })
+          
+          // Try to verify if the key was actually saved by checking provider status
+          try {
+            await new Promise(resolve => setTimeout(resolve, 1500)) // Brief delay for database consistency
+            const statuses = await this.getProviderStatuses(userId)
+            const providerStatus = statuses.find(s => s.provider === provider)
+            
+            if (providerStatus?.configured) {
+              console.log(`✅ ${provider} API key was successfully saved despite backend validation error`)
+              return // Success! The key was saved despite the response error
+            } else {
+              console.warn(`❌ ${provider} API key was not found in provider statuses after save attempt`)
+            }
+          } catch (statusError) {
+            console.warn('Could not verify API key status:', statusError)
+            // Continue to throw original error
+          }
+        }
+      }
+      
+      throw new Error('Failed to save API key')
+    }
+  }
+
+  /**
+   * Get all provider statuses
+   */
+  async getProviderStatuses(userId: string): Promise<ProviderStatus[]> {
+    const githubToken = authService.getStoredToken()
+    if (!githubToken) {
+      throw new Error('No authentication token found')
+    }
+
+    try {
+      const response = await axios.get<AllProvidersResponse>(
+        `${BACKEND_URL}${API_ENDPOINTS.USER_API_KEYS}`,
+        {
+          params: {
+            user_id: parseInt(userId),
+            github_token: githubToken,
+          },
+          headers: {
+            'Authorization': `Bearer ${githubToken}`,
+          },
+        }
+      )
+
+      return response.data.providers || []
+    } catch (error) {
+      console.error('Failed to get provider statuses:', error)
+      
+      // Return empty array instead of throwing to allow graceful degradation
+      if (axios.isAxiosError(error) && error.response?.status === 500) {
+        console.warn('Backend error when fetching provider statuses, returning empty array')
+        return []
+      }
+      
+      throw new Error('Failed to get provider statuses')
+    }
+  }
+
+  /**
+   * Delete API key for a specific provider
+   */
+  async deleteProviderApiKey(
+    userId: string, 
+    provider: 'groq' | 'gemini' | 'openai'
+  ): Promise<void> {
+    const githubToken = authService.getStoredToken()
+    if (!githubToken) {
+      throw new Error('No authentication token found')
+    }
+
+    try {
+      const response = await axios.delete<MultiProviderApiKeyResponse>(
+        `${BACKEND_URL}${API_ENDPOINTS.USER_API_KEY_PROVIDER}/${provider}`,
+        {
+          data: {
+            github_token: githubToken,
+            user_id: parseInt(userId),
+          },
+          headers: {
+            'Authorization': `Bearer ${githubToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+
+      if (response.data.status !== 'success') {
+        throw new Error(response.data.message || 'Failed to delete API key')
+      }
+    } catch (error) {
+      console.error('Failed to delete API key:', error)
+      throw new Error('Failed to delete API key')
+    }
+  }
+
+  /**
+   * Get routing statistics
+   */
+  async getRoutingStats(): Promise<any> {
+    try {
+      const response = await axios.get(`${BACKEND_URL}${API_ENDPOINTS.STATS_ROUTING}`)
+      return response.data
+    } catch (error) {
+      console.error('Failed to get routing stats:', error)
+      throw new Error('Failed to get routing statistics')
+    }
+  }
+
+  // Keep legacy methods for backward compatibility
   async saveApiKey(userId: string, apiKey: string): Promise<void> {
-    return authService.saveApiKey(parseInt(userId), apiKey)
+    return this.saveProviderApiKey(userId, 'groq', apiKey)
   }
 
   /**

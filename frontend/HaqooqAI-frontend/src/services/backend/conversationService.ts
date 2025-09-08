@@ -16,6 +16,7 @@ export class ConversationService {
       const response = await axios.get(`${BACKEND_URL}/conversations`, {
         params: { user_id: user.github_id },
         headers: { Authorization: `Bearer ${githubToken}` },
+        timeout: 15000, // 15 second timeout (increased from 10s)
       })
 
       return (response.data.conversations || []).map((conv: any) => ({
@@ -27,6 +28,20 @@ export class ConversationService {
       }))
     } catch (error) {
       console.error('Failed to fetch conversations:', error)
+      
+      // Handle server errors gracefully
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status
+        if (status === 502 || status === 503 || status === 504) {
+          // Server temporarily unavailable, return empty array to allow app to continue
+          console.warn('Backend temporarily unavailable, returning empty conversations list')
+          return []
+        }
+        if (status === 401) {
+          throw new Error('Authentication expired. Please login again.')
+        }
+      }
+      
       throw new Error('Failed to fetch conversations')
     }
   }
