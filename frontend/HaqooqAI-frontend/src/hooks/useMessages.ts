@@ -64,10 +64,20 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
       const { messages: conversationMessages } =
         await conversationService.getConversationWithMessages(convId)
 
+      // ✅ Parse AIResponse if content is JSON
+      const parsedMessages = conversationMessages.map((m) => {
+        try {
+          const parsed = JSON.parse(m.content as unknown as string)
+          return { ...m, content: parsed }
+        } catch {
+          return m // fallback: keep as string
+        }
+      })
+
       if (activeConversationRef.current === convId) {
         setMessages((prev) => ({
           ...prev,
-          [convId]: dedupeMessages(conversationMessages),
+          [convId]: dedupeMessages(parsedMessages),
         }))
       }
     } catch (err) {
@@ -156,13 +166,16 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
         id: `assistant-${Date.now()}`,
         conversation_id: convId,
         role: "assistant",
-        content: aiResponse,
+        content: JSON.stringify(aiResponse),
         created_at: new Date().toISOString(),
       }
 
       setMessages((prev) => ({
         ...prev,
-        [convId]: dedupeMessages([...(prev[convId] || []), assistantMessage]),
+        [convId]: dedupeMessages([
+          ...(prev[convId] || []),
+          { ...assistantMessage, content: aiResponse }, // ✅ keep parsed in memory
+        ]),
       }))
     } catch (err) {
       const errorMessage =

@@ -90,6 +90,12 @@ export function ErrorDisplay({ error, onRetry, showSettingsButton = false }: Err
               Go to Settings
             </Button>
           )}
+
+          {errorType === 'auth' && (
+          <Button onClick={() => navigate('/login')} className="w-full">
+            Go to Login
+          </Button>
+        )}
         </div>
       </CardContent>
     </Card>

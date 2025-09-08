@@ -174,17 +174,16 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
         {/* Bubble */}
         <div
           className={cn(
-            "relative px-5 md:px-6 py-4 md:py-5 rounded-2xl shadow-md",
-            // Base text & rhythm
-            "text-[15px] md:text-[16px] leading-7 tracking-[0.1px]",
+            "relative px-6 py-5 rounded-2xl leading-relaxed shadow-md text-[16px] tracking-[0.25px] space-y-4",
             isUser
-              ? "bg-[var(--primary-color)] text-white rounded-br-lg"
-              : "bg-[var(--bubble-assistant-bg)]/95 text-[var(--text-primary)] border border-[var(--border-color)]"
+              ? "bg-[var(--primary-color)]/90 text-white rounded-br-lg"
+              : "bg-[var(--bubble-assistant-bg)] text-[var(--text-primary)] border border-[var(--border-color)]"
           )}
+          style={{ lineHeight: "1.75" }}
           title={timestamp.toLocaleString()}
         >
           {isUser ? (
-            <div className="whitespace-pre-wrap">
+            <div className="whitespace-pre-wrap max-w-[85ch]">
               {typeof message.content === "string"
                 ? message.content
                 : isAIResponse(message.content)
