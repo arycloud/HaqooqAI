@@ -128,6 +128,7 @@ class MessageResponse(BaseModel):
     role: str = Field(..., description="Message role")
     content: str = Field(..., description="Message content")
     sources: Optional[List[SourceInfo]] = Field(None, description="Message sources")
+    disclaimer: Optional[str] = Field(None, description="Disclaimer message")
     created_at: datetime = Field(..., description="Creation timestamp")
 
 

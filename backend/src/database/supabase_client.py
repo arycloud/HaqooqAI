@@ -403,7 +403,7 @@ class SupabaseClient:
             logger.error(f"Error verifying conversation ownership: {e}")
             return False
 
-    def create_message(self, conversation_id: str, role: str, content: str, sources: Optional[List] = None) -> Dict[str, Any]:
+    def create_message(self, conversation_id: str, role: str, content: str, sources: Optional[List] = None, disclaimer: Optional[str] = None, llm_provider: Optional[str] = None, query_tokens: Optional[int] = None, routing_reason: Optional[str] = None, using_user_key: Optional[bool] = None, processing_time_ms: Optional[int] = None) -> Dict[str, Any]:
         """Create a new message in a conversation"""
         if not self.service_client:
             raise Exception("Supabase service client not initialized")
@@ -417,6 +417,24 @@ class SupabaseClient:
 
             if sources:
                 message_data["sources"] = sources
+
+            if disclaimer:
+                message_data["disclaimer"] = disclaimer
+
+            if llm_provider:
+                message_data["llm_provider"] = llm_provider
+
+            if query_tokens is not None:
+                message_data["query_tokens"] = query_tokens
+
+            if routing_reason:
+                message_data["routing_reason"] = routing_reason
+
+            if using_user_key is not None:
+                message_data["using_user_key"] = using_user_key
+
+            if processing_time_ms is not None:
+                message_data["processing_time_ms"] = processing_time_ms
 
             result = self.service_client.table("messages").insert(message_data).execute()
 

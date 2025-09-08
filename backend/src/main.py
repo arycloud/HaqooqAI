@@ -515,7 +515,13 @@ async def process_query(
                         conversation_id=request.conversation_id,
                         role="assistant",
                         content=result.get("response", "") or "",
-                        # sources=result.get("sources") or None
+                        sources=result.get("sources") or None,
+                        disclaimer=result.get("disclaimer") or None,
+                        llm_provider=routing_decision.provider.value if routing_decision else None,
+                        query_tokens=routing_decision.query_tokens if routing_decision else None,
+                        routing_reason=routing_decision.reason if routing_decision else None,
+                        using_user_key=routing_decision.using_user_key if routing_decision else None,
+                        processing_time_ms=int(result.get("processing_time", 0) * 1000) if result.get("processing_time") else None
                     )
 
                 try:
@@ -1068,7 +1074,7 @@ async def create_message(
             raise HTTPException(status_code=403, detail="Access denied")
 
         message = supabase_client.create_message(
-            conversation_id, request.role, request.content, request.sources
+            conversation_id, request.role, request.content, request.sources, request.disclaimer
         )
 
         return MessageResponse(
@@ -1077,6 +1083,7 @@ async def create_message(
             role=message['role'],
             content=message['content'],
             sources=message.get('sources'),
+            disclaimer=message.get('disclaimer'),
             created_at=message['created_at']
         )
 
