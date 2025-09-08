@@ -1,17 +1,17 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
-import { useAuth } from '@/hooks/useAuth'
-import { Message } from '@/types/message'
-import { cn } from '@/lib/utils'
-import { AIResponse } from '@/types/api'
+import { useAuth } from "@/hooks/useAuth"
+import { Message } from "@/types/message"
+import { cn } from "@/lib/utils"
+import { AIResponse } from "@/types/api"
 
 interface MessageBubbleNewProps {
   message: Message
   isLoading?: boolean
 }
 
-export function MessageBubbleNew({ message, isLoading = false }: any) {
+export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNewProps) {
   const { user } = useAuth()
   const [copied, setCopied] = useState(false)
   const isUser = message.role === "user"
@@ -54,20 +54,19 @@ export function MessageBubbleNew({ message, isLoading = false }: any) {
     }
   }
 
+  /** Render AI assistant content with formatting */
   const renderAssistantContent = (content: string | AIResponse) => {
     if (typeof content === "string") {
-      return (
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-      )
+      return <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
     }
 
     const disclaimer =
       "⚠️ This response is for informational purposes only and does not constitute legal advice."
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-5">
         {/* Main response */}
-        <div className="prose prose-sm dark:prose-invert max-w-none">
+        <div className="prose prose-base leading-relaxed dark:prose-invert max-w-none">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {content.response}
           </ReactMarkdown>
@@ -75,12 +74,25 @@ export function MessageBubbleNew({ message, isLoading = false }: any) {
 
         {/* Sources */}
         {content.sources?.length > 0 && (
-          <div className="p-3 rounded-md bg-[var(--hover-color)]/40 border border-[var(--border-color)] text-sm">
-            <div className="font-semibold mb-2">Sources</div>
-            <ul className="list-disc list-inside space-y-1">
+          <div className="p-4 rounded-xl bg-[var(--hover-color)]/30 border border-[var(--border-color)]">
+            <div className="text-sm font-semibold mb-2 text-[var(--text-primary)]">
+              📚 Sources
+            </div>
+            <ul className="list-disc list-inside space-y-1 text-sm text-[var(--text-secondary)]">
               {content.sources.map((src, idx) => (
-                <li key={idx} className="text-[var(--text-secondary)]">
-                  {src.title ? `${src.title} (${src.url})` : src.url}
+                <li key={idx}>
+                  {src.title ? (
+                    <a
+                      href={src.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline hover:text-[var(--primary-color)]"
+                    >
+                      {src.title}
+                    </a>
+                  ) : (
+                    src.url
+                  )}
                 </li>
               ))}
             </ul>
@@ -88,7 +100,7 @@ export function MessageBubbleNew({ message, isLoading = false }: any) {
         )}
 
         {/* Disclaimer */}
-        <div className="p-3 rounded-md bg-amber-100 text-amber-800 text-xs border border-amber-300">
+        <div className="p-3 rounded-lg bg-amber-50 text-amber-800 text-xs border border-amber-200">
           {disclaimer}
         </div>
       </div>
@@ -96,94 +108,90 @@ export function MessageBubbleNew({ message, isLoading = false }: any) {
   }
 
   return (
-    <div
-      className={cn("flex w-full mb-4", isUser ? "justify-end" : "justify-start")}
-    >
+    <div className={cn("flex w-full mb-6", isUser ? "justify-end" : "justify-start")}>
+      {/* Left: Assistant avatar */}
       {!isUser && (
-        <div className="flex-shrink-0 mr-2">
+        <div className="flex-shrink-0 mr-3">
           <div
-            className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-md"
             style={{ background: "var(--gradient-primary)" }}
             aria-hidden
           >
-            <span className="material-symbols-outlined text-sm">balance</span>
+            <span className="material-symbols-outlined text-base">balance</span>
           </div>
         </div>
       )}
 
-      <div
-        className={cn(
-          "flex flex-col max-w-[78%]",
-          isUser ? "items-end" : "items-start"
-        )}
-      >
+      {/* Message content */}
+      <div className={cn("flex flex-col max-w-[75%]", isUser ? "items-end" : "items-start")}>
+        {/* Sender label */}
         <div
           className={cn(
-            "mb-1 w-full flex items-center gap-2",
-            isUser ? "justify-end" : "justify-start"
+            "mb-2 text-xs font-semibold",
+            isUser ? "text-pink-400" : "text-purple-400"
           )}
         >
-          <div
-            className={cn(
-              "text-[11px] font-medium",
-              isUser ? "text-pink-300" : "text-purple-300"
-            )}
-          >
-            {isUser ? "You" : "HaqooqAI"}
-          </div>
+          {isUser ? "You" : "HaqooqAI"}
         </div>
 
+        {/* Bubble */}
         <div
           className={cn(
-            "relative px-4 py-3 rounded-2xl leading-relaxed text-lg break-words shadow-sm",
+            "relative px-5 py-4 rounded-2xl leading-relaxed shadow-md text-[15px] tracking-[0.2px]",
             isUser
               ? "bg-[var(--primary-color)] text-white rounded-br-lg"
-              : "panel border hairline text-[var(--text-primary)]"
+              : "bg-[var(--bubble-assistant-bg)] text-[var(--text-primary)] border border-[var(--border-color)]"
           )}
           title={timestamp.toLocaleString()}
         >
           {isUser ? (
-            <div className="whitespace-pre-wrap">{message.content}</div>
-          ) : (
-            renderAssistantContent(message.content)
-          )}
+            <div className="whitespace-pre-wrap">
+              {typeof message.content === "string"
+                ? message.content
+                : (message.content as AIResponse).response}
+            </div>
+              ) : (
+                renderAssistantContent(message.content)
+            )}
 
+          {/* Actions */}
           {!isUser && (
-            <div className="flex items-center gap-2 mt-3">
+            <div className="flex items-center gap-3 mt-4 text-sm">
               <button
                 onClick={handleCopy}
-                className="p-1 rounded-md text-slate-400 hover:text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition"
+                className="p-1.5 rounded-md text-slate-400 hover:text-[var(--primary-color)] hover:bg-[var(--hover-color)] transition"
                 title={copied ? "Copied!" : "Copy"}
               >
-                <span className="material-symbols-outlined text-sm">
+                <span className="material-symbols-outlined text-base">
                   {copied ? "check" : "content_copy"}
                 </span>
               </button>
               <button
-                className="p-1 rounded-md text-slate-400 hover:text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition"
+                className="p-1.5 rounded-md text-slate-400 hover:text-[var(--primary-color)] hover:bg-[var(--hover-color)] transition"
                 title="Helpful"
               >
-                <span className="material-symbols-outlined text-sm">thumb_up</span>
+                <span className="material-symbols-outlined text-base">thumb_up</span>
               </button>
               <button
-                className="p-1 rounded-md text-slate-400 hover:text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition"
+                className="p-1.5 rounded-md text-slate-400 hover:text-[var(--primary-color)] hover:bg-[var(--hover-color)] transition"
                 title="Not helpful"
               >
-                <span className="material-symbols-outlined text-sm">thumb_down</span>
+                <span className="material-symbols-outlined text-base">thumb_down</span>
               </button>
               <button
-                className="p-1 rounded-md text-slate-400 hover:text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition"
+                className="p-1.5 rounded-md text-slate-400 hover:text-[var(--primary-color)] hover:bg-[var(--hover-color)] transition"
                 title="Regenerate"
               >
-                <span className="material-symbols-outlined text-sm">refresh</span>
+                <span className="material-symbols-outlined text-base">refresh</span>
               </button>
             </div>
           )}
         </div>
 
+        {/* Timestamp */}
         <div
           className={cn(
-            "text-[10px] text-[var(--text-secondary)] mt-1",
+            "mt-2 text-[11px] text-[var(--text-secondary)]",
             isUser ? "text-right" : "text-left"
           )}
         >
@@ -191,10 +199,11 @@ export function MessageBubbleNew({ message, isLoading = false }: any) {
         </div>
       </div>
 
+      {/* Right: User avatar */}
       {isUser && (
-        <div className="flex-shrink-0 ml-2">
+        <div className="flex-shrink-0 ml-3">
           <div
-            className="w-9 h-9 rounded-full flex items-center justify-center font-semibold text-white"
+            className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-white shadow-md"
             style={
               userAvatarStyle
                 ? userAvatarStyle
