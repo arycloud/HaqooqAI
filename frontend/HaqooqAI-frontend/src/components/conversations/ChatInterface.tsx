@@ -202,7 +202,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
             paddingBottom: '140px',
           }}
         >
-          <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full">
+          <div className="flex flex-col gap-6 max-w-6xl mx-auto w-full">
             {error && <ErrorDisplay error={error} onRetry={handleRetryMessage} />}
 
             {/* CENTERED LOADER for initial conversation load (no message bubbles) */}
@@ -214,7 +214,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
               !setupLoading &&
               !analyzingLoading &&
               !isCreatingConversation && (
-                <div className="pt-8">
+                <div className="pt-8 w-full">
                   <div className="text-center mb-6">
                     <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
                       Try asking about:
@@ -224,7 +224,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 max-w-6xl mx-auto">
                     <div
                       className="p-4 bg-gradient-to-r from-purple-500/15 to-indigo-500/15 rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
                       onClick={() => handleSendMessage("What are the legal requirements for property purchase in Pakistan?")}
@@ -285,7 +285,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
 
         {/* Sticky input at bottom (always visible) */}
         <div className="sticky bottom-0 z-40 bg-[var(--background-color)] border-t border-[var(--border-color)] p-3 backdrop-blur-sm">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <MessageInputNew
               onSendMessage={handleSendMessage}
               disabled={fetchingLoading || isCreatingConversation || setupLoading || analyzingLoading}

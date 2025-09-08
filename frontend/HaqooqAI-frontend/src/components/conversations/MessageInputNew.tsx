@@ -60,7 +60,7 @@ export function MessageInputNew({
             placeholder={placeholder}
             disabled={disabled}
             rows={1}  // Start with 1 row for compactness
-            className="w-full resize-none rounded-2xl text-[var(--text-primary)] bg-[var(--input-color)] border border-[var(--border-color)] min-h-[48px] placeholder:text-[var(--text-secondary)] pl-4 pr-12 py-3 focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:outline-none transition-all duration-200 font-inter"  // Rounded 2xl (20px), Inter font, icon space pr-12
+            className="w-full resize-none rounded-2xl text-[var(--text-primary)] bg-[var(--input-color)] border border-[var(--border-color)] min-h-[48px] placeholder:text-[var(--text-secondary)] pl-4 pr-12 py-3 focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:outline-none transition-all duration-200 font-inter text-[17px]"  // Increased font size
             style={{ minHeight: '48px', maxHeight: '120px' }}
             aria-label="Type your legal question here"
           />

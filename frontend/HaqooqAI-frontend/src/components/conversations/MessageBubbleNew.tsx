@@ -67,7 +67,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
   const renderAssistantContent = (content: string | AIResponse) => {
     if (!isAIResponse(content)) {
       return (
-        <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none leading-7">
+        <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none leading-7 text-[17px]"> // Increased font size
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{String(content ?? "")}</ReactMarkdown>
         </div>
       )
@@ -83,9 +83,9 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
           className={cn(
             "prose prose-slate dark:prose-invert max-w-none",
             // Typography tuning
-            "prose-sm md:prose-base",
+            "prose-sm md:prose-base text-[17px]", // Increased font size
             "prose-headings:font-semibold prose-h2:mt-4 prose-h2:mb-2",
-            "prose-p:leading-7 prose-li:leading-7",
+            "prose-p:leading-7 prose-li:leading-9",
             "prose-ul:my-2 prose-ol:my-2 prose-li:my-[2px]",
             "prose-a:no-underline hover:prose-a:underline",
             "prose-a:text-[var(--primary-color)]",
@@ -105,7 +105,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
           <div className="rounded-lg border border-[var(--border-color)] bg-[var(--hover-color)] overflow-hidden">  {/* Card style */}
             <button
               onClick={() => setShowSources(!showSources)}
-              className="w-full px-4 py-3 text-left text-sm font-medium text-[var(--text-primary)] flex items-center justify-between hover:bg-[var(--hover-color)] transition-colors"
+              className="w-full px-4 py-3 text-left font-medium text-[var(--text-primary)] flex items-center justify-between hover:bg-[var(--hover-color)] transition-colors text-[15px]" // Increased font size
               aria-expanded={showSources}
               aria-label="Toggle sources"
             >
@@ -117,7 +117,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
             </button>
             {showSources && (
               <div className="px-4 pb-4">
-                <ul className="space-y-1 text-sm text-[var(--text-secondary)] list-disc list-inside">
+                <ul className="space-y-1 text-[15px] text-[var(--text-secondary)] list-disc list-inside"> // Increased font size
                   {content.sources.map((src, idx) => (
                     <li key={idx}>
                       {src.url ? (
@@ -125,12 +125,12 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
                           href={src.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[var(--secondary-color)] hover:underline focus-visible:underline"
+                          className="text-[var(--secondary-color)] hover:underline focus-visible:underline text-[15px]" // Increased font size
                         >
                           {src.title || src.url}
                         </a>
                       ) : (
-                        src.title
+                        <span className="text-[15px]">{src.title}</span> // Increased font size
                       )}
                     </li>
                   ))}
@@ -141,7 +141,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
         )}
 
         {/* Disclaimer */}
-        <div className="flex items-start gap-2 rounded-xl border border-amber-300/60 bg-amber-50/90 px-4 py-3 text-[12.5px] md:text-sm text-amber-900">
+        <div className="flex items-start gap-2 rounded-xl border border-amber-300/60 bg-amber-50/90 px-4 py-3 text-[13.5px] md:text-[15px] text-amber-900"> // Increased font size
           <span className="material-symbols-outlined text-base md:text-[18px]">warning</span>
           <span>{disclaimer}</span>
         </div>
@@ -169,14 +169,14 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
         className={cn(
           "flex flex-col",
           // Wider & more readable line length; responsive so it doesn’t stretch on large screens
-          "max-w-[92%] sm:max-w-[85%] lg:max-w-[78%]",
+          "max-w-[95%] sm:max-w-[90%] lg:max-w-[85%]", // Increased width
           isUser ? "items-end" : "items-start"
         )}
       >
         {/* Sender label */}
         <div
           className={cn(
-            "mb-2 text-[11px] font-semibold tracking-wide",
+            "mb-2 font-semibold tracking-wide text-[13px]", // Increased font size from 11px to 13px
             isUser ? "text-pink-400" : "text-purple-400"
           )}
         >
@@ -186,7 +186,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
         {/* Bubble */}
         <div
           className={cn(
-            "relative px-6 py-5 rounded-2xl leading-relaxed shadow-md text-[16px] tracking-[0.25px] space-y-4",
+            "relative px-6 py-5 rounded-2xl leading-relaxed shadow-md text-[17px] tracking-[0.25px] space-y-4", // Increased font size from 16px to 17px
             isUser
               ? "bg-[var(--primary-color)]/90 text-white rounded-br-lg"
               : "bg-[var(--bubble-assistant-bg)] text-[var(--text-primary)] border border-[var(--border-color)]"
@@ -194,7 +194,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
           title={timestamp.toLocaleString()}
         >
           {isUser ? (
-            <div className="whitespace-pre-wrap">
+            <div className="whitespace-pre-wrap text-[17px]"> // Increased font size
               {typeof message.content === "string"
                 ? message.content
                 : isAIResponse(message.content)
@@ -245,7 +245,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
         {/* Timestamp */}
         <div
           className={cn(
-            "mt-2 text-[11px] text-[var(--text-secondary)]",
+            "mt-2 text-[var(--text-secondary)] text-[13px]", // Increased font size from 11px to 13px
             isUser ? "text-right" : "text-left"
           )}
         >
