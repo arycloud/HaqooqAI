@@ -79,6 +79,7 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
     }
 
   const handleLogout = async () => {
+      localStorage.clear()
       await logout()
     }
 
@@ -272,10 +273,7 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
         </button>
 
         <button
-          onClick={() => {
-            localStorage.clear()
-            {handleLogout}
-          }}
+          onClick={handleLogout}
           className="p-2 rounded-lg hover:bg-[var(--hover-color)]"
           title="Logout"
         >
