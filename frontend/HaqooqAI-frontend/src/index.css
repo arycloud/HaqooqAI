@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -10,20 +8,14 @@
 @layer base {
   :root {
     /* Core palette (dark) */
-    /* New Palette */
-    --background-color: #F8FAFC;
-    --sidebar-color: #FFFFFF;
-    --input-color: #FFFFFF;
-    --hover-color: #F1F5F9;
-    --border-color: #E2E8F0;
-    --text-primary: #1E293B;
-    --text-secondary: #64748B;
-    --primary-color: #1E40AF;
-    --secondary-color: #10B981;
-    --bubble-assistant-bg: #FFFFFF;
-    --gradient-primary: linear-gradient(135deg, #1E40AF, #3B82F6);
+    --background-color: #0f1420;        /* canvas */
+    --sidebar-color:    #0c111b;        /* panels/cards */
+    --input-color:      #131a26;        /* inputs */
+    --hover-color:      #1b2536;        /* hovers */
+    --border-color:     #1f2a3d;        /* hairlines */
 
-    font-family: 'Inter', system-ui, sans-serif;
+    --text-primary:     #e6e9f2;
+    --text-secondary:   #a9b1c5;
 
     /* Brand gradient (matches shots: subtle red ring + electric accent) */
     --primary-color:    #4158D0;
@@ -64,33 +56,6 @@
     );
   }
 
-  /* Dark mode toggle (add class 'dark' to html) */
-  .dark {
-    --background-color: #0F172A;
-    --sidebar-color: #1E293B;
-    --input-color: #334155;
-    --hover-color: #475569;
-    --border-color: #334155;
-    --text-primary: #F1F5F9;
-    --text-secondary: #CBD5E1;
-    --bubble-assistant-bg: #1E293B;
-  }
-
-  /* Accessibility: Focus ring */
-  *:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
-
-  /* Reduced motion */
-  @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; } }
-}
-
-/* New Utilities */
-@layer utilities {
-  .bubble-user { background: var(--primary-color); color: white; border-radius: 16px 16px 4px 16px; }
-  .bubble-ai { background: var(--bubble-assistant-bg); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 16px 16px 16px 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-  .prompt-card { background: white; border: 1px solid var(--border-color); border-radius: 12px; transition: all 0.2s ease; }
-  .prompt-card:hover { border-color: var(--primary-color); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(30,64,175,0.1); }
-}
-
   html, body, #root {
     height: 100%;
     background: var(--background-color);
@@ -122,6 +87,7 @@
     border: 3px solid transparent;
     background-clip: content-box;
   }
+}
 
 /* Utilities used by multiple components */
 @layer utilities {
