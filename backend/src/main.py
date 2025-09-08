@@ -1074,7 +1074,7 @@ async def create_message(
             raise HTTPException(status_code=403, detail="Access denied")
 
         message = supabase_client.create_message(
-            conversation_id, request.role, request.content, request.sources, request.disclaimer
+            conversation_id, request.role, request.content, request.sources, getattr(request, 'disclaimer', None)
         )
 
         return MessageResponse(
