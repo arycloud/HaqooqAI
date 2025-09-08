@@ -11,7 +11,11 @@ interface MessageBubbleNewProps {
   isLoading?: boolean
 }
 
-export function MessageBubbleNew({ message }: MessageBubbleNewProps) {
+function isAIResponse(val: unknown): val is AIResponse {
+  return !!val && typeof val === "object" && "response" in (val as any)
+}
+
+export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNewProps) {
   const { user } = useAuth()
   const [copied, setCopied] = useState(false)
   const isUser = message.role === "user"
@@ -45,7 +49,10 @@ export function MessageBubbleNew({ message }: MessageBubbleNewProps) {
       const text =
         typeof message.content === "string"
           ? message.content
-          : (message.content as AIResponse).response
+          : isAIResponse(message.content)
+          ? message.content.response
+          : ""
+
       await navigator.clipboard.writeText(text)
       setCopied(true)
       setTimeout(() => setCopied(false), 1600)
@@ -54,22 +61,38 @@ export function MessageBubbleNew({ message }: MessageBubbleNewProps) {
     }
   }
 
+  /** Render AI assistant content with clean markdown + structured boxes */
   const renderAssistantContent = (content: string | AIResponse) => {
-    if (typeof content === "string") {
+    if (!isAIResponse(content)) {
       return (
-        <div className="prose prose-base dark:prose-invert max-w-none leading-relaxed">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+        <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none leading-7">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{String(content ?? "")}</ReactMarkdown>
         </div>
       )
     }
 
     const disclaimer =
-      "⚠️ This response is for informational purposes only and does not constitute legal advice."
+      "This response is for informational purposes only and does not constitute legal advice."
 
     return (
       <div className="space-y-5">
         {/* Main response */}
-        <div className="prose prose-base dark:prose-invert max-w-none leading-relaxed">
+        <div
+          className={cn(
+            "prose prose-slate dark:prose-invert max-w-none",
+            // Typography tuning
+            "prose-sm md:prose-base",
+            "prose-headings:font-semibold prose-h2:mt-4 prose-h2:mb-2",
+            "prose-p:leading-7 prose-li:leading-7",
+            "prose-ul:my-2 prose-ol:my-2 prose-li:my-[2px]",
+            "prose-a:no-underline hover:prose-a:underline",
+            "prose-a:text-[var(--primary-color)]",
+            "prose-strong:text-[var(--text-primary)]",
+            "prose-blockquote:text-[var(--text-secondary)]",
+            "prose-pre:bg-[#0b1324] prose-pre:text-slate-100 prose-pre:rounded-lg",
+            "prose-code:bg-[#0b1324] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded"
+          )}
+        >
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {content.response}
           </ReactMarkdown>
@@ -77,32 +100,38 @@ export function MessageBubbleNew({ message }: MessageBubbleNewProps) {
 
         {/* Sources */}
         {content.sources?.length > 0 && (
-          <div className="p-4 rounded-lg bg-[var(--hover-color)]/30 border border-[var(--border-color)] text-sm">
-            <div className="font-semibold mb-2 flex items-center">📚 Sources</div>
-            <ul className="list-disc list-inside space-y-1">
-              {content.sources.map((src, idx) => (
-                <li key={idx} className="text-[var(--text-secondary)]">
-                  {src.title ? (
-                    <a
-                      href={src.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[var(--primary-color)] hover:underline"
-                    >
-                      {src.title}
-                    </a>
-                  ) : (
-                    src.url
-                  )}
-                </li>
-              ))}
-            </ul>
+          <div className="rounded-xl border border-[var(--border-color)] bg-[var(--hover-color)]/35">
+            <div className="px-4 pt-3 pb-2 text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+              <span className="material-symbols-outlined text-base text-[var(--primary-color)]">library_books</span>
+              Sources
+            </div>
+            <div className="px-4 pb-3">
+              <ul className="list-disc list-inside space-y-1 text-[13px] md:text-sm text-[var(--text-secondary)]">
+                {content.sources.map((src, idx) => (
+                  <li key={idx}>
+                    {src.url ? (
+                      <a
+                        href={src.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline decoration-dotted underline-offset-2 hover:text-[var(--primary-color)]"
+                      >
+                        {src.title || src.url}
+                      </a>
+                    ) : (
+                      src.title
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         )}
 
         {/* Disclaimer */}
-        <div className="p-4 rounded-md bg-amber-50 text-amber-800 text-sm border-l-4 border-amber-500 shadow-sm">
-          {disclaimer}
+        <div className="flex items-start gap-2 rounded-xl border border-amber-300/60 bg-amber-50/90 px-4 py-3 text-[12.5px] md:text-sm text-amber-900">
+          <span className="material-symbols-outlined text-base md:text-[18px]">warning</span>
+          <span>{disclaimer}</span>
         </div>
       </div>
     )
@@ -110,79 +139,117 @@ export function MessageBubbleNew({ message }: MessageBubbleNewProps) {
 
   return (
     <div className={cn("flex w-full mb-6", isUser ? "justify-end" : "justify-start")}>
-      {/* Assistant avatar */}
+      {/* Left: Assistant avatar */}
       {!isUser && (
         <div className="flex-shrink-0 mr-3">
           <div
-            className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-md"
             style={{ background: "var(--gradient-primary)" }}
+            aria-hidden
           >
-            <span className="material-symbols-outlined text-sm">balance</span>
+            <span className="material-symbols-outlined text-base">balance</span>
           </div>
         </div>
       )}
 
-      {/* Bubble */}
-      <div className={cn("flex flex-col max-w-[90%] md:max-w-3xl", isUser ? "items-end" : "items-start")}>
-        {/* Name + time */}
-        <div className="mb-1 flex items-center gap-2">
-          <span className={cn("text-xs font-medium", isUser ? "text-pink-300" : "text-purple-300")}>
-            {isUser ? "You" : "HaqooqAI"}
-          </span>
-          <span className="text-[10px] text-[var(--text-secondary)]">{timeLabel}</span>
-        </div>
-
-        {/* Bubble content */}
+      {/* Message content */}
+      <div
+        className={cn(
+          "flex flex-col",
+          // Wider & more readable line length; responsive so it doesn’t stretch on large screens
+          "max-w-[92%] sm:max-w-[85%] lg:max-w-[78%]",
+          isUser ? "items-end" : "items-start"
+        )}
+      >
+        {/* Sender label */}
         <div
           className={cn(
-            "relative px-5 py-4 rounded-2xl leading-relaxed text-base shadow-md",
-            isUser
-              ? "bg-[var(--primary-color)] text-white rounded-br-lg"
-              : "bg-[var(--bubble-assistant-bg)] text-[var(--text-primary)]"
+            "mb-2 text-[11px] font-semibold tracking-wide",
+            isUser ? "text-pink-400" : "text-purple-400"
           )}
         >
-          {isUser ? (
-          <div className="whitespace-pre-wrap">
-            {typeof message.content === "string"
-              ? message.content
-              : (message.content as AIResponse).response}
-          </div>
-        ) : (
-          renderAssistantContent(message.content)
-        )}
+          {isUser ? "You" : "HaqooqAI"}
+        </div>
 
-          {/* Copy + actions (assistant only) */}
+        {/* Bubble */}
+        <div
+          className={cn(
+            "relative px-5 md:px-6 py-4 md:py-5 rounded-2xl shadow-md",
+            // Base text & rhythm
+            "text-[15px] md:text-[16px] leading-7 tracking-[0.1px]",
+            isUser
+              ? "bg-[var(--primary-color)] text-white rounded-br-lg"
+              : "bg-[var(--bubble-assistant-bg)]/95 text-[var(--text-primary)] border border-[var(--border-color)]"
+          )}
+          title={timestamp.toLocaleString()}
+        >
+          {isUser ? (
+            <div className="whitespace-pre-wrap">
+              {typeof message.content === "string"
+                ? message.content
+                : isAIResponse(message.content)
+                ? message.content.response
+                : ""}
+            </div>
+          ) : (
+            renderAssistantContent(message.content)
+          )}
+
+          {/* Actions */}
           {!isUser && (
-            <div className="flex items-center gap-3 mt-4 text-sm text-[var(--text-secondary)]">
+            <div className="flex items-center gap-3 mt-4 text-sm">
               <button
                 onClick={handleCopy}
-                className="hover:text-[var(--primary-color)] transition"
+                className={cn(
+                  "p-1.5 rounded-md text-slate-400 transition",
+                  "hover:text-[var(--primary-color)] hover:bg-[var(--hover-color)]"
+                )}
                 title={copied ? "Copied!" : "Copy"}
               >
-                <span className="material-symbols-outlined text-sm">
+                <span className="material-symbols-outlined text-base">
                   {copied ? "check" : "content_copy"}
                 </span>
               </button>
-              <button title="Helpful" className="hover:text-[var(--primary-color)] transition">
-                <span className="material-symbols-outlined text-sm">thumb_up</span>
+              <button
+                className="p-1.5 rounded-md text-slate-400 hover:text-[var(--primary-color)] hover:bg-[var(--hover-color)] transition"
+                title="Helpful"
+              >
+                <span className="material-symbols-outlined text-base">thumb_up</span>
               </button>
-              <button title="Not helpful" className="hover:text-[var(--primary-color)] transition">
-                <span className="material-symbols-outlined text-sm">thumb_down</span>
+              <button
+                className="p-1.5 rounded-md text-slate-400 hover:text-[var(--primary-color)] hover:bg-[var(--hover-color)] transition"
+                title="Not helpful"
+              >
+                <span className="material-symbols-outlined text-base">thumb_down</span>
               </button>
-              <button title="Regenerate" className="hover:text-[var(--primary-color)] transition">
-                <span className="material-symbols-outlined text-sm">refresh</span>
+              <button
+                className="p-1.5 rounded-md text-slate-400 hover:text-[var(--primary-color)] hover:bg-[var(--hover-color)] transition"
+                title="Regenerate"
+              >
+                <span className="material-symbols-outlined text-base">refresh</span>
               </button>
             </div>
           )}
         </div>
+
+        {/* Timestamp */}
+        <div
+          className={cn(
+            "mt-2 text-[11px] text-[var(--text-secondary)]",
+            isUser ? "text-right" : "text-left"
+          )}
+        >
+          {timeLabel}
+        </div>
       </div>
 
-      {/* User avatar */}
+      {/* Right: User avatar */}
       {isUser && (
         <div className="flex-shrink-0 ml-3">
           <div
-            className="w-9 h-9 rounded-full flex items-center justify-center font-semibold text-white"
+            className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-white shadow-md"
             style={userAvatarStyle ? userAvatarStyle : { background: "var(--gradient-primary)" }}
+            aria-hidden
           >
             {!user?.avatar_url && getInitials(user)}
           </div>
