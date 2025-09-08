@@ -44,13 +44,13 @@ export function MessageInputNew({
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
       const scrollHeight = textareaRef.current.scrollHeight
-      textareaRef.current.style.height = Math.min(scrollHeight, 120) + 'px'  // Reduced max height for minimalism
+      textareaRef.current.style.height = Math.min(scrollHeight, 120) + 'px'
     }
   }
 
   return (
     <div className="p-4 bg-[var(--background-color)] border-t border-[var(--border-color)]">  {/* Increased padding, neutral bg */}
-      <div className="max-w-6xl mx-auto"> // Changed from max-w-4xl to max-w-6xl
+      <div className="max-w-6xl mx-auto">
         <form onSubmit={handleSubmit} className="relative" aria-label="Message input form">
           <textarea
             ref={textareaRef}

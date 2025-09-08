@@ -67,7 +67,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
   const renderAssistantContent = (content: string | AIResponse) => {
     if (!isAIResponse(content)) {
       return (
-        <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none leading-7 text-[17px]"> // Increased font size
+        <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none leading-7 text-[17px]">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{String(content ?? "")}</ReactMarkdown>
         </div>
       )
@@ -105,7 +105,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
           <div className="rounded-lg border border-[var(--border-color)] bg-[var(--hover-color)] overflow-hidden">  {/* Card style */}
             <button
               onClick={() => setShowSources(!showSources)}
-              className="w-full px-4 py-3 text-left font-medium text-[var(--text-primary)] flex items-center justify-between hover:bg-[var(--hover-color)] transition-colors text-[15px]" // Increased font size
+              className="w-full px-4 py-3 text-left font-medium text-[var(--text-primary)] flex items-center justify-between hover:bg-[var(--hover-color)] transition-colors text-[15px]" 
               aria-expanded={showSources}
               aria-label="Toggle sources"
             >
@@ -117,7 +117,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
             </button>
             {showSources && (
               <div className="px-4 pb-4">
-                <ul className="space-y-1 text-[15px] text-[var(--text-secondary)] list-disc list-inside"> // Increased font size
+                <ul className="space-y-1 text-[15px] text-[var(--text-secondary)] list-disc list-inside"> 
                   {content.sources.map((src, idx) => (
                     <li key={idx}>
                       {src.url ? (
@@ -125,12 +125,12 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
                           href={src.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[var(--secondary-color)] hover:underline focus-visible:underline text-[15px]" // Increased font size
+                          className="text-[var(--secondary-color)] hover:underline focus-visible:underline text-[15px]" 
                         >
                           {src.title || src.url}
                         </a>
                       ) : (
-                        <span className="text-[15px]">{src.title}</span> // Increased font size
+                        <span className="text-[15px]">{src.title}</span>
                       )}
                     </li>
                   ))}
@@ -141,7 +141,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
         )}
 
         {/* Disclaimer */}
-        <div className="flex items-start gap-2 rounded-xl border border-amber-300/60 bg-amber-50/90 px-4 py-3 text-[13.5px] md:text-[15px] text-amber-900"> // Increased font size
+        <div className="flex items-start gap-2 rounded-xl border border-amber-300/60 bg-amber-50/90 px-4 py-3 text-[13.5px] md:text-[15px] text-amber-900">
           <span className="material-symbols-outlined text-base md:text-[18px]">warning</span>
           <span>{disclaimer}</span>
         </div>
@@ -169,14 +169,14 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
         className={cn(
           "flex flex-col",
           // Wider & more readable line length; responsive so it doesn’t stretch on large screens
-          "max-w-[95%] sm:max-w-[90%] lg:max-w-[85%]", // Increased width
+          "max-w-[95%] sm:max-w-[90%] lg:max-w-[85%]", 
           isUser ? "items-end" : "items-start"
         )}
       >
         {/* Sender label */}
         <div
           className={cn(
-            "mb-2 font-semibold tracking-wide text-[13px]", // Increased font size from 11px to 13px
+            "mb-2 font-semibold tracking-wide text-[13px]", 
             isUser ? "text-pink-400" : "text-purple-400"
           )}
         >
@@ -186,7 +186,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
         {/* Bubble */}
         <div
           className={cn(
-            "relative px-6 py-5 rounded-2xl leading-relaxed shadow-md text-[17px] tracking-[0.25px] space-y-4", // Increased font size from 16px to 17px
+            "relative px-6 py-5 rounded-2xl leading-relaxed shadow-md text-[17px] tracking-[0.25px] space-y-4",
             isUser
               ? "bg-[var(--primary-color)]/90 text-white rounded-br-lg"
               : "bg-[var(--bubble-assistant-bg)] text-[var(--text-primary)] border border-[var(--border-color)]"
@@ -194,7 +194,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
           title={timestamp.toLocaleString()}
         >
           {isUser ? (
-            <div className="whitespace-pre-wrap text-[17px]"> // Increased font size
+            <div className="whitespace-pre-wrap text-[17px]">
               {typeof message.content === "string"
                 ? message.content
                 : isAIResponse(message.content)
@@ -245,7 +245,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
         {/* Timestamp */}
         <div
           className={cn(
-            "mt-2 text-[var(--text-secondary)] text-[13px]", // Increased font size from 11px to 13px
+            "mt-2 text-[var(--text-secondary)] text-[13px]",
             isUser ? "text-right" : "text-left"
           )}
         >
