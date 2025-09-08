@@ -122,7 +122,6 @@
     border: 3px solid transparent;
     background-clip: content-box;
   }
-}
 
 /* Utilities used by multiple components */
 @layer utilities {

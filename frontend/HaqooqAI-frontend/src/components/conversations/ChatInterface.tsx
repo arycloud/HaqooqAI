@@ -3,13 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import SidebarNew from '@/components/layout/SidebarNew'
 import { MessageBubbleNew } from '@/components/conversations/MessageBubbleNew'
 import { MessageInputNew } from '@/components/conversations/MessageInputNew'
-import { CyclingLoader } from '@/components/ui/CyclingLoader'
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay'
 import { useMessages } from '@/hooks/useMessages'
 import { useConversations } from '@/hooks/useConversations'
 import { Header } from '@/components/layout/Header'
 import { cn } from '@/lib/utils'
-import { AnalyzingLoader } from '../ui/AnalyzingLoader'
 
 interface ChatInterfaceProps {
   conversationId?: string
