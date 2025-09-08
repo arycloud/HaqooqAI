@@ -179,11 +179,10 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
               ? "bg-[var(--primary-color)]/90 text-white rounded-br-lg"
               : "bg-[var(--bubble-assistant-bg)] text-[var(--text-primary)] border border-[var(--border-color)]"
           )}
-          style={{ lineHeight: "1.75" }}
           title={timestamp.toLocaleString()}
         >
           {isUser ? (
-            <div className="whitespace-pre-wrap max-w-[85ch]">
+            <div className="whitespace-pre-wrap">
               {typeof message.content === "string"
                 ? message.content
                 : isAIResponse(message.content)
