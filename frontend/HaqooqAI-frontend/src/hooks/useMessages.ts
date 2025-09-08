@@ -166,7 +166,9 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
         id: `assistant-${Date.now()}`,
         conversation_id: convId,
         role: "assistant",
-        content: JSON.stringify(aiResponse),
+        content: JSON.stringify(aiResponse.response),
+        sources: aiResponse.sources,
+        disclaimer: aiResponse.disclaimer,  // Add disclaimer if present
         created_at: new Date().toISOString(),
       }
 

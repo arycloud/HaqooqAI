@@ -88,6 +88,7 @@ export interface AIResponse {
   routing_info?: RoutingInfo;  // New field for routing information
   processing_time?: number;
   query_id?: string;
+  disclaimer?: string;  // Optional disclaimer field from backend
 }
 
 export interface ApiKeyResponse {

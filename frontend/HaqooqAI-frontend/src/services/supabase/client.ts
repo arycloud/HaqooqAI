@@ -99,6 +99,7 @@ export interface Database {
           role: 'user' | 'assistant'
           content: string
           sources: any | null
+          disclaimer: string | null
           created_at: string
         }
         Insert: {
@@ -107,6 +108,7 @@ export interface Database {
           role: 'user' | 'assistant'
           content: string
           sources?: any | null
+          disclaimer?: string | null
           created_at?: string
         }
         Update: {
@@ -115,6 +117,7 @@ export interface Database {
           role?: 'user' | 'assistant'
           content?: string
           sources?: any | null
+          disclaimer?: string | null
           created_at?: string
         }
       }

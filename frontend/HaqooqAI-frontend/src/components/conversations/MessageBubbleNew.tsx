@@ -74,6 +74,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
     }
 
     const disclaimer =
+      (isAIResponse(content) && content.disclaimer) ||
       "This response is for informational purposes only and does not constitute legal advice."
 
     return (
@@ -141,10 +142,12 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
         )}
 
         {/* Disclaimer */}
-        <div className="flex items-start gap-2 rounded-xl border border-amber-300/60 bg-amber-50/90 px-4 py-3 text-[13.5px] md:text-[15px] text-amber-900">
-          <span className="material-symbols-outlined text-base md:text-[18px]">warning</span>
-          <span>{disclaimer}</span>
-        </div>
+        {(disclaimer || message.disclaimer) && (
+          <div className="flex items-start gap-2 rounded-xl border border-amber-300/60 bg-amber-50/90 px-4 py-3 text-[13.5px] md:text-[15px] text-amber-900">
+            <span className="material-symbols-outlined text-base md:text-[18px]">warning</span>
+            <span>{message.disclaimer || disclaimer}</span>
+          </div>
+        )}
       </div>
     )
   }

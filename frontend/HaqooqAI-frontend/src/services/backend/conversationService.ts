@@ -144,6 +144,7 @@ export class ConversationService {
         role: response.data.role as 'user' | 'assistant',
         content: response.data.content,
         sources: response.data.sources || [],
+        disclaimer: response.data.disclaimer,  // Add disclaimer if present
         created_at: response.data.created_at,
       }
     } catch (error) {
