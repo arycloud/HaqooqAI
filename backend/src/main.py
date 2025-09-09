@@ -495,52 +495,35 @@ async def process_query(
             user_id=request.user_id
         )
 
-
-        # -------------------------
-        # LOCAL-ONLY: persist assistant reply for immediate follow-ups, remove this when in production
-        # -------------------------
+        # Save assistant's response to the database
         try:
-            # import local DB client (already used in other routes)
-            from .database.supabase_client import supabase_client  # adjust relative import to your file's path
-
-            # Resolve internal user id (same helper your create_message route uses)
+            # Get user's internal ID
             user_internal_id = supabase_client.get_user_internal_id(request.user_id)
             if user_internal_id and request.conversation_id:
-                # Use thread-run to avoid blocking the event loop
-                import anyio
-
-                def _insert_msg():
-                    # create_message returns inserted row dict
-                    return supabase_client.create_message(
-                        conversation_id=request.conversation_id,
-                        role="assistant",
-                        content=result.get("response", "") or "",
-                        sources=result.get("sources") or None,
-                        disclaimer=result.get("disclaimer") or None,
-                        llm_provider=routing_decision.provider.value if routing_decision else None,
-                        query_tokens=routing_decision.query_tokens if routing_decision else None,
-                        routing_reason=routing_decision.reason if routing_decision else None,
-                        using_user_key=routing_decision.using_user_key if routing_decision else None,
-                        processing_time_ms=int(result.get("processing_time", 0) * 1000) if result.get("processing_time") else None
-                    )
-
-                try:
-                    inserted_row = await anyio.to_thread.run_sync(_insert_msg)
-                    logger.info(
-                        "LOCAL-PERSIST: inserted assistant message id=%s conversation=%s user_internal_id=%s",
-                        inserted_row.get("id"),
-                        request.conversation_id,
-                        user_internal_id
-                    )
-                except Exception as _e:
-                    logger.error("LOCAL-PERSIST: failed to persist assistant message (will continue): %s", _e)
+                # Create message for assistant's response
+                assistant_message = supabase_client.create_message(
+                    conversation_id=request.conversation_id,
+                    role="assistant",
+                    content=result.get("response", "") or "",
+                    sources=result.get("sources") or None,
+                    disclaimer=result.get("disclaimer") or None,
+                    llm_provider=routing_decision.provider.value if routing_decision else None,
+                    query_tokens=routing_decision.query_tokens if routing_decision else None,
+                    routing_reason=routing_decision.reason if routing_decision else None,
+                    using_user_key=routing_decision.using_user_key if routing_decision else None,
+                    processing_time_ms=int(result.get("processing_time", 0) * 1000) if result.get("processing_time") else None
+                )
+                logger.info(
+                    "Saved assistant message id=%s conversation=%s user_internal_id=%s",
+                    assistant_message.get("id"),
+                    request.conversation_id,
+                    user_internal_id
+                )
             else:
-                logger.debug("LOCAL-PERSIST: no user_internal_id or conversation_id; skipping local persistence")
+                logger.debug("No user_internal_id or conversation_id; skipping assistant message persistence")
         except Exception as e:
-            logger.error("LOCAL-PERSIST: unexpected error while persisting assistant message: %s", e)
-        # -------------------------
-        # end local-only persistence
-        # -------------------------
+            logger.error("Failed to persist assistant message: %s", e)
+            # Continue processing even if we can't save the message
 
         # ============================================================================
         # 4. GENERATE RESPONSE WITH QUOTA AND ROUTING INFORMATION
