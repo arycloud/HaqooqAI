@@ -1065,8 +1065,22 @@ async def create_message(
         if not supabase_client.verify_conversation_ownership(conversation_id, user_internal_id):
             raise HTTPException(status_code=403, detail="Access denied")
 
+        # Handle sources - convert SourceInfo objects to dictionaries if needed
+        sources = request.sources
+        if sources:
+            # Convert any SourceInfo objects to dictionaries
+            serialized_sources = []
+            for source in sources:
+                if hasattr(source, 'dict'):  # Pydantic model
+                    serialized_sources.append(source.dict())
+                elif hasattr(source, '__dict__'):  # Regular object
+                    serialized_sources.append(source.__dict__)
+                else:  # Already a dict or other JSON-serializable type
+                    serialized_sources.append(source)
+            sources = serialized_sources
+
         message = supabase_client.create_message(
-            conversation_id, request.role, request.content, request.sources, getattr(request, 'disclaimer', None)
+            conversation_id, request.role, request.content, sources, getattr(request, 'disclaimer', None)
         )
 
         return MessageResponse(

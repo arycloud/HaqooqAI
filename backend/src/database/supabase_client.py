@@ -423,8 +423,18 @@ class SupabaseClient:
                 "content": content
             }
 
+            # Handle sources - convert SourceInfo objects to dictionaries if needed
             if sources:
-                message_data["sources"] = sources
+                # Convert any SourceInfo objects to dictionaries
+                serialized_sources = []
+                for source in sources:
+                    if hasattr(source, 'dict'):  # Pydantic model
+                        serialized_sources.append(source.dict())
+                    elif hasattr(source, '__dict__'):  # Regular object
+                        serialized_sources.append(source.__dict__)
+                    else:  # Already a dict or other JSON-serializable type
+                        serialized_sources.append(source)
+                message_data["sources"] = serialized_sources
 
             # Only include disclaimer if it's not None and not empty
             if disclaimer and disclaimer.strip():
