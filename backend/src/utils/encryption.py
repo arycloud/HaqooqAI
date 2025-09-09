@@ -30,11 +30,28 @@ class APIKeyEncryption:
             # In production, this should be set as an environment variable
             master_key = base64.urlsafe_b64encode(os.urandom(32)).decode()
             logger.warning("No API_KEY_ENCRYPTION_KEY found, using generated key. Set this in production!")
+        else:
+            # Validate that the provided key is a valid base64-encoded 32-byte key
+            try:
+                decoded_key = base64.urlsafe_b64decode(master_key)
+                if len(decoded_key) != 32:
+                    raise ValueError(f"Master key must be 32 bytes, got {len(decoded_key)} bytes")
+                logger.info("Using provided API_KEY_ENCRYPTION_KEY")
+            except Exception as e:
+                logger.error(f"Invalid API_KEY_ENCRYPTION_KEY: {e}")
+                raise ValueError("API_KEY_ENCRYPTION_KEY must be a valid base64-encoded 32-byte key")
             
         return master_key
     
     def _derive_key(self, salt: bytes) -> bytes:
         """Derive encryption key from master key and salt"""
+        # Decode the base64-encoded master key to get the actual 32-byte key
+        try:
+            master_key_bytes = base64.urlsafe_b64decode(self.master_key)
+        except Exception as e:
+            logger.error(f"Failed to decode master key: {e}")
+            raise ValueError("Invalid master key format - must be base64 encoded 32-byte key")
+        
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
@@ -42,7 +59,7 @@ class APIKeyEncryption:
             iterations=100000,
         )
         # Fix: Don't base64 encode the derived key, KDF already returns correct bytes
-        return kdf.derive(self.master_key.encode())
+        return kdf.derive(master_key_bytes)
     
     def encrypt_api_key(self, api_key: str, user_id: int, provider: str) -> str:
         """
@@ -76,6 +93,9 @@ class APIKeyEncryption:
             
         except Exception as e:
             logger.error(f"Failed to encrypt API key for user {user_id}, provider {provider}: {e}")
+            # Add more specific error information
+            if "Fernet key must be 32 url-safe base64-encoded bytes" in str(e):
+                logger.error("This error typically occurs when the master encryption key has changed or is incorrectly formatted")
             raise ValueError("Failed to encrypt API key")
     
     def decrypt_api_key(self, encrypted_data: str, user_id: int, provider: str) -> str:
@@ -109,6 +129,9 @@ class APIKeyEncryption:
             
         except Exception as e:
             logger.error(f"Failed to decrypt API key for user {user_id}, provider {provider}: {e}")
+            # Add more specific error information
+            if "Fernet key must be 32 url-safe base64-encoded bytes" in str(e):
+                logger.error("This error typically occurs when the master encryption key has changed or is incorrectly formatted")
             raise ValueError("Failed to decrypt API key")
     
     def validate_encrypted_key(self, encrypted_data: str, user_id: int, provider: str) -> bool:
