@@ -85,18 +85,7 @@ class APIKeyManager:
                 "github_id", user_id
             ).eq("provider", provider).execute()
             
-            # If no data found with new structure, try old structure for backward compatibility
             if not result.data:
-                # Try to get data with old structure (api_key_hash column)
-                old_result = self.db.client.table("api_keys").select("api_key_hash").eq(
-                    "github_id", user_id
-                ).execute()
-                
-                if not old_result.data:
-                    return None
-                
-                # For old structure, we can't decrypt the data as it's hashed, not encrypted
-                logger.warning(f"Found old-style hashed API key for user {user_id}, cannot decrypt")
                 return None
             
             encrypted_key = result.data[0]["encrypted_key"]
@@ -152,25 +141,6 @@ class APIKeyManager:
             result = self.db.client.table("api_keys").select(
                 "provider, encrypted_key, updated_at"
             ).eq("github_id", user_id).execute()
-            
-            # If no data found with new structure, try old structure for backward compatibility
-            if not result.data:
-                old_result = self.db.client.table("api_keys").select(
-                    "api_key_hash, updated_at"
-                ).eq("github_id", user_id).execute()
-                
-                if old_result.data:
-                    logger.warning(f"Found old-style hashed API keys for user {user_id}, cannot validate")
-                    # Return default status for all providers since we can't validate old keys
-                    return [
-                        ProviderStatus(
-                            provider=provider,
-                            configured=False,
-                            valid=False,
-                            last_validated=None
-                        )
-                        for provider in ["groq", "gemini", "openai"]
-                    ]
             
             configured_providers = {}
             for row in result.data:
@@ -234,24 +204,8 @@ class APIKeyManager:
                 "encrypted_key, updated_at"
             ).eq("github_id", user_id).eq("provider", provider).execute()
             
-            # If no data found with new structure, try old structure for backward compatibility
             if not result.data:
-                old_result = self.db.client.table("api_keys").select(
-                    "api_key_hash, updated_at"
-                ).eq("github_id", user_id).eq("provider", provider).execute()
-                
-                if old_result.data:
-                    logger.warning(f"Found old-style hashed API key for user {user_id}, provider {provider}, cannot validate")
-                    row = old_result.data[0]
-                    updated_at = datetime.fromisoformat(row["updated_at"].replace('Z', '+00:00'))
-                    return ProviderStatus(
-                        provider=provider,
-                        configured=True,
-                        valid=False,  # Can't validate old keys
-                        last_validated=updated_at
-                    )
-                
-                # No key found at all
+                # No key found
                 return ProviderStatus(
                     provider=provider,
                     configured=False,
@@ -318,16 +272,6 @@ class APIKeyManager:
             result = self.db.client.table("api_keys").select(
                 "provider, encrypted_key"
             ).eq("github_id", user_id).execute()
-            
-            # If no data found with new structure, try old structure for backward compatibility
-            if not result.data:
-                old_result = self.db.client.table("api_keys").select(
-                    "api_key_hash"
-                ).eq("github_id", user_id).execute()
-                
-                if old_result.data:
-                    logger.warning(f"Found old-style hashed API keys for user {user_id}, cannot decrypt")
-                    return {}  # Can't decrypt old keys
             
             keys = {}
             for row in result.data:

@@ -277,14 +277,6 @@ class SupabaseClient:
             if result.data:
                 return result.data[0]["encrypted_key"]
             
-            # If not found with new structure, try old structure for backward compatibility
-            old_result = self.service_client.table(API_KEYS_TABLE).select("api_key_hash").eq("github_id", github_id).execute()
-            
-            if old_result.data:
-                # For old structure, we can't decrypt the data as it's hashed, not encrypted
-                logger.warning(f"Found old-style hashed API key for user {github_id}, cannot decrypt")
-                return None
-            
             return None
 
         except Exception as e:
