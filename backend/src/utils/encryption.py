@@ -48,6 +48,7 @@ class APIKeyEncryption:
         # Decode the base64-encoded master key to get the actual 32-byte key
         try:
             master_key_bytes = base64.urlsafe_b64decode(self.master_key)
+            logger.debug(f"Master key bytes length: {len(master_key_bytes)}")
         except Exception as e:
             logger.error(f"Failed to decode master key: {e}")
             raise ValueError("Invalid master key format - must be base64 encoded 32-byte key")
@@ -59,7 +60,10 @@ class APIKeyEncryption:
             iterations=100000,
         )
         # Fix: Don't base64 encode the derived key, KDF already returns correct bytes
-        return kdf.derive(master_key_bytes)
+        derived_key = kdf.derive(master_key_bytes)
+        logger.debug(f"Derived key length: {len(derived_key)}")
+        logger.debug(f"Derived key type: {type(derived_key)}")
+        return derived_key
     
     def encrypt_api_key(self, api_key: str, user_id: int, provider: str) -> str:
         """
@@ -77,19 +81,33 @@ class APIKeyEncryption:
             # Create a unique salt for this user/provider combination
             salt_data = f"{user_id}:{provider}:{self.master_key[:8]}".encode()
             salt = hashlib.sha256(salt_data).digest()[:16]  # 16 bytes salt
+            logger.debug(f"Salt length: {len(salt)}")
             
             # Derive encryption key
             key = self._derive_key(salt)
-            fernet = Fernet(key)
+            logger.debug(f"Key length: {len(key)}")
+            logger.debug(f"Key type: {type(key)}")
+            
+            # Create Fernet instance - Fernet expects a base64-encoded 32-byte key
+            # So we need to base64 encode the derived key
+            fernet_key = base64.urlsafe_b64encode(key)
+            logger.debug(f"Fernet key length: {len(fernet_key)}")
+            logger.debug(f"Fernet key type: {type(fernet_key)}")
+            fernet = Fernet(fernet_key)
+            logger.debug("Fernet instance created successfully")
             
             # Encrypt the API key
             encrypted_key = fernet.encrypt(api_key.encode())
+            logger.debug(f"Encrypted key length: {len(encrypted_key)}")
             
             # Combine salt and encrypted data
             combined = salt + encrypted_key
+            logger.debug(f"Combined data length: {len(combined)}")
             
             # Return base64 encoded result
-            return base64.urlsafe_b64encode(combined).decode()
+            result = base64.urlsafe_b64encode(combined).decode()
+            logger.debug(f"Final result length: {len(result)}")
+            return result
             
         except Exception as e:
             logger.error(f"Failed to encrypt API key for user {user_id}, provider {provider}: {e}")
@@ -113,17 +131,30 @@ class APIKeyEncryption:
         try:
             # Decode base64 data
             combined = base64.urlsafe_b64decode(encrypted_data.encode())
+            logger.debug(f"Combined data length: {len(combined)}")
             
             # Extract salt and encrypted data
             salt = combined[:16]
             encrypted_key = combined[16:]
+            logger.debug(f"Salt length: {len(salt)}")
+            logger.debug(f"Encrypted key length: {len(encrypted_key)}")
             
             # Derive encryption key
             key = self._derive_key(salt)
-            fernet = Fernet(key)
+            logger.debug(f"Key length: {len(key)}")
+            logger.debug(f"Key type: {type(key)}")
+            
+            # Create Fernet instance - Fernet expects a base64-encoded 32-byte key
+            # So we need to base64 encode the derived key
+            fernet_key = base64.urlsafe_b64encode(key)
+            logger.debug(f"Fernet key length: {len(fernet_key)}")
+            logger.debug(f"Fernet key type: {type(fernet_key)}")
+            fernet = Fernet(fernet_key)
+            logger.debug("Fernet instance created successfully")
             
             # Decrypt the API key
             decrypted_key = fernet.decrypt(encrypted_key)
+            logger.debug(f"Decrypted key length: {len(decrypted_key)}")
             
             return decrypted_key.decode()
             
