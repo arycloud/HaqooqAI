@@ -434,7 +434,8 @@ class SupabaseClient:
             if sources:
                 message_data["sources"] = sources
 
-            if disclaimer:
+            # Only include disclaimer if it's not None and not empty
+            if disclaimer and disclaimer.strip():
                 message_data["disclaimer"] = disclaimer
 
             if llm_provider:

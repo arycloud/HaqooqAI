@@ -45,7 +45,7 @@ class ContextManager:
             # Summarizer LLM (cheap/smaller model) - used for rewrites & summarization fallback
             try:
                 self.summarizer = ChatOpenAI(
-                    model=os.getenv("CONTEXT_SUMMARIZER_MODEL", "qwen/qwen1.5-7b-chat"),
+                    model=os.getenv("CONTEXT_SUMMARIZER_MODEL", "qwen/qwen3-32b"),
                     base_url=GROQ_API_BASE,
                     api_key=DEFAULT_GROQ_KEY,
                     temperature=float(os.getenv("SUMMARIZER_TEMP", "0.2")),

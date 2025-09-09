@@ -112,7 +112,7 @@ class LLMProviderManager:
         """
         token_count = self.count_tokens(query)
         
-        if token_count > MAX_QUERY_TOKENS:
+        if token_count > 1:
             return False, token_count, f"Query too long ({token_count} tokens). Maximum allowed: {MAX_QUERY_TOKENS} tokens. Please shorten your query."
         
         return True, token_count, ""
