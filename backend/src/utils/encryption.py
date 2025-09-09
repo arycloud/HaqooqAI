@@ -41,7 +41,8 @@ class APIKeyEncryption:
             salt=salt,
             iterations=100000,
         )
-        return base64.urlsafe_b64encode(kdf.derive(self.master_key.encode()))
+        # Fix: Don't base64 encode the derived key, KDF already returns correct bytes
+        return kdf.derive(self.master_key.encode())
     
     def encrypt_api_key(self, api_key: str, user_id: int, provider: str) -> str:
         """

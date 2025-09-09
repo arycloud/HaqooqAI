@@ -499,7 +499,14 @@ async def process_query(
         try:
             # Get user's internal ID
             user_internal_id = supabase_client.get_user_internal_id(request.user_id)
+            logger.info(f"User lookup result for GitHub ID {request.user_id}: {user_internal_id}")
+            
             if user_internal_id and request.conversation_id:
+                # Log what we're trying to save
+                logger.info(f"Attempting to save assistant message for conversation {request.conversation_id}")
+                logger.info(f"Assistant message content length: {len(result.get('response', '') or '')}")
+                logger.debug(f"Assistant message sources: {result.get('sources')}")
+                
                 # Create message for assistant's response
                 assistant_message = supabase_client.create_message(
                     conversation_id=request.conversation_id,
@@ -520,10 +527,12 @@ async def process_query(
                     user_internal_id
                 )
             else:
-                logger.debug("No user_internal_id or conversation_id; skipping assistant message persistence")
+                logger.warning(f"Skipping assistant message persistence - user_internal_id: {user_internal_id}, conversation_id: {request.conversation_id}")
         except Exception as e:
-            logger.error("Failed to persist assistant message: %s", e)
-            # Continue processing even if we can't save the message
+            logger.error("Failed to persist assistant message: %s", e, exc_info=True)
+            # Log the error with full traceback but don't fail the entire request
+            # The assistant response will still be returned to the user
+            # but it won't be saved in the database
 
         # ============================================================================
         # 4. GENERATE RESPONSE WITH QUOTA AND ROUTING INFORMATION
