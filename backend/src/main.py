@@ -124,7 +124,7 @@ async def startup_event():
         rag_engine = LegalRAGEngine()
         conversation_manager = ConversationManager()
 
-        logger.info("✅ All services initialized successfully (including tiered quota system)")
+        logger.info("✅ All services initialized successfully (including tiered quota system) and others")
 
         # Log health status
         if rag_engine:
