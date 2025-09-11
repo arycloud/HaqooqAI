@@ -220,7 +220,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
                       Try asking about:
                     </h3>
                     <p className="text-sm text-[var(--text-secondary)]">
-                      Click on any question to get started
+                      Click on any question to get started with
                     </p>
                   </div>
 
