@@ -526,7 +526,7 @@ class LegalAssistantAgent:
             # Call agent executor; pass chat_history (LangChain messages) so agent keeps context
             # -------------------------
             response = await executor_to_use.ainvoke({
-                        "input": effective_query,
+                        "question": effective_query,
                         "chat_history": chat_history
                     })
 
