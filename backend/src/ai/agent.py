@@ -520,14 +520,13 @@ class LegalAssistantAgent:
                                     - Time-sensitive: {query_analysis['is_time_sensitive']}
                                     - Legal query: {query_analysis['is_legal_query']}
                                     - Suggested strategy: {query_analysis['suggested_strategy']}
-                                    Original Question: {effective_query}
                                 """
 
             # -------------------------
             # Call agent executor; pass chat_history (LangChain messages) so agent keeps context
             # -------------------------
             response = await executor_to_use.ainvoke({
-                        "question": enhanced_context,
+                        "input": effective_query,
                         "chat_history": chat_history
                     })
 
