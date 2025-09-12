@@ -443,9 +443,18 @@ class LegalAssistantAgent:
                     # capture context snippet for debugging
                     matched_context_snippet = m.content if not matched_context_snippet else matched_context_snippet
 
-            effective_query = rewritten_query or query
-            if rewritten_query:
-                logger.info("Using rewritten effective_query for preprocessing (preview): %s", (effective_query[:200] + "...") if len(effective_query) > 200 else effective_query)
+            # Use original query instead of rewritten query if the rewritten query is clearly not a real question
+            # The context manager sometimes rewrites queries to analysis tasks like "Okay, let's see..."
+            if rewritten_query and ("Okay, let's see" in rewritten_query or "The user's original question was" in rewritten_query):
+                effective_query = query
+                logger.info("Ignoring context manager rewrite as it appears to be an analysis task, using original query: %s", (query[:200] + "..." if len(query) > 200 else query))
+            else:
+                effective_query = rewritten_query or query
+                
+            if rewritten_query and effective_query != rewritten_query:
+                logger.info("Using original query instead of context manager rewrite: %s", (query[:200] + "..." if len(query) > 200 else query))
+            elif rewritten_query:
+                logger.info("Using rewritten effective_query for preprocessing (preview): %s", (effective_query[:200] + "..." if len(effective_query) > 200 else effective_query))
             else:
                 logger.debug("No rewrite found; using original user query for preprocessing")
 
