@@ -64,13 +64,37 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
       const { messages: conversationMessages } =
         await conversationService.getConversationWithMessages(convId)
 
-      // ✅ Parse AIResponse if content is JSON
+      // ✅ Parse AIResponse if content is JSON AND reconstruct AIResponse structure for assistant messages
       const parsedMessages = conversationMessages.map((m) => {
-        try {
-          const parsed = JSON.parse(m.content as unknown as string)
-          return { ...m, content: parsed }
-        } catch {
-          return m // fallback: keep as string
+        // For assistant messages, we want to reconstruct the AIResponse structure
+        if (m.role === "assistant") {
+          let parsedResponse = m.content; // Default to the raw content
+          try {
+            // Try to parse the content (which should be the stringified 'response')
+            parsedResponse = JSON.parse(m.content as unknown as string);
+          } catch (parseError) {
+            console.warn("Could not parse message content as JSON, using raw string.", parseError);
+            // If parsing fails, we keep the raw string, which is fine for display.
+          }
+
+          // Return a message object where 'content' mimics the AIResponse structure
+          return {
+            ...m,
+            content: {
+              response: parsedResponse, // This is now the parsed string (or raw string if parse failed)
+              sources: m.sources || [],  // Use the sources array fetched from the DB
+              disclaimer: m.disclaimer || '', // Use the disclaimer from the DB
+              // You can add other AIResponse fields here if needed (e.g., usage, processing_time)
+            }
+          };
+        } else {
+          // For user messages, just try to parse or return as-is
+          try {
+            const parsed = JSON.parse(m.content as unknown as string)
+            return { ...m, content: parsed }
+          } catch {
+            return m // fallback: keep as string
+          }
         }
       })
 
