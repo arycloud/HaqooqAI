@@ -43,6 +43,10 @@ DEFAULT_GEMINI_KEY = os.getenv("DEFAULT_GEMINI_KEY", "")
 # OpenAI is BYOK-only (no system default key)
 DEFAULT_OPENAI_KEY = os.getenv("DEFAULT_OPENAI_KEY", "")  # Will be empty in production
 
+# Web Search API Keys
+EXA_API_KEY = os.getenv("EXA_API_KEY", "")
+SERPAPI_API_KEY = os.getenv("SERPAPI_API_KEY", "")
+
 # Groq Configuration
 GROQ_API_BASE = "https://api.groq.com/openai/v1"
 GROQ_MODEL = "qwen/qwen3-32b"

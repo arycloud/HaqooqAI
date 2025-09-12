@@ -13,7 +13,6 @@ import re
 import logging
 
 from ..config import VECTOR_DB_DIR, COLLECTION_NAME, EMBEDDING_MODEL_NAME
-from .searxng_client import searxng_client
 
 logger = logging.getLogger(__name__)
 
@@ -215,22 +214,25 @@ legal_document_search = Tool(
     )
 )
 
-async def _searxng_web_search_func(query: str) -> str:
+# Web search clients with fallback functionality
+from .web_search_clients import web_search_manager
+
+async def _web_search_func(query: str) -> str:
     """
-    Enhanced SearxNG web search with intelligent query processing.
+    Enhanced web search with Exa.ai and SerpAPI fallback.
     """
-    logger.info(f"Using SearxNG web search tool for query: '{query}'")
+    logger.info(f"Using web search tool for query: '{query}'")
 
     # Process and enhance the query
     enhanced_query = QueryProcessor.enhance_search_query(query)
     logger.info(f"Enhanced query: '{enhanced_query}'")
 
     # Log health status
-    health_status = await searxng_client.get_health_status()
-    logger.info(f"SearxNG Status: {health_status['healthy']}/{health_status['total_instances']} instances healthy")
+    health_status = await web_search_manager.get_health_status()
+    logger.info(f"Web Search Status: Primary={health_status['primary']}, Fallback={health_status['fallback']}")
 
     # Perform the search
-    result = await searxng_client.search(enhanced_query)
+    result = await web_search_manager.search(enhanced_query)
 
     # Post-process results for relevance
     if "No search results found" in result or not _is_result_relevant_to_query(result, query):
@@ -239,7 +241,7 @@ async def _searxng_web_search_func(query: str) -> str:
         # Try with a simpler, more direct query
         simple_query = QueryProcessor.clean_query(query)
         if simple_query != enhanced_query:
-            result = await searxng_client.search(simple_query)
+            result = await web_search_manager.search(simple_query)
 
     return result
 
@@ -250,9 +252,9 @@ try:
     from langchain_community.tools import AsyncTool  # Use langchain-community instead of deprecated langchain
     web_search_tool = AsyncTool(
         name="web_search",
-        func=_searxng_web_search_func,
+        func=_web_search_func,
         description=(
-            "Async web search via SearxNG. Use for current events, gov sites, etc."
+            "Async web search via Exa.ai with SerpAPI fallback. Use for current events, gov sites, etc."
         )
     )
     logger.info("Using AsyncTool for web_search.")
@@ -260,7 +262,7 @@ except Exception:
     # Fallback: create a sync wrapper that runs the async coroutine safely
     def _web_search_sync_wrapper(query: str) -> str:
         """
-        Synchronously run the async searxng function in the running loop
+        Synchronously run the async web search function in the running loop
         via run_coroutine_threadsafe. This avoids returning an un-awaited coroutine.
         """
         loop = None
@@ -271,17 +273,17 @@ except Exception:
 
         if loop and loop.is_running():
             # run_coroutine_threadsafe returns a concurrent.futures.Future
-            fut = asyncio.run_coroutine_threadsafe(_searxng_web_search_func(query), loop)
+            fut = asyncio.run_coroutine_threadsafe(_web_search_func(query), loop)
             return fut.result(timeout=30)  # timeout to avoid stuck threads
         else:
             # no running loop: safe to run directly
-            return asyncio.run(_searxng_web_search_func(query))
+            return asyncio.run(_web_search_func(query))
 
     web_search_tool = Tool(
         name="web_search",
         func=_web_search_sync_wrapper,
         description=(
-            "Search the web using production-grade SearxNG instances (sync wrapper). "
+            "Search the web using Exa.ai with SerpAPI fallback (sync wrapper). "
             "Use for general knowledge or current Pakistani legal developments."
         )
     )
