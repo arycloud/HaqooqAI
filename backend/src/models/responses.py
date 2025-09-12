@@ -88,7 +88,7 @@ class AIResponse(BaseModel):
     status: str = Field(..., description="Response status")
     response: str = Field(..., description="AI-generated response")
     sources: List[SourceInfo] = Field(default_factory=list, description="Sources used in the response")
-    disclaimer: Optional[str] = Field(None, description="Disclaimer message")
+    show_disclaimer: bool = Field(False, description="Whether to show the disclaimer")
     usage: QuotaInfo = Field(..., description="Updated quota information")
     processing_time: Optional[float] = Field(None, description="Processing time in seconds")
     query_id: Optional[str] = Field(None, description="Unique query identifier")
@@ -128,7 +128,7 @@ class MessageResponse(BaseModel):
     role: str = Field(..., description="Message role")
     content: str = Field(..., description="Message content")
     sources: Optional[List[SourceInfo]] = Field(None, description="Message sources")
-    disclaimer: Optional[str] = Field(None, description="Disclaimer message")
+    show_disclaimer: bool = Field(False, description="Whether to show the disclaimer")
     created_at: datetime = Field(..., description="Creation timestamp")
 
 

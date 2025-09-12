@@ -134,7 +134,7 @@ class LegalRAGEngine:
             return {
                 "response": final_response,
                 "sources": sources,
-                "disclaimer": agent_result.get("disclaimer"),
+                "show_disclaimer": agent_result.get("show_disclaimer", False),
                 "processing_time": processing_time,
                 "query_analysis": query_analysis,
                 "error": agent_result.get("error")

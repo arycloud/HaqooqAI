@@ -166,7 +166,7 @@ class MessageCreateRequest(BaseModel):
     role: str = Field(..., description="Message role: 'user' or 'assistant'")
     content: str = Field(..., min_length=1, description="Message content")
     sources: Optional[list] = Field(None, description="Optional sources for assistant messages")
-    disclaimer: Optional[str] = Field(None, description="Optional disclaimer for assistant messages")
+    show_disclaimer: bool = Field(False, description="Whether to show the disclaimer")
     user_id: int = Field(..., description="User's GitHub ID")
     github_token: str = Field(..., description="GitHub token for verification")
 

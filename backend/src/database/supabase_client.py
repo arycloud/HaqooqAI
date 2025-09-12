@@ -411,7 +411,7 @@ class SupabaseClient:
             logger.error(f"Error verifying conversation ownership: {e}")
             return False
 
-    def create_message(self, conversation_id: str, role: str, content: str, sources: Optional[List] = None, disclaimer: Optional[str] = None, llm_provider: Optional[str] = None, query_tokens: Optional[int] = None, routing_reason: Optional[str] = None, using_user_key: Optional[bool] = None, processing_time_ms: Optional[int] = None) -> Dict[str, Any]:
+    def create_message(self, conversation_id: str, role: str, content: str, sources: Optional[List] = None, show_disclaimer: bool = False, llm_provider: Optional[str] = None, query_tokens: Optional[int] = None, routing_reason: Optional[str] = None, using_user_key: Optional[bool] = None, processing_time_ms: Optional[int] = None) -> Dict[str, Any]:
         """Create a new message in a conversation"""
         if not self.service_client:
             raise Exception("Supabase service client not initialized")
@@ -420,7 +420,8 @@ class SupabaseClient:
             message_data = {
                 "conversation_id": conversation_id,
                 "role": role,
-                "content": content
+                "content": content,
+                "show_disclaimer": show_disclaimer
             }
 
             # Handle sources - convert SourceInfo objects to dictionaries if needed
@@ -435,10 +436,6 @@ class SupabaseClient:
                     else:  # Already a dict or other JSON-serializable type
                         serialized_sources.append(source)
                 message_data["sources"] = serialized_sources
-
-            # Only include disclaimer if it's not None and not empty
-            if disclaimer and disclaimer.strip():
-                message_data["disclaimer"] = disclaimer
 
             if llm_provider:
                 message_data["llm_provider"] = llm_provider

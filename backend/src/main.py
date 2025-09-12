@@ -513,7 +513,7 @@ async def process_query(
                     role="assistant",
                     content=result.get("response", "") or "",
                     sources=result.get("sources") or None,
-                    disclaimer=result.get("disclaimer") or None,
+                    show_disclaimer=result.get("show_disclaimer", False),
                     llm_provider=routing_decision.provider.value if routing_decision else None,
                     query_tokens=routing_decision.query_tokens if routing_decision else None,
                     routing_reason=routing_decision.reason if routing_decision else None,
@@ -579,7 +579,7 @@ async def process_query(
             status="success",
             response=result["response"],
             sources=result.get("sources", []),
-            disclaimer=result.get("disclaimer", ''),
+            show_disclaimer=result.get("show_disclaimer", False),
             usage=updated_quota,
             processing_time=result.get("processing_time"),
             query_id=query_id,
@@ -1080,7 +1080,7 @@ async def create_message(
             sources = serialized_sources
 
         message = supabase_client.create_message(
-            conversation_id, request.role, request.content, sources, getattr(request, 'disclaimer', None)
+            conversation_id, request.role, request.content, sources, getattr(request, 'show_disclaimer', False)
         )
 
         return MessageResponse(
@@ -1089,7 +1089,7 @@ async def create_message(
             role=message['role'],
             content=message['content'],
             sources=message.get('sources'),
-            disclaimer=message.get('disclaimer'),
+            show_disclaimer=message.get('show_disclaimer', False),
             created_at=message['created_at']
         )
 

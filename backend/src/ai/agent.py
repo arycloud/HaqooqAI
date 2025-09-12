@@ -127,7 +127,7 @@ class LegalAssistantAgent:
                     "1. Is response Pakistan-relevant and consistent with history?\n"
                     "2. Does it directly address the query without extras?\n"
                     "3. Are all facts tool-verified with citations?\n"
-                    "4. Are sources in the **exact pipe format** and disclaimer present?\n"
+                    "4. Are sources in the **exact pipe format**?\n"
                     "5. If tools failed/relevant info missing: Say 'Insufficient reliable info—please provide more details or rephrase.'\n\n"
 
                     "Prioritize accuracy, relevance, and user safety over completeness."
@@ -543,8 +543,8 @@ class LegalAssistantAgent:
             cleaned_output_string = re.sub(r"<tool_code>.*?</tool_code>", "", output_string, flags=re.DOTALL)
             cleaned_output_string = cleaned_output_string.strip()
 
-            # Step 1: Extract sources and disclaimer
-            sources, disclaimer = self._extract_sources_from_response(cleaned_output_string)
+            # Step 1: Extract sources
+            sources = self._extract_sources_from_response(cleaned_output_string)
 
             # Step 2: Post-process response (without re-extraction)
             final_response = self._post_process_response(cleaned_output_string)
@@ -553,7 +553,7 @@ class LegalAssistantAgent:
             return {
                 "response": final_response,
                 "sources": sources,
-                "disclaimer": disclaimer,
+                "show_disclaimer": query_analysis.get("is_legal_query", False),
                 "query_analysis": query_analysis,
                 "routing_info": {
                     "provider": routing_decision.provider.value,
@@ -617,7 +617,6 @@ class LegalAssistantAgent:
             r'"type":\s*"infoBlock"',
             r'"type":\s*"paragraph"',
             r'"type":\s*"metadata"',
-            r'"type":\s*"disclaimerCard"',
             r'"style":\s*{[^}]*}'
         ]
         for pattern in structured_patterns:
@@ -641,7 +640,7 @@ class LegalAssistantAgent:
 
     def _post_process_response(self, response: str) -> str:
         """Post-process the response for quality and consistency.
-        Removes fenced source blocks, inline sources, and disclaimers so they don’t appear in the final response.
+        Removes fenced source blocks and inline sources so they don't appear in the final response.
         """
 
         # Sanitize first (removes JSON artifacts, etc.)
@@ -708,13 +707,12 @@ class LegalAssistantAgent:
         return clean_content
 
     
-    def _extract_sources_from_response(self, response: str) -> tuple[list[dict], Optional[str]]:
-        """Extract structured sources and disclaimer from the LLM response text."""
+    def _extract_sources_from_response(self, response: str) -> list[dict]:
+        """Extract structured sources from the LLM response text."""
         sources = []
-        disclaimer = None
 
         if not response:
-            return sources, disclaimer
+            return sources
 
         # 1. Extract code block contents (if present)
         code_block_pattern = re.compile(r"```([\s\S]*?)```", re.MULTILINE)
@@ -738,12 +736,6 @@ class LegalAssistantAgent:
                 "url": None if url.strip().lower() in ["n/a", "na"] else url.strip().rstrip("`"),
             })
 
-        # 3. Regex for disclaimer
-        disclaimer_pattern = re.compile(r"(\*\*Disclaimer\*\*:.+)", re.IGNORECASE | re.DOTALL)
-        disclaimer_match = disclaimer_pattern.search(response)
-        if disclaimer_match:
-            disclaimer = disclaimer_match.group(1).strip()
-
         # 4. Deduplicate by (title, url)
         seen = set()
         unique_sources = []
@@ -753,4 +745,4 @@ class LegalAssistantAgent:
                 seen.add(key)
                 unique_sources.append(s)
 
-        return unique_sources, disclaimer
+        return unique_sources
