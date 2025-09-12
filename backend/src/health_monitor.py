@@ -11,7 +11,7 @@ import httpx
 import chromadb
 
 from .config import GITHUB_API_URL, VECTOR_DB_DIR, COLLECTION_NAME
-from .ai.searxng_client import searxng_client
+from .ai.web_search_clients import web_search_manager
 from .database.supabase_client import supabase_client
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class HealthMonitor:
         tasks = {
             "github_api": self.check_github_api(),
             "chroma_db": self.check_chroma_db(),
-            "searxng": self.check_searxng(),
+            "web_search": self.check_searxng(),
             "supabase": self.check_supabase(),
             "system": self.check_system_resources()
         }
@@ -143,15 +143,21 @@ class HealthMonitor:
             }
 
     async def check_searxng(self) -> Dict[str, Any]:
-        """Check SearxNG instances health"""
+        """Check web search providers health"""
         try:
-            health_status = await searxng_client.get_health_status()
-
+            health_status = await web_search_manager.get_health_status()
+            
+            # Count healthy providers
+            healthy_providers = [client for client in health_status.get("clients", []) 
+                               if client.get("healthy", False)]
+            
             return {
-                "status": "healthy" if health_status["healthy"] > 0 else "unhealthy",
-                "healthy_instances": health_status["healthy"],
-                "total_instances": health_status["total_instances"],
-                "last_check": health_status["last_check"],
+                "status": "healthy" if len(healthy_providers) > 0 else "unhealthy",
+                "healthy_providers": len(healthy_providers),
+                "total_providers": len(health_status.get("clients", [])),
+                "providers": health_status.get("clients", []),
+                "primary_provider": health_status.get("primary"),
+                "fallback_provider": health_status.get("fallback"),
                 "timestamp": datetime.now().isoformat()
             }
 

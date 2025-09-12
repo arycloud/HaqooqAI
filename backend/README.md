@@ -209,7 +209,7 @@ The API is configured to accept requests from:
 
 ### Health Monitoring
 - **Comprehensive Health Checks**: Monitors all system components
-- **Service Status**: Real-time status of GitHub API, ChromaDB, and SearxNG
+- **Service Status**: Real-time status of GitHub API, ChromaDB, and web search providers (Exa.ai, SerpAPI)
 - **Performance Metrics**: Response times and system resource usage
 
 ## 🧪 Testing

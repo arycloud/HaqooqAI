@@ -10,7 +10,7 @@ from datetime import datetime
 
 from .agent import LegalAssistantAgent
 from .tools import retrieve_relevant_chunks
-from .searxng_client import searxng_client
+from .web_search_clients import web_search_manager
 from ..models.responses import SourceInfo
 from ..services.context_manager import ContextManager
 
@@ -223,7 +223,7 @@ class LegalRAGEngine:
             Formatted search results
         """
         try:
-            return await searxng_client.search(query)
+            return await web_search_manager.search(query)
         except Exception as e:
             logger.error(f"Error in web search: {e}")
             return "Web search unavailable"
@@ -258,8 +258,11 @@ class LegalRAGEngine:
 
             # Check web search
             try:
-                searx_health = await searxng_client.check_searxng_health()
-                health_status["web_search"] = searx_health.get("status", "unhealthy")
+                web_search_health = await web_search_manager.get_health_status()
+                # Check if at least one provider is healthy
+                healthy_providers = [client for client in web_search_health.get("clients", []) 
+                                   if client.get("healthy", False)]
+                health_status["web_search"] = "healthy" if healthy_providers else "unhealthy"
             except Exception:
                 health_status["web_search"] = "unhealthy"
 
