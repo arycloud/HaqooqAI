@@ -106,6 +106,7 @@ export class ConversationService {
           role: msg.role as 'user' | 'assistant',
           content: msg.content,
           sources: msg.sources || [],
+          show_disclaimer: msg.show_disclaimer || false,  // Use show_disclaimer flag
           created_at: msg.created_at,
         })),
       }
@@ -144,7 +145,7 @@ export class ConversationService {
         role: response.data.role as 'user' | 'assistant',
         content: response.data.content,
         sources: response.data.sources || [],
-        disclaimer: response.data.disclaimer,  // Add disclaimer if present
+        show_disclaimer: response.data.show_disclaimer || false,  // Use show_disclaimer flag
         created_at: response.data.created_at,
       }
     } catch (error) {

@@ -83,7 +83,7 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
             content: {
               response: parsedResponse, // This is now the parsed string (or raw string if parse failed)
               sources: m.sources || [],  // Use the sources array fetched from the DB
-              disclaimer: m.disclaimer || '', // Use the disclaimer from the DB
+              show_disclaimer: m.show_disclaimer || false, // Use the show_disclaimer flag from the DB
               // You can add other AIResponse fields here if needed (e.g., usage, processing_time)
             }
           };
@@ -192,7 +192,7 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
         role: "assistant",
         content: JSON.stringify(aiResponse.response),
         sources: aiResponse.sources,
-        disclaimer: aiResponse.disclaimer,  // Add disclaimer if present
+        show_disclaimer: aiResponse.show_disclaimer || false,  // Use show_disclaimer flag
         created_at: new Date().toISOString(),
       }
 

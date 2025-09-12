@@ -73,9 +73,8 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
       )
     }
 
-    const disclaimer =
-      (isAIResponse(content) && content.disclaimer) ||
-      "This response is for informational purposes only and does not constitute legal advice."
+    // Standard disclaimer text to show when show_disclaimer is true
+    const disclaimerText = "This response is for informational purposes only and does not constitute legal advice.";
 
     return (
       <div className="space-y-5">
@@ -141,11 +140,11 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
           </div>
         )}
 
-        {/* Disclaimer */}
-        {(disclaimer || message.disclaimer) && (
+        {/* Disclaimer - only show when show_disclaimer is true */}
+        {content.show_disclaimer && (
           <div className="flex items-start gap-2 rounded-xl border border-amber-300/60 bg-amber-50/90 px-4 py-3 text-[13.5px] md:text-[15px] text-amber-900">
             <span className="material-symbols-outlined text-base md:text-[18px]">warning</span>
-            <span>{message.disclaimer || disclaimer}</span>
+            <span>{disclaimerText}</span>
           </div>
         )}
       </div>

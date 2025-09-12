@@ -84,11 +84,11 @@ export interface AIResponse {
   status: string;
   response: string;
   sources: Source[];
+  show_disclaimer: boolean;
   usage: QuotaInfo;
   routing_info?: RoutingInfo;  // New field for routing information
   processing_time?: number;
   query_id?: string;
-  disclaimer?: string;  // Optional disclaimer field from backend
 }
 
 export interface ApiKeyResponse {
@@ -137,5 +137,3 @@ export interface ImportMetaEnv {
   readonly VITE_SUPABASE_ANON_KEY: string;
   readonly VITE_APP_URL: string;
 }
-
-
