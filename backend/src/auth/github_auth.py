@@ -95,7 +95,7 @@ class GitHubAuthService:
                     logger.warning(f"Invalid GitHub token attempted")
                     raise HTTPException(
                         status_code=401,
-                        detail="Invalid or expired GitHub token"
+                        detail="GitHub token has expired. Please log in again to continue."
                     )
 
                 elif response.status_code == 403:

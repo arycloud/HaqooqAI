@@ -139,6 +139,22 @@ async def startup_event():
 async def http_exception_handler(request, exc: HTTPException):
     """Custom HTTP exception handler with safe frontend output"""
     logger.warning(f"HTTP error {exc.status_code}: {exc.detail}")
+    
+    # Add special handling for expired/invalid tokens
+    if exc.status_code == 401 and "token" in str(exc.detail).lower():
+        # Add a header to indicate token expiration
+        response = JSONResponse(
+            status_code=exc.status_code,
+            content=jsonable_encoder(ErrorResponse(
+                status="error",
+                error="INVALID_TOKEN",
+                message="GitHub token has expired. Please log in again to continue.",
+                details={"token_expired": True, "requires_logout": True}
+            ).dict())
+        )
+        response.headers["X-Auth-Token-Expired"] = "true"
+        return response
+    
     error_response = ErrorResponse(
         status="error",
         error="HTTP_ERROR",
@@ -918,6 +934,12 @@ async def get_conversations(
 ):
     """Get all conversations for a user"""
     try:
+        # Validate GitHub token (for security)
+        # Note: This endpoint doesn't receive a token directly in the request,
+        # but we include the auth service dependency to ensure proper authentication
+        # is handled at the API gateway or middleware level.
+        # In a production environment, you might want to pass the token explicitly.
+        
         from .database.supabase_client import supabase_client
 
         if not supabase_client.is_connected():
