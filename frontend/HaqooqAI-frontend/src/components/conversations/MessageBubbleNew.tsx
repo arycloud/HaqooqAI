@@ -2,7 +2,7 @@ import { useState, useMemo } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { useAuth } from "@/hooks/useAuth"
-import { Message } from "@/types/message"
+import { Message, Source } from "@/types/message"
 import { cn } from "@/lib/utils"
 import { AIResponse } from "@/types/api"
 
