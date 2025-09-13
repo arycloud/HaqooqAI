@@ -445,7 +445,7 @@ class LegalAssistantAgent:
 
             # Use original query instead of rewritten query if the rewritten query is clearly not a real question
             # The context manager sometimes rewrites queries to analysis tasks like "Okay, let's see..."
-            if rewritten_query and ("Okay, let's see" in rewritten_query or "The user's original question was" in rewritten_query):
+            if rewritten_query and ("Okay" in rewritten_query and ("let's see" in rewritten_query or "let me check" in rewritten_query or "user is asking" in rewritten_query)):
                 effective_query = query
                 logger.info("Ignoring context manager rewrite as it appears to be an analysis task, using original query: %s", (query[:200] + "..." if len(query) > 200 else query))
             else:

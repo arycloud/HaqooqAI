@@ -466,13 +466,20 @@ class ContextManager:
             score_str = f"{best_score:.3f}"
             injected_messages.append(SystemMessage(content=f"Follow-up context (matched assistant message, similarity={score_str}):\n{matched_msg.content}"))
 
-        if rewrite_text:
+        # Check if the rewrite is clearly an analysis task
+        is_analysis_task = rewrite_text and ("Okay" in rewrite_text and ("let's see" in rewrite_text or "let me check" in rewrite_text or "user is asking" in rewrite_text))
+        
+        if rewrite_text and not is_analysis_task:
             injected_messages.append(SystemMessage(content=f"Follow-up rewritten: {rewrite_text}"))
             injected_messages.append(HumanMessage(content=rewrite_text))
             logger.debug("Injected rewritten follow-up and system note")
         else:
+            # If it's an analysis task or no rewrite, inject the original query
             injected_messages.append(HumanMessage(content=user_query))
-            logger.debug("Injected original user query (no rewrite)")
+            if is_analysis_task:
+                logger.debug("Skipping injection of analysis task rewrite, using original query instead")
+            else:
+                logger.debug("Injected original user query (no rewrite)")
 
         final_history = chat_history + injected_messages if injected_messages else chat_history
         logger.debug("Returning final_history len=%d (chat_history=%d injected=%d) total_tokens=%d",
