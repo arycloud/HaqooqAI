@@ -75,19 +75,23 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
           
           // If content is a string that looks like JSON, try to parse it
           if (typeof m.content === "string") {
-            try {
-              const parsedContent = JSON.parse(m.content);
-              // If parsing succeeds and it looks like an AIResponse object
-              if (parsedContent && typeof parsedContent === "object" && "response" in parsedContent) {
-                content = parsedContent.response;
-                sources = parsedContent.sources || [];
-                showDisclaimer = parsedContent.show_disclaimer || false;
+            // Only try to parse as JSON if it looks like JSON (starts with { or [)
+            if (m.content.trim().startsWith('{') || m.content.trim().startsWith('[')) {
+              try {
+                const parsedContent = JSON.parse(m.content);
+                // If parsing succeeds and it looks like an AIResponse object
+                if (parsedContent && typeof parsedContent === "object" && "response" in parsedContent) {
+                  content = parsedContent.response;
+                  sources = parsedContent.sources || [];
+                  showDisclaimer = parsedContent.show_disclaimer || false;
+                }
+                // If it's just a regular string that happens to be valid JSON, keep it as is
+              } catch (e) {
+                // If parsing fails, it's just a regular string response, which is fine
+                console.log("Could not parse message content as JSON, using raw string.", e);
               }
-              // If it's just a regular string, keep it as is
-            } catch (e) {
-              // If parsing fails, it's just a regular string response, which is fine
-              console.log("Could not parse message content as JSON, using raw string.", e);
             }
+            // If it doesn't look like JSON, treat it as a regular string (no action needed)
           } else if (typeof m.content === "object" && m.content !== null) {
             // If content is already an object, extract the fields
             content = (m.content as any).response || m.content;

@@ -6,6 +6,61 @@ import { Message, Source } from "@/types/message"
 import { cn } from "@/lib/utils"
 import { AIResponse } from "@/types/api"
 
+// Error boundary component for markdown rendering
+interface MarkdownErrorBoundaryProps {
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+}
+
+function MarkdownErrorBoundary({ children, fallback }: MarkdownErrorBoundaryProps) {
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return fallback || <div className="text-red-500">Failed to render content</div>;
+  }
+
+  return (
+    <ErrorBoundary onError={() => setHasError(true)}>
+      {children}
+    </ErrorBoundary>
+  );
+}
+
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+  onError?: () => void;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Markdown rendering error:', error, errorInfo);
+    if (this.props.onError) {
+      this.props.onError();
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <div className="text-red-500">Failed to render content</div>;
+    }
+
+    return this.props.children;
+  }
+}
+
 interface MessageBubbleNewProps {
   message: Message
   isLoading?: boolean
@@ -80,6 +135,13 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
       showDisclaimer = content.show_disclaimer || false;
     }
 
+    // Preprocess content to handle potential markdown table issues
+    // Add extra newlines around tables to ensure proper parsing
+    const processedContent = responseContent
+      .replace(/(\|\s*---+\s*\|)/g, '\n$1') // Add newline before table separator
+      .replace(/(\|\s*\S+\s*\|)/g, '\n$1') // Add newlines around table rows
+      .replace(/\n{3,}/g, '\n\n'); // Normalize multiple newlines
+
     // Standard disclaimer text to show when show_disclaimer is true
     const disclaimerText = "This response is for informational purposes only and does not constitute legal advice.";
 
@@ -102,9 +164,11 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
             "prose-code:bg-[#0b1324] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded"
           )}
         >
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {responseContent}
-          </ReactMarkdown>
+          <MarkdownErrorBoundary fallback={<div className="whitespace-pre-wrap">{processedContent}</div>}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {processedContent}
+            </ReactMarkdown>
+          </MarkdownErrorBoundary>
         </div>
 
         {/* Sources */}
@@ -211,7 +275,9 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
                 : ""}
             </div>
           ) : (
-            renderAssistantContent(message.content)
+            <MarkdownErrorBoundary fallback={<div className="whitespace-pre-wrap text-[17px]">{typeof message.content === "string" ? message.content : typeof message.content === "object" && message.content !== null ? (message.content as any).response || "" : ""}</div>}>
+              {renderAssistantContent(message.content)}
+            </MarkdownErrorBoundary>
           )}
 
           {/* Actions */}

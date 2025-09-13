@@ -118,19 +118,23 @@ export class ConversationService {
           
           // If content is a string that looks like JSON, try to parse it
           if (typeof msg.content === "string") {
-            try {
-              const parsedContent = JSON.parse(msg.content);
-              // If parsing succeeds and it looks like an AIResponse object
-              if (parsedContent && typeof parsedContent === "object" && "response" in parsedContent) {
-                content = parsedContent.response;
-                sources = parsedContent.sources || [];
-                showDisclaimer = parsedContent.show_disclaimer || false;
+            // Only try to parse as JSON if it looks like JSON (starts with { or [)
+            if (msg.content.trim().startsWith('{') || msg.content.trim().startsWith('[')) {
+              try {
+                const parsedContent = JSON.parse(msg.content);
+                // If parsing succeeds and it looks like an AIResponse object
+                if (parsedContent && typeof parsedContent === "object" && "response" in parsedContent) {
+                  content = parsedContent.response;
+                  sources = parsedContent.sources || [];
+                  showDisclaimer = parsedContent.show_disclaimer || false;
+                }
+                // If it's just a regular string that happens to be valid JSON, keep it as is
+              } catch (e) {
+                // If parsing fails, it's just a regular string response, which is fine
+                console.log("Could not parse message content as JSON, using raw string.", e);
               }
-              // If it's just a regular string, keep it as is
-            } catch (e) {
-              // If parsing fails, it's just a regular string response, which is fine
-              console.log("Could not parse message content as JSON, using raw string.", e);
             }
+            // If it doesn't look like JSON, treat it as a regular string (no action needed)
           } else if (typeof msg.content === "object" && msg.content !== null) {
             // If content is already an object, extract the fields
             content = msg.content.response || msg.content;
@@ -148,6 +152,7 @@ export class ConversationService {
             created_at: msg.created_at,
           };
         }),
+
       }
     } catch (error) {
       console.error('Failed to fetch conversation:', error)
@@ -203,19 +208,23 @@ export class ConversationService {
       
       // If content is a string that looks like JSON, try to parse it
       if (typeof response.data.content === "string") {
-        try {
-          const parsedContent = JSON.parse(response.data.content);
-          // If parsing succeeds and it looks like an AIResponse object
-          if (parsedContent && typeof parsedContent === "object" && "response" in parsedContent) {
-            responseContent = parsedContent.response;
-            responseSources = parsedContent.sources || [];
-            responseShowDisclaimer = parsedContent.show_disclaimer || false;
+        // Only try to parse as JSON if it looks like JSON (starts with { or [)
+        if (response.data.content.trim().startsWith('{') || response.data.content.trim().startsWith('[')) {
+          try {
+            const parsedContent = JSON.parse(response.data.content);
+            // If parsing succeeds and it looks like an AIResponse object
+            if (parsedContent && typeof parsedContent === "object" && "response" in parsedContent) {
+              responseContent = parsedContent.response;
+              responseSources = parsedContent.sources || [];
+              responseShowDisclaimer = parsedContent.show_disclaimer || false;
+            }
+            // If it's just a regular string that happens to be valid JSON, keep it as is
+          } catch (e) {
+            // If parsing fails, it's just a regular string response, which is fine
+            console.log("Could not parse message content as JSON, using raw string.", e);
           }
-          // If it's just a regular string, keep it as is
-        } catch (e) {
-          // If parsing fails, it's just a regular string response, which is fine
-          console.log("Could not parse message content as JSON, using raw string.", e);
         }
+        // If it doesn't look like JSON, treat it as a regular string (no action needed)
       } else if (typeof response.data.content === "object" && response.data.content !== null) {
         // If content is already an object, extract the fields
         responseContent = response.data.content.response || response.data.content;
