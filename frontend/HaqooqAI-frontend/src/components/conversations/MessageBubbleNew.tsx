@@ -65,12 +65,19 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
 
   /** Render AI assistant content with clean markdown + structured boxes */
   const renderAssistantContent = (content: string | AIResponse) => {
-    if (!isAIResponse(content)) {
-      return (
-        <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none leading-7 text-[17px]">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{String(content ?? "")}</ReactMarkdown>
-        </div>
-      )
+    // Handle content that might be a string or an AIResponse object
+    let responseContent = "";
+    let sources: Source[] = [];
+    let showDisclaimer = false;
+    
+    if (typeof content === "string") {
+      // If it's a string, use it directly
+      responseContent = content;
+    } else if (content && typeof content === "object") {
+      // If it's an AIResponse object, extract the fields
+      responseContent = content.response || "";
+      sources = content.sources || [];
+      showDisclaimer = content.show_disclaimer || false;
     }
 
     // Standard disclaimer text to show when show_disclaimer is true
@@ -96,12 +103,12 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
           )}
         >
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {content.response}
+            {responseContent}
           </ReactMarkdown>
         </div>
 
         {/* Sources */}
-        {content.sources?.length > 0 && (
+        {sources.length > 0 && (
           <div className="rounded-lg border border-[var(--border-color)] bg-[var(--hover-color)] overflow-hidden">  {/* Card style */}
             <button
               onClick={() => setShowSources(!showSources)}
@@ -111,14 +118,14 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
             >
               <span className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-sm text-[var(--secondary-color)]">library_books</span>
-                Sources ({content.sources.length})
+                Sources ({sources.length})
               </span>
               <span className="material-symbols-outlined transition-transform">{showSources ? 'expand_less' : 'expand_more'}</span>
             </button>
             {showSources && (
               <div className="px-4 pb-4">
                 <ul className="space-y-1 text-[15px] text-[var(--text-secondary)] list-disc list-inside"> 
-                  {content.sources.map((src, idx) => (
+                  {sources.map((src, idx) => (
                     <li key={idx}>
                       {src.url ? (
                         <a
@@ -141,7 +148,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
         )}
 
         {/* Disclaimer - only show when show_disclaimer is true */}
-        {content.show_disclaimer && (
+        {showDisclaimer && (
           <div className="flex items-start gap-2 rounded-xl border border-amber-300/60 bg-amber-50/90 px-4 py-3 text-[13.5px] md:text-[15px] text-amber-900">
             <span className="material-symbols-outlined text-base md:text-[18px]">warning</span>
             <span>{disclaimerText}</span>
@@ -199,8 +206,8 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
             <div className="whitespace-pre-wrap text-[17px]">
               {typeof message.content === "string"
                 ? message.content
-                : isAIResponse(message.content)
-                ? message.content.response
+                : typeof message.content === "object" && message.content !== null
+                ? (message.content as any).response || ""
                 : ""}
             </div>
           ) : (

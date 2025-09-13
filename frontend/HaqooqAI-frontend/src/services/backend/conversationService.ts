@@ -39,6 +39,7 @@ export class ConversationService {
         }
         if (status === 401) {
           // Token expired, let the axios interceptor handle logout
+          // Don't show error here as axios interceptor will handle it
           throw new Error('Authentication expired. Please login again.')
         }
       }
@@ -74,6 +75,8 @@ export class ConversationService {
       
       // Handle authentication errors
       if (axios.isAxiosError(error) && error.response?.status === 401) {
+        // Token expired, let the axios interceptor handle logout
+        // Don't show error here as axios interceptor will handle it
         throw new Error('Authentication expired. Please login again.')
       }
       
@@ -107,21 +110,52 @@ export class ConversationService {
           created_at: response.data.conversation.created_at,
           updated_at: response.data.conversation.updated_at,
         },
-        messages: (response.data.messages || []).map((msg: any) => ({
-          id: msg.id,
-          conversation_id: msg.conversation_id,
-          role: msg.role as 'user' | 'assistant',
-          content: msg.content,
-          sources: msg.sources || [],
-          show_disclaimer: msg.show_disclaimer || false,  // Use show_disclaimer flag
-          created_at: msg.created_at,
-        })),
+        messages: (response.data.messages || []).map((msg: any) => {
+          // Handle message content that might be a string or object
+          let content = msg.content;
+          let sources = msg.sources || [];
+          let showDisclaimer = msg.show_disclaimer || false;
+          
+          // If content is a string that looks like JSON, try to parse it
+          if (typeof msg.content === "string") {
+            try {
+              const parsedContent = JSON.parse(msg.content);
+              // If parsing succeeds and it looks like an AIResponse object
+              if (parsedContent && typeof parsedContent === "object" && "response" in parsedContent) {
+                content = parsedContent.response;
+                sources = parsedContent.sources || [];
+                showDisclaimer = parsedContent.show_disclaimer || false;
+              }
+              // If it's just a regular string, keep it as is
+            } catch (e) {
+              // If parsing fails, it's just a regular string response, which is fine
+              console.log("Could not parse message content as JSON, using raw string.", e);
+            }
+          } else if (typeof msg.content === "object" && msg.content !== null) {
+            // If content is already an object, extract the fields
+            content = msg.content.response || msg.content;
+            sources = msg.content.sources || [];
+            showDisclaimer = msg.content.show_disclaimer || false;
+          }
+
+          return {
+            id: msg.id,
+            conversation_id: msg.conversation_id,
+            role: msg.role as 'user' | 'assistant',
+            content,
+            sources,
+            show_disclaimer: showDisclaimer,
+            created_at: msg.created_at,
+          };
+        }),
       }
     } catch (error) {
       console.error('Failed to fetch conversation:', error)
       
       // Handle authentication errors
       if (axios.isAxiosError(error) && error.response?.status === 401) {
+        // Token expired, let the axios interceptor handle logout
+        // Don't show error here as axios interceptor will handle it
         throw new Error('Authentication expired. Please login again.')
       }
       
@@ -143,22 +177,59 @@ export class ConversationService {
     if (!githubToken || !user) throw new Error('No authentication found')
 
     try {
+      // Handle content that might be an object or string
+      let processedContent = content;
+      let showDisclaimer = false;
+      
+      // If content is an object, we might need to serialize it
+      if (typeof content === "object" && content !== null) {
+        processedContent = JSON.stringify(content);
+      }
+
       const response = await axios.post(`${BACKEND_URL}/conversations/${conversationId}/messages`, {
         conversation_id: conversationId,
         role,
-        content,
+        content: processedContent,
         sources,
+        show_disclaimer: showDisclaimer,
         user_id: user.github_id,
         github_token: githubToken,
       })
+
+      // Handle the response content as well
+      let responseContent = response.data.content;
+      let responseSources = response.data.sources || [];
+      let responseShowDisclaimer = response.data.show_disclaimer || false;
+      
+      // If content is a string that looks like JSON, try to parse it
+      if (typeof response.data.content === "string") {
+        try {
+          const parsedContent = JSON.parse(response.data.content);
+          // If parsing succeeds and it looks like an AIResponse object
+          if (parsedContent && typeof parsedContent === "object" && "response" in parsedContent) {
+            responseContent = parsedContent.response;
+            responseSources = parsedContent.sources || [];
+            responseShowDisclaimer = parsedContent.show_disclaimer || false;
+          }
+          // If it's just a regular string, keep it as is
+        } catch (e) {
+          // If parsing fails, it's just a regular string response, which is fine
+          console.log("Could not parse message content as JSON, using raw string.", e);
+        }
+      } else if (typeof response.data.content === "object" && response.data.content !== null) {
+        // If content is already an object, extract the fields
+        responseContent = response.data.content.response || response.data.content;
+        responseSources = response.data.content.sources || [];
+        responseShowDisclaimer = response.data.content.show_disclaimer || false;
+      }
 
       return {
         id: response.data.id,
         conversation_id: response.data.conversation_id,
         role: response.data.role as 'user' | 'assistant',
-        content: response.data.content,
-        sources: response.data.sources || [],
-        show_disclaimer: response.data.show_disclaimer || false,  // Use show_disclaimer flag
+        content: responseContent,
+        sources: responseSources,
+        show_disclaimer: responseShowDisclaimer,
         created_at: response.data.created_at,
       }
     } catch (error) {
@@ -166,6 +237,8 @@ export class ConversationService {
       
       // Handle authentication errors
       if (axios.isAxiosError(error) && error.response?.status === 401) {
+        // Token expired, let the axios interceptor handle logout
+        // Don't show error here as axios interceptor will handle it
         throw new Error('Authentication expired. Please login again.')
       }
       
@@ -199,6 +272,8 @@ export class ConversationService {
       
       // Handle authentication errors
       if (axios.isAxiosError(error) && error.response?.status === 401) {
+        // Token expired, let the axios interceptor handle logout
+        // Don't show error here as axios interceptor will handle it
         throw new Error('Authentication expired. Please login again.')
       }
       
@@ -229,6 +304,8 @@ export class ConversationService {
       
       // Handle authentication errors
       if (axios.isAxiosError(error) && error.response?.status === 401) {
+        // Token expired, let the axios interceptor handle logout
+        // Don't show error here as axios interceptor will handle it
         throw new Error('Authentication expired. Please login again.')
       }
       

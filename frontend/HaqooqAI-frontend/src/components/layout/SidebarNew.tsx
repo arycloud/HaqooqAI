@@ -224,7 +224,7 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
                     </button>
 
                     {/* Row actions */}
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => handleRename(conversation.id, conversation.title || 'Untitled')}
                         className="p-1 rounded hover:bg-[var(--hover-color)]"

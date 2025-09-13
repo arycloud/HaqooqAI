@@ -158,7 +158,8 @@ export const useAuth = () => {
     setError(message)
     
     // Don't show toast for "Authentication expired" messages as they're already handled
-    if (!message.includes('expired')) {
+    // by the axios interceptor
+    if (!message.includes('expired') && !message.includes('Expired')) {
       toast.error(message)
     }
     

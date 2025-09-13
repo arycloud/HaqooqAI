@@ -64,37 +64,46 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
       const { messages: conversationMessages } =
         await conversationService.getConversationWithMessages(convId)
 
-      // ✅ Parse AIResponse if content is JSON AND reconstruct AIResponse structure for assistant messages
+      // ✅ Properly handle message content for both user and assistant messages
       const parsedMessages = conversationMessages.map((m) => {
-        // For assistant messages, we want to reconstruct the AIResponse structure
+        // For assistant messages, the content might be a string or an AIResponse object
         if (m.role === "assistant") {
-          let parsedResponse = m.content; // Default to the raw content
-          try {
-            // Try to parse the content (which should be the stringified 'response')
-            parsedResponse = JSON.parse(m.content as unknown as string);
-          } catch (parseError) {
-            console.warn("Could not parse message content as JSON, using raw string.", parseError);
-            // If parsing fails, we keep the raw string, which is fine for display.
+          // Check if content is already an object (AIResponse) or needs to be parsed
+          let content = m.content;
+          let sources = m.sources || [];
+          let showDisclaimer = m.show_disclaimer || false;
+          
+          // If content is a string that looks like JSON, try to parse it
+          if (typeof m.content === "string") {
+            try {
+              const parsedContent = JSON.parse(m.content);
+              // If parsing succeeds and it looks like an AIResponse object
+              if (parsedContent && typeof parsedContent === "object" && "response" in parsedContent) {
+                content = parsedContent.response;
+                sources = parsedContent.sources || [];
+                showDisclaimer = parsedContent.show_disclaimer || false;
+              }
+              // If it's just a regular string, keep it as is
+            } catch (e) {
+              // If parsing fails, it's just a regular string response, which is fine
+              console.log("Could not parse message content as JSON, using raw string.", e);
+            }
+          } else if (typeof m.content === "object" && m.content !== null) {
+            // If content is already an object, extract the fields
+            content = (m.content as any).response || m.content;
+            sources = (m.content as any).sources || [];
+            showDisclaimer = (m.content as any).show_disclaimer || false;
           }
 
-          // Return a message object where 'content' mimics the AIResponse structure
           return {
             ...m,
-            content: {
-              response: parsedResponse, // This is now the parsed string (or raw string if parse failed)
-              sources: m.sources || [],  // Use the sources array fetched from the DB
-              show_disclaimer: m.show_disclaimer || false, // Use the show_disclaimer flag from the DB
-              // You can add other AIResponse fields here if needed (e.g., usage, processing_time)
-            }
+            content,
+            sources,
+            show_disclaimer: showDisclaimer,
           };
         } else {
-          // For user messages, just try to parse or return as-is
-          try {
-            const parsed = JSON.parse(m.content as unknown as string)
-            return { ...m, content: parsed }
-          } catch {
-            return m // fallback: keep as string
-          }
+          // For user messages, content should be a string
+          return m;
         }
       })
 
@@ -190,7 +199,7 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
         id: `assistant-${Date.now()}`,
         conversation_id: convId,
         role: "assistant",
-        content: JSON.stringify(aiResponse.response),
+        content: aiResponse.response, // Use the response string directly
         sources: aiResponse.sources,
         show_disclaimer: aiResponse.show_disclaimer || false,  // Use show_disclaimer flag
         created_at: new Date().toISOString(),
@@ -200,7 +209,7 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
         ...prev,
         [convId]: dedupeMessages([
           ...(prev[convId] || []),
-          { ...assistantMessage, content: aiResponse }, // ✅ keep parsed in memory
+          assistantMessage, // ✅ keep as proper message structure
         ]),
       }))
     } catch (err) {
@@ -285,4 +294,3 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
       : undefined,
   }
 }
-
