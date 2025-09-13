@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import React, { useState, useMemo } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { useAuth } from "@/hooks/useAuth"
