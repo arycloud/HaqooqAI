@@ -25,6 +25,18 @@ export const useAuth = () => {
 
   useEffect(() => {
     initializeAuth()
+    
+    // Listen for auth expiration events
+    const handleAuthExpired = (event: CustomEvent) => {
+      const message = event.detail?.message || 'Your session has expired. Please log in again.'
+      handleAuthError(message, true)
+    }
+    
+    window.addEventListener('auth-expired', handleAuthExpired as EventListener)
+    
+    return () => {
+      window.removeEventListener('auth-expired', handleAuthExpired as EventListener)
+    }
   }, [])
 
   /** ---------------------------
@@ -144,7 +156,12 @@ export const useAuth = () => {
   const handleAuthError = (message: string, redirectToLogin = false) => {
     _setError(message)
     setError(message)
-    toast.error(message)
+    
+    // Don't show toast for "Authentication expired" messages as they're already handled
+    if (!message.includes('expired')) {
+      toast.error(message)
+    }
+    
     console.error('Auth Error:', message)
 
     window.history.replaceState({}, document.title, location.pathname)

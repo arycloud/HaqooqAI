@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 // import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -11,6 +11,7 @@ interface AuthGuardProps {
 export function AuthGuard({ children }: AuthGuardProps) {
   const { user, loading, isAuthenticated } = useAuth()
   const location = useLocation()
+  const [authExpired, setAuthExpired] = useState(false)
 
   // Check if we're currently processing an OAuth callback
   const isProcessingOAuth = () => {
@@ -22,11 +23,24 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const isDevelopmentMode = import.meta.env.VITE_REACT_APP_ENV === 'development';
   console.log('Development Mode:', isDevelopmentMode);
   console.log('User Authenticated:', isAuthenticated);
+  
+  // Listen for auth expiration
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      setAuthExpired(true)
+    }
+    
+    window.addEventListener('auth-expired', handleAuthExpired)
+    
+    return () => {
+      window.removeEventListener('auth-expired', handleAuthExpired)
+    }
+  }, [])
+
   if (isDevelopmentMode) {
     console.warn('Authentication bypassed in development mode');
     return <>{children}</>;
   } 
-
 
   useEffect(() => {
     // If we're on a protected route and not authenticated,
@@ -48,7 +62,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
     )
   }
 
-  if (!isAuthenticated || !user) {
+  // If auth has expired, redirect to login
+  if (authExpired || !isAuthenticated || !user) {
     // Redirect to login with the current location as state
     return <Navigate to="/login" state={{ from: location }} replace />
   }

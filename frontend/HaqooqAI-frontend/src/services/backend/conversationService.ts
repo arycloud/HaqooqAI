@@ -38,6 +38,7 @@ export class ConversationService {
           return []
         }
         if (status === 401) {
+          // Token expired, let the axios interceptor handle logout
           throw new Error('Authentication expired. Please login again.')
         }
       }
@@ -70,6 +71,12 @@ export class ConversationService {
       }
     } catch (error) {
       console.error('Failed to create conversation:', error)
+      
+      // Handle authentication errors
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        throw new Error('Authentication expired. Please login again.')
+      }
+      
       throw new Error('Failed to create conversation')
     }
   }
@@ -112,6 +119,12 @@ export class ConversationService {
       }
     } catch (error) {
       console.error('Failed to fetch conversation:', error)
+      
+      // Handle authentication errors
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        throw new Error('Authentication expired. Please login again.')
+      }
+      
       throw new Error('Failed to fetch conversation')
     }
   }
@@ -150,6 +163,12 @@ export class ConversationService {
       }
     } catch (error) {
       console.error('Failed to create message:', error)
+      
+      // Handle authentication errors
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        throw new Error('Authentication expired. Please login again.')
+      }
+      
       throw new Error('Failed to create message')
     }
   }
@@ -177,6 +196,12 @@ export class ConversationService {
       }
     } catch (error) {
       console.error('Failed to update conversation:', error)
+      
+      // Handle authentication errors
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        throw new Error('Authentication expired. Please login again.')
+      }
+      
       throw new Error('Failed to update conversation')
     }
   }
@@ -201,6 +226,12 @@ export class ConversationService {
       })
     } catch (error) {
       console.error('Failed to delete conversation:', error)
+      
+      // Handle authentication errors
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        throw new Error('Authentication expired. Please login again.')
+      }
+      
       throw new Error('Failed to delete conversation')
     }
   }
