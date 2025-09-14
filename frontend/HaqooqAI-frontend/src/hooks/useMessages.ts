@@ -73,6 +73,9 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
           let sources = m.sources || [];
           let showDisclaimer = m.show_disclaimer || false;
           
+          // Debug: Log the raw content
+          console.log('Raw message content from database:', { id: m.id, content, contentType: typeof content });
+          
           // If content is a string that looks like JSON, try to parse it
           if (typeof m.content === "string") {
             // Only try to parse as JSON if it looks like JSON (starts with { or [)

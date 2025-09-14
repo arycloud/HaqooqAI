@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import rehypeRaw from "rehype-raw"
 import { useAuth } from "@/hooks/useAuth"
 import { Message, Source } from "@/types/message"
 import { cn } from "@/lib/utils"
@@ -133,6 +134,56 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
     }
   }
 
+  /** Fix specific table formatting issues, especially for the user's example */
+  const fixTableFormatting = (content: string): string => {
+    // Log the content before fixing
+    console.log('Content before table fixing:', content);
+    
+    let fixedContent = content;
+    
+    // Specific fix for the user's broken table format:
+    // Handle the exact case from the user's example where we have double pipes
+    // like: ||----------------------------|----------------------------- |----------------------------|
+    
+    // Step 1: Fix the specific pattern of double pipes at the beginning of separator lines
+    // This handles the case: ||---|---|---|  ->  |---|---|---|
+    fixedContent = fixedContent.replace(/\|\|(-*\|)/g, '|$1');
+    
+    // Step 2: Fix table headers and separators that are malformed
+    fixedContent = fixedContent
+      // Fix table headers with their separators
+      .replace(/(\|[^\n]*\|)\s*\n(\|[-|\s]*\|)/g, (match, headerRow, separatorRow) => {
+        // Clean up the separator row to ensure proper markdown table format
+        let cleanSeparator = separatorRow;
+        
+        // Replace malformed separator cells with proper ones
+        cleanSeparator = cleanSeparator.replace(/\|([^|]*)\|/g, (cell: string) => {
+          const trimmed = cell.trim();
+          // If cell is empty or contains only dashes/spaces/pipe characters, make it a proper separator
+          if (trimmed === '' || /^[-|\s]*$/.test(trimmed)) {
+            return '|---|';
+          }
+          // If it already looks like a proper separator, keep it
+          if (trimmed.includes('---')) {
+            return cell;
+          }
+          // Otherwise, make it a proper separator
+          return '|---|';
+        });
+        
+        return `${headerRow}\n${cleanSeparator}`;
+      })
+      // Fix table data rows that might be broken
+      .replace(/(\|[-|\s]*\|)\s*\n(\|[^\n]*\|)/g, '$1\n$2')
+      // Normalize excessive whitespace while preserving table structure
+      .replace(/\n{3,}/g, '\n\n');
+    
+    // Log the content after fixing
+    console.log('Content after table fixing:', fixedContent);
+    
+    return fixedContent;
+  };
+
   /** Render AI assistant content with clean markdown + structured boxes */
   const renderAssistantContent = (content: string | AIResponse) => {
     // Handle content that might be a string or an AIResponse object
@@ -162,43 +213,14 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
       console.log('Content is generic object, extracted sources:', sources);
     }
 
-    // Enhanced table formatting preprocessing with more comprehensive patterns
-    let processedContent = responseContent;
-    
-    // Comprehensive table formatting fixes
-    processedContent = processedContent
-      // Fix table headers - ensure proper separation
-      .replace(/(\|[^\n]*\|)\s*\n\s*(\|[^\n]*\|)/g, '$1\n$2')
-      // Fix table separators - ensure proper dashes
-      .replace(/(\|[^\n]*\|)\s*\n\s*(\|\s*[-\s|]*\s*\|)/g, (match, headerRow, separatorRow) => {
-        // Ensure the separator row has proper dashes
-        const fixedSeparator = separatorRow.replace(/\|([^|]*)\|/g, (cell: string) => {
-          // If the cell contains only whitespace or pipes, replace with dashes
-          const trimmedCell = cell.trim();
-          if (trimmedCell === '' || trimmedCell === '|' || trimmedCell.replace(/\|/g, '').trim() === '') {
-            // Create a proper separator with at least 3 dashes
-            return '|---|';
-          }
-          return cell;
-        });
-        return `${headerRow}\n${fixedSeparator}`;
-      })
-      // Fix table rows - ensure proper separation
-      .replace(/(\|\s*[-\s|]*\s*\|)\s*\n\s*(\|[^\n]*\|)/g, '$1\n$2')
-      // Fix broken table rows that are split across lines
-      .replace(/(\|[^\n]*\|)\s*\n\s*([^\n|]*\|)/g, (match, row1, row2) => {
-        // Check if this looks like a broken table row
-        if (row1.split('|').length > 2 && row2.split('|').length > 2) {
-          return `${row1} ${row2}`;
-        }
-        return match;
-      })
-      // Fix specific case from user example: broken table separators
-      .replace(/(\|[-\s|]*\|)\s*\n\s*(\|[-\s|]*\|)/g, '$1\n$2')
-      // Fix table rows with missing pipes
-      .replace(/(\|[^\n]*\|)\s*\n([^\n|]*\|)/g, '$1\n|$2')
-      // Normalize excessive newlines but preserve structure
-      .replace(/\n{3,}/g, '\n\n');
+    // Log the raw content before processing
+    console.log('Raw content before table processing:', responseContent);
+
+    // Apply table formatting fixes
+    let processedContent = fixTableFormatting(responseContent);
+
+    // Log the processed content after table formatting
+    console.log('Processed content after table formatting:', processedContent);
 
     // Standard disclaimer text to show when show_disclaimer is true
     const disclaimerText = "This response is for informational purposes only and does not constitute legal advice.";
@@ -219,11 +241,31 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
             "prose-strong:text-[var(--text-primary)]",
             "prose-blockquote:text-[var(--text-secondary)]",
             "prose-pre:bg-[#0b1324] prose-pre:text-slate-100 prose-pre:rounded-lg",
-            "prose-code:bg-[#0b1324] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded"
+            "prose-code:bg-[#0b1324] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded",
+            // Table styling
+            "prose-table:border-spacing-0",
+            "prose-table:border-collapse",
+            "prose-table:overflow-auto",
+            "prose-table:w-full",
+            "prose-table:max-w-full",
+            "prose-table:my-4",
+            "prose-thead:bg-[var(--hover-color)]",
+            "prose-tr:border-b",
+            "prose-tr:border-[var(--border-color)]",
+            "prose-th:px-4",
+            "prose-th:py-2",
+            "prose-th:text-left",
+            "prose-th:font-semibold",
+            "prose-td:px-4",
+            "prose-td:py-2"
           )}
         >
           <MarkdownErrorBoundary fallback={<div className="whitespace-pre-wrap">{processedContent}</div>}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
+              remarkRehypeOptions={{ passThrough: ['link'] }}
+            >
               {processedContent}
             </ReactMarkdown>
           </MarkdownErrorBoundary>

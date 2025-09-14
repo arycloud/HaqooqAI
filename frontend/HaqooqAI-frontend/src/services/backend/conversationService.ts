@@ -117,7 +117,7 @@ export class ConversationService {
           let showDisclaimer = msg.show_disclaimer || false;
           
           // Debug: Log the raw message data
-          console.log('Raw message data from backend:', { id: msg.id, content: msg.content, sources: msg.sources });
+          console.log('Raw message data from backend:', { id: msg.id, content: msg.content, sources: msg.sources, contentType: typeof msg.content });
           
           // If content is a string that looks like JSON, try to parse it
           if (typeof msg.content === "string") {
