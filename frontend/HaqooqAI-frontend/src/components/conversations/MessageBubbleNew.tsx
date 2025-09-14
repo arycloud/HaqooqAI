@@ -77,6 +77,21 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
   const [showActions, setShowActions] = useState(false)  // New: Collapsed menu
   const [showSources, setShowSources] = useState(false)
 
+  // Debug: Log message content and sources
+  React.useEffect(() => {
+    if (!isUser) {
+      console.log('MessageBubbleNew - Message data:', {
+        id: message.id,
+        role: message.role,
+        content: message.content,
+        sources: message.sources,
+        hasSources: !!message.sources && message.sources.length > 0,
+        contentType: typeof message.content,
+        contentKeys: typeof message.content === 'object' && message.content !== null ? Object.keys(message.content) : null
+      });
+    }
+  }, [isUser, message]);
+
   const timestamp = useMemo(() => {
     try {
       return message.created_at ? new Date(message.created_at) : new Date()
@@ -125,22 +140,65 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
     let sources: Source[] = [];
     let showDisclaimer = false;
     
+    console.log('renderAssistantContent called with:', { content, contentType: typeof content });
+    
     if (typeof content === "string") {
       // If it's a string, use it directly
       responseContent = content;
-    } else if (content && typeof content === "object") {
+      // Also check if the message object has sources
+      sources = message.sources || [];
+      console.log('Content is string, using message.sources:', sources);
+    } else if (content && typeof content === "object" && "response" in content) {
       // If it's an AIResponse object, extract the fields
       responseContent = content.response || "";
       sources = content.sources || [];
       showDisclaimer = content.show_disclaimer || false;
+      console.log('Content is AIResponse object, extracted sources:', sources);
+    } else if (content && typeof content === "object") {
+      // If it's some other object, try to handle it gracefully
+      responseContent = (content as any).response || JSON.stringify(content);
+      sources = (content as any).sources || message.sources || [];
+      showDisclaimer = (content as any).show_disclaimer || false;
+      console.log('Content is generic object, extracted sources:', sources);
     }
 
-    // Preprocess content to handle potential markdown table issues
-    // Add extra newlines around tables to ensure proper parsing
-    const processedContent = responseContent
-      .replace(/(\|\s*---+\s*\|)/g, '\n$1') // Add newline before table separator
-      .replace(/(\|\s*\S+\s*\|)/g, '\n$1') // Add newlines around table rows
-      .replace(/\n{3,}/g, '\n\n'); // Normalize multiple newlines
+    // Enhanced table formatting preprocessing with more comprehensive patterns
+    let processedContent = responseContent;
+    
+    // Comprehensive table formatting fixes
+    processedContent = processedContent
+      // Fix table headers - ensure proper separation
+      .replace(/(\|[^\n]*\|)\s*\n\s*(\|[^\n]*\|)/g, '$1\n$2')
+      // Fix table separators - ensure proper dashes
+      .replace(/(\|[^\n]*\|)\s*\n\s*(\|\s*[-\s|]*\s*\|)/g, (match, headerRow, separatorRow) => {
+        // Ensure the separator row has proper dashes
+        const fixedSeparator = separatorRow.replace(/\|([^|]*)\|/g, (cell: string) => {
+          // If the cell contains only whitespace or pipes, replace with dashes
+          const trimmedCell = cell.trim();
+          if (trimmedCell === '' || trimmedCell === '|' || trimmedCell.replace(/\|/g, '').trim() === '') {
+            // Create a proper separator with at least 3 dashes
+            return '|---|';
+          }
+          return cell;
+        });
+        return `${headerRow}\n${fixedSeparator}`;
+      })
+      // Fix table rows - ensure proper separation
+      .replace(/(\|\s*[-\s|]*\s*\|)\s*\n\s*(\|[^\n]*\|)/g, '$1\n$2')
+      // Fix broken table rows that are split across lines
+      .replace(/(\|[^\n]*\|)\s*\n\s*([^\n|]*\|)/g, (match, row1, row2) => {
+        // Check if this looks like a broken table row
+        if (row1.split('|').length > 2 && row2.split('|').length > 2) {
+          return `${row1} ${row2}`;
+        }
+        return match;
+      })
+      // Fix specific case from user example: broken table separators
+      .replace(/(\|[-\s|]*\|)\s*\n\s*(\|[-\s|]*\|)/g, '$1\n$2')
+      // Fix table rows with missing pipes
+      .replace(/(\|[^\n]*\|)\s*\n([^\n|]*\|)/g, '$1\n|$2')
+      // Normalize excessive newlines but preserve structure
+      .replace(/\n{3,}/g, '\n\n');
 
     // Standard disclaimer text to show when show_disclaimer is true
     const disclaimerText = "This response is for informational purposes only and does not constitute legal advice.";
@@ -172,7 +230,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
         </div>
 
         {/* Sources */}
-        {sources.length > 0 && (
+        {(sources.length > 0 || (message.sources && message.sources.length > 0)) && (
           <div className="rounded-lg border border-[var(--border-color)] bg-[var(--hover-color)] overflow-hidden">  {/* Card style */}
             <button
               onClick={() => setShowSources(!showSources)}
@@ -182,14 +240,14 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
             >
               <span className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-sm text-[var(--secondary-color)]">library_books</span>
-                Sources ({sources.length})
+                Sources ({sources.length || (message.sources ? message.sources.length : 0)})
               </span>
               <span className="material-symbols-outlined transition-transform">{showSources ? 'expand_less' : 'expand_more'}</span>
             </button>
             {showSources && (
               <div className="px-4 pb-4">
                 <ul className="space-y-1 text-[15px] text-[var(--text-secondary)] list-disc list-inside"> 
-                  {sources.map((src, idx) => (
+                  {(sources.length > 0 ? sources : message.sources || []).map((src, idx) => (
                     <li key={idx}>
                       {src.url ? (
                         <a

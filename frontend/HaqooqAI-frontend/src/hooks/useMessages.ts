@@ -99,6 +99,9 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
             showDisclaimer = (m.content as any).show_disclaimer || false;
           }
 
+          // Debug: Log the sources for this message
+          console.log('Processing message with sources:', { id: m.id, sources, content });
+
           return {
             ...m,
             content,
@@ -198,16 +201,22 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
         convId
       )
 
+      // Debug: Log the AI response
+      console.log('AI Response received:', aiResponse);
+
       // Create assistant message with structured content
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
         conversation_id: convId,
         role: "assistant",
-        content: aiResponse.response, // Use the response string directly
-        sources: aiResponse.sources,
+        content: aiResponse, // Pass the entire AIResponse object to preserve structure
+        sources: aiResponse.sources || [], // Explicitly set sources
         show_disclaimer: aiResponse.show_disclaimer || false,  // Use show_disclaimer flag
         created_at: new Date().toISOString(),
       }
+
+      // Debug: Log the assistant message
+      console.log('Creating assistant message:', assistantMessage);
 
       setMessages((prev) => ({
         ...prev,

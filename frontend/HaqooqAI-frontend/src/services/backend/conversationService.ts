@@ -116,6 +116,9 @@ export class ConversationService {
           let sources = msg.sources || [];
           let showDisclaimer = msg.show_disclaimer || false;
           
+          // Debug: Log the raw message data
+          console.log('Raw message data from backend:', { id: msg.id, content: msg.content, sources: msg.sources });
+          
           // If content is a string that looks like JSON, try to parse it
           if (typeof msg.content === "string") {
             // Only try to parse as JSON if it looks like JSON (starts with { or [)
@@ -141,6 +144,9 @@ export class ConversationService {
             sources = msg.content.sources || [];
             showDisclaimer = msg.content.show_disclaimer || false;
           }
+
+          // Debug: Log the processed message data
+          console.log('Processed message data:', { id: msg.id, content, sources, showDisclaimer });
 
           return {
             id: msg.id,
@@ -185,9 +191,15 @@ export class ConversationService {
       // Handle content that might be an object or string
       let processedContent = content;
       let showDisclaimer = false;
+      let processedSources = sources || [];
       
-      // If content is an object, we might need to serialize it
-      if (typeof content === "object" && content !== null) {
+      // If content is an AIResponse object, extract the fields
+      if (typeof content === "object" && content !== null && "response" in content) {
+        processedContent = (content as any).response;
+        processedSources = (content as any).sources || [];
+        showDisclaimer = (content as any).show_disclaimer || false;
+      } else if (typeof content === "object" && content !== null) {
+        // If content is some other object, serialize it
         processedContent = JSON.stringify(content);
       }
 
@@ -195,7 +207,7 @@ export class ConversationService {
         conversation_id: conversationId,
         role,
         content: processedContent,
-        sources,
+        sources: processedSources,
         show_disclaimer: showDisclaimer,
         user_id: user.github_id,
         github_token: githubToken,
