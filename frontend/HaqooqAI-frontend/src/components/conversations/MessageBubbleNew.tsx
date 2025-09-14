@@ -263,8 +263,7 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
           <MarkdownErrorBoundary fallback={<div className="whitespace-pre-wrap">{processedContent}</div>}>
             <ReactMarkdown 
               remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeRaw]}
-              remarkRehypeOptions={{ passThrough: ['link'] }}
+              rehypePlugins={[]}
             >
               {processedContent}
             </ReactMarkdown>
