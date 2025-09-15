@@ -16,7 +16,7 @@ export class ConversationService {
       const response = await axios.get(`${BACKEND_URL}/conversations`, {
         params: { user_id: user.github_id },
         headers: { Authorization: `Bearer ${githubToken}` },
-        timeout: 30000, // 30 second timeout
+        timeout: 45000, // 45 second timeout
       })
 
       return (response.data.conversations || []).map((conv: any) => ({
@@ -128,7 +128,7 @@ export class ConversationService {
       const response = await axios.get(`${BACKEND_URL}/conversations/${conversationId}`, {
         params: { user_id: user.github_id, limit, offset },
         headers: { Authorization: `Bearer ${githubToken}` },
-        timeout: 30000, // 30 second timeout
+        timeout: 45000, // 45 second timeout
       })
 
       return {

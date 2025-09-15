@@ -51,7 +51,7 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
   }
 
   /** Load messages for a conversation */
-  const loadMessages = async (convId: string) => {
+  const loadMessages = async (convId: string, retryCount = 0) => {
     if (!convId) return
     try {
       if (isNewConversation) {
@@ -126,6 +126,16 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to load messages"
+      
+      // Retry mechanism for timeout errors (up to 2 retries)
+      if (errorMessage.includes('timeout') && retryCount < 2) {
+        console.warn(`Timeout occurred, retrying... (${retryCount + 1}/2)`);
+        setTimeout(() => {
+          loadMessages(convId, retryCount + 1);
+        }, 1000 * (retryCount + 1)); // Exponential backoff
+        return;
+      }
+      
       setError(errorMessage)
       console.error("Failed to load messages:", err)
       
