@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { AxiosInstance } from 'axios'
 import { BACKEND_URL } from '@/utils/constants'
 import { Conversation, Message } from '@/types/conversation'
 import { authService } from './authService'
@@ -13,7 +13,9 @@ export class ConversationService {
     if (!githubToken || !user) throw new Error('No authentication found')
 
     try {
-      const response = await axios.get(`${BACKEND_URL}/conversations`, {
+      // Create a new axios instance for each request to avoid connection pooling issues
+      const axiosInstance: AxiosInstance = axios.create()
+      const response = await axiosInstance.get(`${BACKEND_URL}/conversations`, {
         params: { user_id: user.github_id },
         headers: { Authorization: `Bearer ${githubToken}` },
         timeout: 45000, // 45 second timeout
@@ -73,7 +75,9 @@ export class ConversationService {
     if (!githubToken || !user) throw new Error('No authentication found')
 
     try {
-      const response = await axios.post(`${BACKEND_URL}/conversations`, {
+      // Create a new axios instance for each request to avoid connection pooling issues
+      const axiosInstance: AxiosInstance = axios.create()
+      const response = await axiosInstance.post(`${BACKEND_URL}/conversations`, {
         title,
         user_id: user.github_id,
         github_token: githubToken,
@@ -125,7 +129,9 @@ export class ConversationService {
     if (!githubToken || !user) throw new Error('No authentication found')
 
     try {
-      const response = await axios.get(`${BACKEND_URL}/conversations/${conversationId}`, {
+      // Create a new axios instance for each request to avoid connection pooling issues
+      const axiosInstance: AxiosInstance = axios.create()
+      const response = await axiosInstance.get(`${BACKEND_URL}/conversations/${conversationId}`, {
         params: { user_id: user.github_id, limit, offset },
         headers: { Authorization: `Bearer ${githubToken}` },
         timeout: 45000, // 45 second timeout
@@ -242,7 +248,9 @@ export class ConversationService {
         processedContent = JSON.stringify(content);
       }
 
-      const response = await axios.post(`${BACKEND_URL}/conversations/${conversationId}/messages`, {
+      // Create a new axios instance for each request to avoid connection pooling issues
+      const axiosInstance: AxiosInstance = axios.create()
+      const response = await axiosInstance.post(`${BACKEND_URL}/conversations/${conversationId}/messages`, {
         conversation_id: conversationId,
         role,
         content: processedContent,
@@ -327,7 +335,9 @@ export class ConversationService {
     if (!githubToken || !user) throw new Error('No authentication found')
 
     try {
-      const response = await axios.put(`${BACKEND_URL}/conversations/${conversationId}`, null, {
+      // Create a new axios instance for each request to avoid connection pooling issues
+      const axiosInstance: AxiosInstance = axios.create()
+      const response = await axiosInstance.put(`${BACKEND_URL}/conversations/${conversationId}`, null, {
         params: { title, user_id: user.github_id },
         headers: { Authorization: `Bearer ${githubToken}` },
         timeout: 15000, // 15 second timeout
@@ -376,7 +386,9 @@ export class ConversationService {
     }
 
     try {
-      await axios.delete(`${BACKEND_URL}/conversations/${conversationId}`, {
+      // Create a new axios instance for each request to avoid connection pooling issues
+      const axiosInstance: AxiosInstance = axios.create()
+      await axiosInstance.delete(`${BACKEND_URL}/conversations/${conversationId}`, {
         params: { user_id: user.github_id },
         headers: {
           'Authorization': `Bearer ${githubToken}`,

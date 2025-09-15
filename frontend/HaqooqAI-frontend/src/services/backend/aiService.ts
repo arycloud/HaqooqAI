@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { AxiosInstance } from 'axios'
 import { BACKEND_URL, API_ENDPOINTS } from '@/utils/constants'
 import { QueryRequest, AIResponse, QuotaResponse, MultiProviderApiKeyResponse,
   MultiProviderApiKeyRequest,
@@ -73,7 +73,9 @@ export class AIService {
         throw new Error('Query must not exceed 1000 characters')
       }
 
-      const response = await axios.post<AIResponse>(
+      // Create a new axios instance for each request to avoid connection pooling issues
+      const axiosInstance: AxiosInstance = axios.create()
+      const response = await axiosInstance.post<AIResponse>(
         `${BACKEND_URL}${API_ENDPOINTS.ASK_QUESTION}`,
         requestData,
         {
@@ -144,7 +146,9 @@ export class AIService {
     }
 
     try {
-      const response = await axios.get<QuotaResponse>(
+      // Create a new axios instance for each request to avoid connection pooling issues
+      const axiosInstance: AxiosInstance = axios.create()
+      const response = await axiosInstance.get<QuotaResponse>(
         `${BACKEND_URL}${API_ENDPOINTS.GET_QUOTA}/${userId}`,
         {
           headers: {
@@ -186,7 +190,9 @@ export class AIService {
     }
 
     try {
-      const response = await axios.post<MultiProviderApiKeyResponse>(
+      // Create a new axios instance for each request to avoid connection pooling issues
+      const axiosInstance: AxiosInstance = axios.create()
+      const response = await axiosInstance.post<MultiProviderApiKeyResponse>(
         `${BACKEND_URL}${API_ENDPOINTS.USER_API_KEYS}`,
         {
           provider,
@@ -258,7 +264,9 @@ export class AIService {
     }
 
     try {
-      const response = await axios.get<AllProvidersResponse>(
+      // Create a new axios instance for each request to avoid connection pooling issues
+      const axiosInstance: AxiosInstance = axios.create()
+      const response = await axiosInstance.get<AllProvidersResponse>(
         `${BACKEND_URL}${API_ENDPOINTS.USER_API_KEYS}`,
         {
           params: {
@@ -313,7 +321,9 @@ export class AIService {
     }
 
     try {
-      const response = await axios.delete<MultiProviderApiKeyResponse>(
+      // Create a new axios instance for each request to avoid connection pooling issues
+      const axiosInstance: AxiosInstance = axios.create()
+      const response = await axiosInstance.delete<MultiProviderApiKeyResponse>(
         `${BACKEND_URL}${API_ENDPOINTS.USER_API_KEY_PROVIDER}/${provider}`,
         {
           data: {
@@ -353,7 +363,9 @@ export class AIService {
    */
   async getRoutingStats(): Promise<any> {
     try {
-      const response = await axios.get(`${BACKEND_URL}${API_ENDPOINTS.STATS_ROUTING}`, {
+      // Create a new axios instance for each request to avoid connection pooling issues
+      const axiosInstance: AxiosInstance = axios.create()
+      const response = await axiosInstance.get(`${BACKEND_URL}${API_ENDPOINTS.STATS_ROUTING}`, {
         timeout: 10000, // 10 second timeout
       })
       return response.data
@@ -384,7 +396,9 @@ export class AIService {
    */
   async healthCheck(): Promise<boolean> {
     try {
-      const response = await axios.get(`${BACKEND_URL}/health`, {
+      // Create a new axios instance for each request to avoid connection pooling issues
+      const axiosInstance: AxiosInstance = axios.create()
+      const response = await axiosInstance.get(`${BACKEND_URL}/health`, {
         timeout: 5000,
       })
       return response.status === 200
