@@ -127,12 +127,14 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
       const errorMessage =
         err instanceof Error ? err.message : "Failed to load messages"
       
-      // Retry mechanism for timeout errors (up to 2 retries)
-      if (errorMessage.includes('timeout') && retryCount < 2) {
-        console.warn(`Timeout occurred, retrying... (${retryCount + 1}/2)`);
+      // Retry mechanism for timeout errors (up to 3 retries with exponential backoff)
+      if (errorMessage.includes('timeout') && retryCount < 3) {
+        console.warn(`Timeout occurred, retrying... (${retryCount + 1}/3)`);
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = Math.pow(2, retryCount) * 1000;
         setTimeout(() => {
           loadMessages(convId, retryCount + 1);
-        }, 1000 * (retryCount + 1)); // Exponential backoff
+        }, delay);
         return;
       }
       
@@ -286,9 +288,19 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
         toast.error(
           "The AI service is taking longer than expected to respond. Please try again or rephrase your question."
         )
+      } else if (errorMessage.includes("timeout")) {
+        toast.error(
+          "Request timeout. The server is taking too long to respond. Please try again later."
+        )
       } else {
         toast.error(errorMessage)
       }
+
+      // Remove the temporary message if there was an error
+      setMessages((prev) => ({
+        ...prev,
+        [convId]: (prev[convId] || []).filter((m) => !m.id.startsWith('temp-')),
+      }))
 
       throw err
     } finally {

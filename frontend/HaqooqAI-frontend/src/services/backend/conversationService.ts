@@ -19,6 +19,8 @@ export class ConversationService {
         params: { user_id: user.github_id },
         headers: { Authorization: `Bearer ${githubToken}` },
         timeout: 45000, // 45 second timeout
+        // Add additional configuration to prevent connection hanging
+        signal: AbortSignal.timeout(45000),
       })
 
       return (response.data.conversations || []).map((conv: any) => ({
@@ -32,14 +34,14 @@ export class ConversationService {
       console.error('Failed to fetch conversations:', error)
       
       // Handle network timeout errors
-      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout'))) {
         // Timeout, return empty array to allow app to continue
         console.warn('Conversations request timeout, returning empty list')
         return []
       }
       
       // Handle network errors
-      if (axios.isAxiosError(error) && !error.response) {
+      if (axios.isAxiosError(error) && (!error.response || error.message?.includes('Network Error'))) {
         // Network error, return empty array to allow app to continue
         console.warn('Conversations network error, returning empty list')
         return []
@@ -83,6 +85,8 @@ export class ConversationService {
         github_token: githubToken,
       }, {
         timeout: 15000, // 15 second timeout
+        // Add additional configuration to prevent connection hanging
+        signal: AbortSignal.timeout(15000),
       })
 
       return {
@@ -103,12 +107,12 @@ export class ConversationService {
       }
       
       // Handle network timeout errors
-      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout'))) {
         throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
       }
       
       // Handle network errors
-      if (axios.isAxiosError(error) && !error.response) {
+      if (axios.isAxiosError(error) && (!error.response || error.message?.includes('Network Error'))) {
         throw new Error('Network error. Please check your internet connection and try again.')
       }
       
@@ -135,6 +139,8 @@ export class ConversationService {
         params: { user_id: user.github_id, limit, offset },
         headers: { Authorization: `Bearer ${githubToken}` },
         timeout: 45000, // 45 second timeout
+        // Add additional configuration to prevent connection hanging
+        signal: AbortSignal.timeout(45000),
       })
 
       return {
@@ -206,12 +212,12 @@ export class ConversationService {
       }
       
       // Handle network timeout errors
-      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout'))) {
         throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
       }
       
       // Handle network errors
-      if (axios.isAxiosError(error) && !error.response) {
+      if (axios.isAxiosError(error) && (!error.response || error.message?.includes('Network Error'))) {
         throw new Error('Network error. Please check your internet connection and try again.')
       }
       
@@ -260,6 +266,8 @@ export class ConversationService {
         github_token: githubToken,
       }, {
         timeout: 15000, // 15 second timeout
+        // Add additional configuration to prevent connection hanging
+        signal: AbortSignal.timeout(15000),
       })
 
       // Handle the response content as well
@@ -313,12 +321,12 @@ export class ConversationService {
       }
       
       // Handle network timeout errors
-      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout'))) {
         throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
       }
       
       // Handle network errors
-      if (axios.isAxiosError(error) && !error.response) {
+      if (axios.isAxiosError(error) && (!error.response || error.message?.includes('Network Error'))) {
         throw new Error('Network error. Please check your internet connection and try again.')
       }
       
@@ -341,6 +349,8 @@ export class ConversationService {
         params: { title, user_id: user.github_id },
         headers: { Authorization: `Bearer ${githubToken}` },
         timeout: 15000, // 15 second timeout
+        // Add additional configuration to prevent connection hanging
+        signal: AbortSignal.timeout(15000),
       })
 
       return {
@@ -361,12 +371,12 @@ export class ConversationService {
       }
       
       // Handle network timeout errors
-      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout'))) {
         throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
       }
       
       // Handle network errors
-      if (axios.isAxiosError(error) && !error.response) {
+      if (axios.isAxiosError(error) && (!error.response || error.message?.includes('Network Error'))) {
         throw new Error('Network error. Please check your internet connection and try again.')
       }
       
@@ -394,6 +404,8 @@ export class ConversationService {
           'Authorization': `Bearer ${githubToken}`,
         },
         timeout: 15000, // 15 second timeout
+        // Add additional configuration to prevent connection hanging
+        signal: AbortSignal.timeout(15000),
       })
     } catch (error) {
       console.error('Failed to delete conversation:', error)
@@ -406,12 +418,12 @@ export class ConversationService {
       }
       
       // Handle network timeout errors
-      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout'))) {
         throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
       }
       
       // Handle network errors
-      if (axios.isAxiosError(error) && !error.response) {
+      if (axios.isAxiosError(error) && (!error.response || error.message?.includes('Network Error'))) {
         throw new Error('Network error. Please check your internet connection and try again.')
       }
       

@@ -95,11 +95,14 @@ export class AIService {
 
       return response.data
     } catch (error) {
-      // Retry mechanism for timeout errors (up to 1 retry)
-      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED' && retryCount < 1) {
-        console.warn(`AI request timeout, retrying... (${retryCount + 1}/1)`);
-        // Wait 2 seconds before retrying
-        await new Promise(resolve => setTimeout(resolve, 2000));
+      // Retry mechanism for timeout errors (up to 2 retries with exponential backoff)
+      if (axios.isAxiosError(error) && 
+          (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) && 
+          retryCount < 2) {
+        console.warn(`AI request timeout, retrying... (${retryCount + 1}/2)`);
+        // Exponential backoff: 2s, then 4s
+        const delay = Math.pow(2, retryCount + 1) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
         return this.askQuestion(query, userId, conversationId, apiKeys, retryCount + 1);
       }
       
@@ -113,8 +116,11 @@ export class AIService {
         if (status === 400) throw new Error(detail || 'Invalid request')
         if (status === 503) throw new Error(detail || 'Service temporarily unavailable. Try again later.')
         if (status === 500) throw new Error(detail || 'AI service error')
-        if (error.code === 'ECONNABORTED') {
+        if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
           throw new Error('Request timeout. The AI service is taking too long to respond.')
+        }
+        if (error.message?.includes('Network Error')) {
+          throw new Error('Network error. Please check your internet connection and try again.')
         }
 
         console.error('AI service error details:', {
@@ -163,12 +169,12 @@ export class AIService {
       console.error('Failed to check quota:', error)
       
       // Handle network timeout errors
-      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout'))) {
         throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
       }
       
       // Handle network errors
-      if (axios.isAxiosError(error) && !error.response) {
+      if (axios.isAxiosError(error) && (!error.response || error.message?.includes('Network Error'))) {
         throw new Error('Network error. Please check your internet connection and try again.')
       }
       
@@ -285,13 +291,13 @@ export class AIService {
       console.error('Failed to get provider statuses:', error)
       
       // Handle network timeout errors
-      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout'))) {
         console.warn('Provider statuses request timeout, returning empty array')
         return []
       }
       
       // Handle network errors
-      if (axios.isAxiosError(error) && !error.response) {
+      if (axios.isAxiosError(error) && (!error.response || error.message?.includes('Network Error'))) {
         console.warn('Provider statuses network error, returning empty array')
         return []
       }

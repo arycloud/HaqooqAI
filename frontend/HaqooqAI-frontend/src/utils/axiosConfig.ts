@@ -2,6 +2,11 @@ import axios from 'axios'
 import toast from 'react-hot-toast'
 import { authService } from '@/services/backend/authService'
 
+// Configure axios defaults
+axios.defaults.timeout = 30000; // 30 second default timeout
+axios.defaults.headers.common['Content-Type'] = 'application/json';
+axios.defaults.headers.common['Accept'] = 'application/json';
+
 // Helper function to trigger connection error events
 function triggerConnectionError(type: 'server' | 'network', message: string) {
   const event = new CustomEvent('connection-error', {
@@ -10,8 +15,8 @@ function triggerConnectionError(type: 'server' | 'network', message: string) {
   window.dispatchEvent(event)
 }
 
-// Global axios configuration for better error handling
-axios.defaults.timeout = 15000 // 15 second timeout
+// Note: We're not setting a global timeout to allow individual services to configure their own timeouts
+// This prevents connection hanging issues by allowing fine-grained control per service
 
 // Response interceptor to handle 502 Bad Gateway and other server errors
 axios.interceptors.response.use(
@@ -122,5 +127,39 @@ axios.interceptors.request.use(
     return Promise.reject(error)
   }
 )
+
+// Response interceptor for retry logic
+axios.interceptors.response.use(undefined, async (error) => {
+  const config = error.config;
+  
+  // If there's no config, we can't retry
+  if (!config) {
+    return Promise.reject(error);
+  }
+  
+  // Set default retry count if not set
+  config.retryCount = config.retryCount || 0;
+  
+  // Retry on network errors or 5xx errors, up to 3 times
+  if ((error.code === 'ECONNABORTED' || 
+       error.message?.includes('timeout') ||
+       error.message?.includes('Network Error') ||
+       (error.response?.status && error.response.status >= 500)) &&
+      config.retryCount < 3) {
+    
+    config.retryCount += 1;
+    
+    // Exponential backoff
+    const delay = Math.pow(2, config.retryCount) * 1000;
+    
+    // Wait before retrying
+    await new Promise(resolve => setTimeout(resolve, delay));
+    
+    // Retry the request
+    return axios(config);
+  }
+  
+  return Promise.reject(error);
+});
 
 export default axios
