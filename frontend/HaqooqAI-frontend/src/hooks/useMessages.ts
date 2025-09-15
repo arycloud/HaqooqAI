@@ -282,6 +282,10 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
         toast.error(
           "Unable to route your query to an available provider. Please try again."
         )
+      } else if (errorMessage.includes("AI service is taking too long to respond")) {
+        toast.error(
+          "The AI service is taking longer than expected to respond. Please try again or rephrase your question."
+        )
       } else {
         toast.error(errorMessage)
       }

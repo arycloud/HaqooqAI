@@ -19,7 +19,8 @@ export class AIService {
       groq?: string;
       gemini?: string;
       openai?: string;
-    }
+    },
+    retryCount = 0
   ): Promise<AIResponse> {
     const githubToken = authService.getStoredToken()
     if (!githubToken) {
@@ -80,7 +81,7 @@ export class AIService {
             'Authorization': `Bearer ${githubToken}`,
             'Content-Type': 'application/json',
           },
-          timeout: 30000, // 30 second timeout
+          timeout: 60000, // 60 second timeout
         }
       )
 
@@ -92,6 +93,14 @@ export class AIService {
 
       return response.data
     } catch (error) {
+      // Retry mechanism for timeout errors (up to 1 retry)
+      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED' && retryCount < 1) {
+        console.warn(`AI request timeout, retrying... (${retryCount + 1}/1)`);
+        // Wait 2 seconds before retrying
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        return this.askQuestion(query, userId, conversationId, apiKeys, retryCount + 1);
+      }
+      
       if (axios.isAxiosError(error)) {
         const status = error.response?.status
         const detail = error.response?.data?.detail
