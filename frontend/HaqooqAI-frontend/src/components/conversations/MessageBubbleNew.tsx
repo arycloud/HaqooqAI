@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
-import rehypeRaw from "rehype-raw"
 import { useAuth } from "@/hooks/useAuth"
 import { Message, Source } from "@/types/message"
 import { cn } from "@/lib/utils"
@@ -263,7 +262,6 @@ export function MessageBubbleNew({ message, isLoading = false }: MessageBubbleNe
           <MarkdownErrorBoundary fallback={<div className="whitespace-pre-wrap">{processedContent}</div>}>
             <ReactMarkdown 
               remarkPlugins={[remarkGfm]}
-              rehypePlugins={[]}
             >
               {processedContent}
             </ReactMarkdown>

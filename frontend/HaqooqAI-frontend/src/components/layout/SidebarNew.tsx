@@ -213,7 +213,7 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
 
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="truncate text-sm text-white max-w-[160px]">
+                          <span className="truncate text-sm text-white max-w-[120px]">
                             {conversation.title || 'Untitled'}
                           </span>
                           <span className="text-[10px] text-[var(--text-secondary)]">

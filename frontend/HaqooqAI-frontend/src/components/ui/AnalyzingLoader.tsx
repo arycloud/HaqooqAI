@@ -17,7 +17,7 @@ export function AnalyzingLoader() {
   useEffect(() => {
     const interval = setInterval(
       () => setStepIndex((prev) => (prev + 1) % ANALYZING_STEPS.length),
-      4000
+      5000
     );
     return () => clearInterval(interval);
   }, []);

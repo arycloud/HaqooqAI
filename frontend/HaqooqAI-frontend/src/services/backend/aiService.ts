@@ -80,7 +80,7 @@ export class AIService {
             'Authorization': `Bearer ${githubToken}`,
             'Content-Type': 'application/json',
           },
-          timeout: 60000, // 60 second timeout
+          timeout: 120000, // 60 second timeout
         }
       )
 
