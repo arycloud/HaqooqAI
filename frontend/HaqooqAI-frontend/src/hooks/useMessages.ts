@@ -128,6 +128,17 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
         err instanceof Error ? err.message : "Failed to load messages"
       setError(errorMessage)
       console.error("Failed to load messages:", err)
+      
+      // Show user-friendly toast for specific errors
+      if (errorMessage.includes('timeout')) {
+        toast.error('Request timeout. The server is taking too long to respond. Please try again later.')
+      } else if (errorMessage.includes('Network error')) {
+        toast.error('Network error. Please check your internet connection and try again.')
+      } else if (errorMessage.includes('Authentication expired')) {
+        toast.error('Session expired. Please log in again.')
+      } else {
+        toast.error('Failed to load messages. Please try again.')
+      }
     } finally {
       if (isNewConversation) {
         setSetupLoading(false)

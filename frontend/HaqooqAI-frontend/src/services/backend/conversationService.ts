@@ -29,6 +29,20 @@ export class ConversationService {
     } catch (error) {
       console.error('Failed to fetch conversations:', error)
       
+      // Handle network timeout errors
+      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+        // Timeout, return empty array to allow app to continue
+        console.warn('Conversations request timeout, returning empty list')
+        return []
+      }
+      
+      // Handle network errors
+      if (axios.isAxiosError(error) && !error.response) {
+        // Network error, return empty array to allow app to continue
+        console.warn('Conversations network error, returning empty list')
+        return []
+      }
+      
       // Handle server errors gracefully
       if (axios.isAxiosError(error)) {
         const status = error.response?.status
@@ -44,7 +58,9 @@ export class ConversationService {
         }
       }
       
-      throw new Error('Failed to fetch conversations')
+      // For other errors, still return empty array to prevent app crash
+      console.warn('Failed to fetch conversations, returning empty list')
+      return []
     }
   }
 
@@ -80,6 +96,16 @@ export class ConversationService {
         // Token expired, let the axios interceptor handle logout
         // Don't show error here as axios interceptor will handle it
         throw new Error('Authentication expired. Please login again.')
+      }
+      
+      // Handle network timeout errors
+      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+        throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
+      }
+      
+      // Handle network errors
+      if (axios.isAxiosError(error) && !error.response) {
+        throw new Error('Network error. Please check your internet connection and try again.')
       }
       
       throw new Error('Failed to create conversation')
@@ -171,6 +197,16 @@ export class ConversationService {
         // Token expired, let the axios interceptor handle logout
         // Don't show error here as axios interceptor will handle it
         throw new Error('Authentication expired. Please login again.')
+      }
+      
+      // Handle network timeout errors
+      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+        throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
+      }
+      
+      // Handle network errors
+      if (axios.isAxiosError(error) && !error.response) {
+        throw new Error('Network error. Please check your internet connection and try again.')
       }
       
       throw new Error('Failed to fetch conversation')
@@ -268,6 +304,16 @@ export class ConversationService {
         throw new Error('Authentication expired. Please login again.')
       }
       
+      // Handle network timeout errors
+      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+        throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
+      }
+      
+      // Handle network errors
+      if (axios.isAxiosError(error) && !error.response) {
+        throw new Error('Network error. Please check your internet connection and try again.')
+      }
+      
       throw new Error('Failed to create message')
     }
   }
@@ -304,6 +350,16 @@ export class ConversationService {
         throw new Error('Authentication expired. Please login again.')
       }
       
+      // Handle network timeout errors
+      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+        throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
+      }
+      
+      // Handle network errors
+      if (axios.isAxiosError(error) && !error.response) {
+        throw new Error('Network error. Please check your internet connection and try again.')
+      }
+      
       throw new Error('Failed to update conversation')
     }
   }
@@ -335,6 +391,16 @@ export class ConversationService {
         // Token expired, let the axios interceptor handle logout
         // Don't show error here as axios interceptor will handle it
         throw new Error('Authentication expired. Please login again.')
+      }
+      
+      // Handle network timeout errors
+      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+        throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
+      }
+      
+      // Handle network errors
+      if (axios.isAxiosError(error) && !error.response) {
+        throw new Error('Network error. Please check your internet connection and try again.')
       }
       
       throw new Error('Failed to delete conversation')

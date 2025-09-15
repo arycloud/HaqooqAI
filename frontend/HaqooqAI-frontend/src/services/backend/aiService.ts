@@ -148,6 +148,17 @@ export class AIService {
       return response.data
     } catch (error) {
       console.error('Failed to check quota:', error)
+      
+      // Handle network timeout errors
+      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+        throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
+      }
+      
+      // Handle network errors
+      if (axios.isAxiosError(error) && !error.response) {
+        throw new Error('Network error. Please check your internet connection and try again.')
+      }
+      
       throw new Error('Failed to check quota')
     }
   }
@@ -256,13 +267,27 @@ export class AIService {
     } catch (error) {
       console.error('Failed to get provider statuses:', error)
       
+      // Handle network timeout errors
+      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+        console.warn('Provider statuses request timeout, returning empty array')
+        return []
+      }
+      
+      // Handle network errors
+      if (axios.isAxiosError(error) && !error.response) {
+        console.warn('Provider statuses network error, returning empty array')
+        return []
+      }
+      
       // Return empty array instead of throwing to allow graceful degradation
       if (axios.isAxiosError(error) && error.response?.status === 500) {
         console.warn('Backend error when fetching provider statuses, returning empty array')
         return []
       }
       
-      throw new Error('Failed to get provider statuses')
+      // For other errors, still return empty array to prevent app crash
+      console.warn('Failed to get provider statuses, returning empty array')
+      return []
     }
   }
 
@@ -299,6 +324,17 @@ export class AIService {
       }
     } catch (error) {
       console.error('Failed to delete API key:', error)
+      
+      // Handle network timeout errors
+      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+        throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
+      }
+      
+      // Handle network errors
+      if (axios.isAxiosError(error) && !error.response) {
+        throw new Error('Network error. Please check your internet connection and try again.')
+      }
+      
       throw new Error('Failed to delete API key')
     }
   }
@@ -314,6 +350,17 @@ export class AIService {
       return response.data
     } catch (error) {
       console.error('Failed to get routing stats:', error)
+      
+      // Handle network timeout errors
+      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+        throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
+      }
+      
+      // Handle network errors
+      if (axios.isAxiosError(error) && !error.response) {
+        throw new Error('Network error. Please check your internet connection and try again.')
+      }
+      
       throw new Error('Failed to get routing statistics')
     }
   }
@@ -334,6 +381,7 @@ export class AIService {
       return response.status === 200
     } catch (error) {
       console.error('Health check failed:', error)
+      // Still return false for any error to indicate health check failure
       return false
     }
   }
