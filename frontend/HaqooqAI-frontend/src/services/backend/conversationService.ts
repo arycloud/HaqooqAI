@@ -12,16 +12,29 @@ export class ConversationService {
     const user = authService.getStoredUser()
     if (!githubToken || !user) throw new Error('No authentication found')
 
+    // Create AbortController for better timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout
+
     try {
       // Create a new axios instance for each request to avoid connection pooling issues
-      const axiosInstance: AxiosInstance = axios.create()
+      const axiosInstance: AxiosInstance = axios.create({
+        signal: controller.signal
+      })
+      
       const response = await axiosInstance.get(`${BACKEND_URL}/conversations`, {
         params: { user_id: user.github_id },
         headers: { Authorization: `Bearer ${githubToken}` },
         timeout: 45000, // 45 second timeout
-        // Add additional configuration to prevent connection hanging
-        signal: AbortSignal.timeout(45000),
       })
+
+      // Clear timeout since request completed
+      clearTimeout(timeoutId);
+
+      // Check if response is valid
+      if (!response || !response.data) {
+        throw new Error('Invalid response from server')
+      }
 
       return (response.data.conversations || []).map((conv: any) => ({
         id: conv.id,
@@ -31,10 +44,13 @@ export class ConversationService {
         updated_at: conv.updated_at,
       }))
     } catch (error) {
+      // Clear timeout
+      clearTimeout(timeoutId);
+      
       console.error('Failed to fetch conversations:', error)
       
       // Handle network timeout errors
-      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout'))) {
+      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || error.name === 'AbortError')) {
         // Timeout, return empty array to allow app to continue
         console.warn('Conversations request timeout, returning empty list')
         return []
@@ -76,18 +92,31 @@ export class ConversationService {
     const user = authService.getStoredUser()
     if (!githubToken || !user) throw new Error('No authentication found')
 
+    // Create AbortController for better timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
     try {
       // Create a new axios instance for each request to avoid connection pooling issues
-      const axiosInstance: AxiosInstance = axios.create()
+      const axiosInstance: AxiosInstance = axios.create({
+        signal: controller.signal
+      })
+      
       const response = await axiosInstance.post(`${BACKEND_URL}/conversations`, {
         title,
         user_id: user.github_id,
         github_token: githubToken,
       }, {
         timeout: 15000, // 15 second timeout
-        // Add additional configuration to prevent connection hanging
-        signal: AbortSignal.timeout(15000),
       })
+
+      // Clear timeout since request completed
+      clearTimeout(timeoutId);
+
+      // Check if response is valid
+      if (!response || !response.data) {
+        throw new Error('Invalid response from server')
+      }
 
       return {
         id: response.data.id,
@@ -97,6 +126,9 @@ export class ConversationService {
         updated_at: response.data.updated_at,
       }
     } catch (error) {
+      // Clear timeout
+      clearTimeout(timeoutId);
+      
       console.error('Failed to create conversation:', error)
       
       // Handle authentication errors
@@ -107,7 +139,7 @@ export class ConversationService {
       }
       
       // Handle network timeout errors
-      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout'))) {
+      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || error.name === 'AbortError')) {
         throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
       }
       
@@ -132,16 +164,29 @@ export class ConversationService {
     const user = authService.getStoredUser()
     if (!githubToken || !user) throw new Error('No authentication found')
 
+    // Create AbortController for better timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout
+
     try {
       // Create a new axios instance for each request to avoid connection pooling issues
-      const axiosInstance: AxiosInstance = axios.create()
+      const axiosInstance: AxiosInstance = axios.create({
+        signal: controller.signal
+      })
+      
       const response = await axiosInstance.get(`${BACKEND_URL}/conversations/${conversationId}`, {
         params: { user_id: user.github_id, limit, offset },
         headers: { Authorization: `Bearer ${githubToken}` },
         timeout: 45000, // 45 second timeout
-        // Add additional configuration to prevent connection hanging
-        signal: AbortSignal.timeout(45000),
       })
+
+      // Clear timeout since request completed
+      clearTimeout(timeoutId);
+
+      // Check if response is valid
+      if (!response || !response.data) {
+        throw new Error('Invalid response from server')
+      }
 
       return {
         conversation: {
@@ -202,6 +247,9 @@ export class ConversationService {
 
       }
     } catch (error) {
+      // Clear timeout
+      clearTimeout(timeoutId);
+      
       console.error('Failed to fetch conversation:', error)
       
       // Handle authentication errors
@@ -212,7 +260,7 @@ export class ConversationService {
       }
       
       // Handle network timeout errors
-      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout'))) {
+      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || error.name === 'AbortError')) {
         throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
       }
       
@@ -238,6 +286,10 @@ export class ConversationService {
     const user = authService.getStoredUser()
     if (!githubToken || !user) throw new Error('No authentication found')
 
+    // Create AbortController for better timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
     try {
       // Handle content that might be an object or string
       let processedContent = content;
@@ -255,7 +307,10 @@ export class ConversationService {
       }
 
       // Create a new axios instance for each request to avoid connection pooling issues
-      const axiosInstance: AxiosInstance = axios.create()
+      const axiosInstance: AxiosInstance = axios.create({
+        signal: controller.signal
+      })
+      
       const response = await axiosInstance.post(`${BACKEND_URL}/conversations/${conversationId}/messages`, {
         conversation_id: conversationId,
         role,
@@ -266,9 +321,15 @@ export class ConversationService {
         github_token: githubToken,
       }, {
         timeout: 15000, // 15 second timeout
-        // Add additional configuration to prevent connection hanging
-        signal: AbortSignal.timeout(15000),
       })
+
+      // Clear timeout since request completed
+      clearTimeout(timeoutId);
+
+      // Check if response is valid
+      if (!response || !response.data) {
+        throw new Error('Invalid response from server')
+      }
 
       // Handle the response content as well
       let responseContent = response.data.content;
@@ -311,6 +372,9 @@ export class ConversationService {
         created_at: response.data.created_at,
       }
     } catch (error) {
+      // Clear timeout
+      clearTimeout(timeoutId);
+      
       console.error('Failed to create message:', error)
       
       // Handle authentication errors
@@ -321,7 +385,7 @@ export class ConversationService {
       }
       
       // Handle network timeout errors
-      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout'))) {
+      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || error.name === 'AbortError')) {
         throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
       }
       
@@ -342,16 +406,29 @@ export class ConversationService {
     const user = authService.getStoredUser()
     if (!githubToken || !user) throw new Error('No authentication found')
 
+    // Create AbortController for better timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
     try {
       // Create a new axios instance for each request to avoid connection pooling issues
-      const axiosInstance: AxiosInstance = axios.create()
+      const axiosInstance: AxiosInstance = axios.create({
+        signal: controller.signal
+      })
+      
       const response = await axiosInstance.put(`${BACKEND_URL}/conversations/${conversationId}`, null, {
         params: { title, user_id: user.github_id },
         headers: { Authorization: `Bearer ${githubToken}` },
         timeout: 15000, // 15 second timeout
-        // Add additional configuration to prevent connection hanging
-        signal: AbortSignal.timeout(15000),
       })
+
+      // Clear timeout since request completed
+      clearTimeout(timeoutId);
+
+      // Check if response is valid
+      if (!response || !response.data) {
+        throw new Error('Invalid response from server')
+      }
 
       return {
         id: response.data.id,
@@ -361,6 +438,9 @@ export class ConversationService {
         updated_at: response.data.updated_at,
       }
     } catch (error) {
+      // Clear timeout
+      clearTimeout(timeoutId);
+      
       console.error('Failed to update conversation:', error)
       
       // Handle authentication errors
@@ -371,7 +451,7 @@ export class ConversationService {
       }
       
       // Handle network timeout errors
-      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout'))) {
+      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || error.name === 'AbortError')) {
         throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
       }
       
@@ -395,19 +475,35 @@ export class ConversationService {
       throw new Error('No authentication found')
     }
 
+    // Create AbortController for better timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
     try {
       // Create a new axios instance for each request to avoid connection pooling issues
-      const axiosInstance: AxiosInstance = axios.create()
-      await axiosInstance.delete(`${BACKEND_URL}/conversations/${conversationId}`, {
+      const axiosInstance: AxiosInstance = axios.create({
+        signal: controller.signal
+      })
+      
+      const response = await axiosInstance.delete(`${BACKEND_URL}/conversations/${conversationId}`, {
         params: { user_id: user.github_id },
         headers: {
           'Authorization': `Bearer ${githubToken}`,
         },
         timeout: 15000, // 15 second timeout
-        // Add additional configuration to prevent connection hanging
-        signal: AbortSignal.timeout(15000),
       })
+
+      // Clear timeout since request completed
+      clearTimeout(timeoutId);
+
+      // Check if response is valid (for delete operations, we might get 204 No Content)
+      if (response.status !== 200 && response.status !== 204) {
+        throw new Error('Failed to delete conversation')
+      }
     } catch (error) {
+      // Clear timeout
+      clearTimeout(timeoutId);
+      
       console.error('Failed to delete conversation:', error)
       
       // Handle authentication errors
@@ -418,7 +514,7 @@ export class ConversationService {
       }
       
       // Handle network timeout errors
-      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout'))) {
+      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || error.name === 'AbortError')) {
         throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
       }
       

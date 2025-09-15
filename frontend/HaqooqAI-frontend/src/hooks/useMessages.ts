@@ -8,15 +8,6 @@ import { authService } from '@/services/backend/authService'
 import toast from 'react-hot-toast'
 import { AIResponse } from "@/types/api"
 
-
-// import { useState, useEffect, useRef } from "react"
-// import { useAuth } from "@/hooks/useAuth"
-// import { useConversations } from "@/hooks/useConversations"
-// import { conversationService } from "@/services/conversationService"
-// import { aiService } from "@/services/aiService"
-// import { toast } from "sonner"
- // Make sure AIResponse is exported from your types
-
 export const useMessages = (conversationId?: string, isNewConversation = false) => {
   const { user } = useAuth()
   const { updateConversationTitle } = useConversations()
@@ -29,6 +20,7 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
 
   // To prevent race conditions when conversation changes
   const activeConversationRef = useRef<string | null>(conversationId || null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     if (conversationId) {
@@ -37,6 +29,10 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
     }
     return () => {
       activeConversationRef.current = null
+      // Abort any ongoing requests when component unmounts
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
     }
   }, [conversationId])
 
@@ -53,6 +49,13 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
   /** Load messages for a conversation */
   const loadMessages = async (convId: string, retryCount = 0) => {
     if (!convId) return
+    
+    // Create new AbortController for this request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    abortControllerRef.current = new AbortController()
+    
     try {
       if (isNewConversation) {
         setSetupLoading(true)
@@ -162,6 +165,12 @@ export const useMessages = (conversationId?: string, isNewConversation = false) 
 
   /** Send message and trigger AI response */
   const sendMessage = async (convId: string, content: string): Promise<void> => {
+    // Create new AbortController for this request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    abortControllerRef.current = new AbortController()
+    
     try {
       if (!convId) throw new Error("No conversation selected")
 

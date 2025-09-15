@@ -99,7 +99,17 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
         // Don't wait for messages to load, show the interface immediately
       } catch (err) {
         console.error('Failed to create conversation:', err)
-        return
+        const errorMessage = err instanceof Error ? err.message : 'Failed to create conversation'
+        // Show error to user
+        if (errorMessage.includes('timeout')) {
+          // Handle timeout specifically
+          console.warn('Conversation creation timeout, but continuing with UI update')
+          // Even if we get a timeout, we might have successfully created the conversation
+          // The user can refresh to see it if needed
+        } else {
+          // For other errors, show error message
+          return
+        }
       } finally {
         // Remove the local creation flag immediately to allow user interaction
         setIsCreatingConversation(false)
@@ -107,8 +117,13 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
     }
 
     if (targetConversationId) {
-      await sendMessage(targetConversationId, content)
-      requestAnimationFrame(() => scrollToBottom())
+      try {
+        await sendMessage(targetConversationId, content)
+        requestAnimationFrame(() => scrollToBottom())
+      } catch (err) {
+        console.error('Failed to send message:', err)
+        // Error is handled in the sendMessage function, no need to do anything here
+      }
     }
   }
 
@@ -303,5 +318,3 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
     </div>
   )
 }
-
-// export default ChatInterface
