@@ -61,6 +61,8 @@ export class ConversationService {
         title,
         user_id: user.github_id,
         github_token: githubToken,
+      }, {
+        timeout: 15000, // 15 second timeout
       })
 
       return {
@@ -100,6 +102,7 @@ export class ConversationService {
       const response = await axios.get(`${BACKEND_URL}/conversations/${conversationId}`, {
         params: { user_id: user.github_id, limit, offset },
         headers: { Authorization: `Bearer ${githubToken}` },
+        timeout: 15000, // 15 second timeout
       })
 
       return {
@@ -211,6 +214,8 @@ export class ConversationService {
         show_disclaimer: showDisclaimer,
         user_id: user.github_id,
         github_token: githubToken,
+      }, {
+        timeout: 15000, // 15 second timeout
       })
 
       // Handle the response content as well
@@ -279,6 +284,7 @@ export class ConversationService {
       const response = await axios.put(`${BACKEND_URL}/conversations/${conversationId}`, null, {
         params: { title, user_id: user.github_id },
         headers: { Authorization: `Bearer ${githubToken}` },
+        timeout: 15000, // 15 second timeout
       })
 
       return {
@@ -319,6 +325,7 @@ export class ConversationService {
         headers: {
           'Authorization': `Bearer ${githubToken}`,
         },
+        timeout: 15000, // 15 second timeout
       })
     } catch (error) {
       console.error('Failed to delete conversation:', error)

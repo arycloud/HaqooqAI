@@ -80,7 +80,7 @@ export class AIService {
             'Authorization': `Bearer ${githubToken}`,
             'Content-Type': 'application/json',
           },
-          timeout: 120000, // 60 second timeout
+          timeout: 30000, // 30 second timeout
         }
       )
 
@@ -141,6 +141,7 @@ export class AIService {
           headers: {
             'Authorization': `Bearer ${githubToken}`,
           },
+          timeout: 10000, // 10 second timeout
         }
       )
 
@@ -178,6 +179,7 @@ export class AIService {
             'Authorization': `Bearer ${githubToken}`,
             'Content-Type': 'application/json',
           },
+          timeout: 10000, // 10 second timeout
         }
       )
 
@@ -246,6 +248,7 @@ export class AIService {
           headers: {
             'Authorization': `Bearer ${githubToken}`,
           },
+          timeout: 10000, // 10 second timeout
         }
       )
 
@@ -287,6 +290,7 @@ export class AIService {
             'Authorization': `Bearer ${githubToken}`,
             'Content-Type': 'application/json',
           },
+          timeout: 10000, // 10 second timeout
         }
       )
 
@@ -304,7 +308,9 @@ export class AIService {
    */
   async getRoutingStats(): Promise<any> {
     try {
-      const response = await axios.get(`${BACKEND_URL}${API_ENDPOINTS.STATS_ROUTING}`)
+      const response = await axios.get(`${BACKEND_URL}${API_ENDPOINTS.STATS_ROUTING}`, {
+        timeout: 10000, // 10 second timeout
+      })
       return response.data
     } catch (error) {
       console.error('Failed to get routing stats:', error)
