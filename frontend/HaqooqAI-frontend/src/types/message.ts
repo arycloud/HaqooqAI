@@ -17,6 +17,7 @@ export interface Message {
   };
   processing_time?: number;
   query_id?: string;
+  show_disclaimer?: boolean;  // Show disclaimer based on backend flag
 }
 
 export interface Source {
@@ -44,4 +45,5 @@ export interface CreateMessageRequest {
   role: 'user' | 'assistant';
   content: string;
   sources?: Source[];
+  show_disclaimer?: boolean;
 }

@@ -213,7 +213,7 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
 
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="truncate text-sm text-white max-w-[160px]">
+                          <span className="truncate text-sm text-white max-w-[120px]">
                             {conversation.title || 'Untitled'}
                           </span>
                           <span className="text-[10px] text-[var(--text-secondary)]">
@@ -224,7 +224,7 @@ export default function SidebarNew({ isOpen }: SidebarNewProps) {
                     </button>
 
                     {/* Row actions */}
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => handleRename(conversation.id, conversation.title || 'Untitled')}
                         className="p-1 rounded hover:bg-[var(--hover-color)]"

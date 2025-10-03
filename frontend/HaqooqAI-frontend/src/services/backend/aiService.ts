@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { AxiosInstance } from 'axios'
 import { BACKEND_URL, API_ENDPOINTS } from '@/utils/constants'
 import { QueryRequest, AIResponse, QuotaResponse, MultiProviderApiKeyResponse,
   MultiProviderApiKeyRequest,
@@ -19,12 +19,17 @@ export class AIService {
       groq?: string;
       gemini?: string;
       openai?: string;
-    }
+    },
+    retryCount = 0
   ): Promise<AIResponse> {
     const githubToken = authService.getStoredToken()
     if (!githubToken) {
       throw new Error('No authentication token found')
     }
+
+    // Create AbortController for better timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 
     try {
       const requestData: QueryRequest = {
@@ -72,7 +77,12 @@ export class AIService {
         throw new Error('Query must not exceed 1000 characters')
       }
 
-      const response = await axios.post<AIResponse>(
+      // Create a new axios instance for each request to avoid connection pooling issues
+      const axiosInstance: AxiosInstance = axios.create({
+        signal: controller.signal
+      })
+      
+      const response = await axiosInstance.post<AIResponse>(
         `${BACKEND_URL}${API_ENDPOINTS.ASK_QUESTION}`,
         requestData,
         {
@@ -80,11 +90,19 @@ export class AIService {
             'Authorization': `Bearer ${githubToken}`,
             'Content-Type': 'application/json',
           },
-          timeout: 30000, // 30 second timeout
+          timeout: 60000, // 60 second timeout
         }
       )
 
+      // Clear timeout since request completed
+      clearTimeout(timeoutId);
+
       console.log('AI service response:', response)
+
+      // Check if response is valid
+      if (!response || !response.data) {
+        throw new Error('Invalid response from AI service')
+      }
 
       if (response.data.status !== 'success') {
         throw new Error(response.data.response || 'AI request failed')
@@ -92,6 +110,20 @@ export class AIService {
 
       return response.data
     } catch (error) {
+      // Clear timeout
+      clearTimeout(timeoutId);
+      
+      // Retry mechanism for timeout errors (up to 2 retries with exponential backoff)
+      if (axios.isAxiosError(error) && 
+          (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || error.name === 'AbortError') && 
+          retryCount < 2) {
+        console.warn(`AI request timeout, retrying... (${retryCount + 1}/2)`);
+        // Exponential backoff: 2s, then 4s
+        const delay = Math.pow(2, retryCount + 1) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.askQuestion(query, userId, conversationId, apiKeys, retryCount + 1);
+      }
+      
       if (axios.isAxiosError(error)) {
         const status = error.response?.status
         const detail = error.response?.data?.detail
@@ -102,8 +134,11 @@ export class AIService {
         if (status === 400) throw new Error(detail || 'Invalid request')
         if (status === 503) throw new Error(detail || 'Service temporarily unavailable. Try again later.')
         if (status === 500) throw new Error(detail || 'AI service error')
-        if (error.code === 'ECONNABORTED') {
+        if (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || error.name === 'AbortError') {
           throw new Error('Request timeout. The AI service is taking too long to respond.')
+        }
+        if (error.message?.includes('Network Error')) {
+          throw new Error('Network error. Please check your internet connection and try again.')
         }
 
         console.error('AI service error details:', {
@@ -134,19 +169,45 @@ export class AIService {
       throw new Error('No authentication token found')
     }
 
+    // Create AbortController for better timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
     try {
-      const response = await axios.get<QuotaResponse>(
+      // Create a new axios instance for each request to avoid connection pooling issues
+      const axiosInstance: AxiosInstance = axios.create({
+        signal: controller.signal
+      })
+      
+      const response = await axiosInstance.get<QuotaResponse>(
         `${BACKEND_URL}${API_ENDPOINTS.GET_QUOTA}/${userId}`,
         {
           headers: {
             'Authorization': `Bearer ${githubToken}`,
           },
+          timeout: 10000, // 10 second timeout
         }
       )
 
+      // Clear timeout since request completed
+      clearTimeout(timeoutId);
       return response.data
     } catch (error) {
+      // Clear timeout
+      clearTimeout(timeoutId);
+      
       console.error('Failed to check quota:', error)
+      
+      // Handle network timeout errors
+      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || error.name === 'AbortError')) {
+        throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
+      }
+      
+      // Handle network errors
+      if (axios.isAxiosError(error) && (!error.response || error.message?.includes('Network Error'))) {
+        throw new Error('Network error. Please check your internet connection and try again.')
+      }
+      
       throw new Error('Failed to check quota')
     }
   }
@@ -164,8 +225,17 @@ export class AIService {
       throw new Error('No authentication token found')
     }
 
+    // Create AbortController for better timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
     try {
-      const response = await axios.post<MultiProviderApiKeyResponse>(
+      // Create a new axios instance for each request to avoid connection pooling issues
+      const axiosInstance: AxiosInstance = axios.create({
+        signal: controller.signal
+      })
+      
+      const response = await axiosInstance.post<MultiProviderApiKeyResponse>(
         `${BACKEND_URL}${API_ENDPOINTS.USER_API_KEYS}`,
         {
           provider,
@@ -178,13 +248,20 @@ export class AIService {
             'Authorization': `Bearer ${githubToken}`,
             'Content-Type': 'application/json',
           },
+          timeout: 10000, // 10 second timeout
         }
       )
+
+      // Clear timeout since request completed
+      clearTimeout(timeoutId);
 
       if (response.data.status !== 'success') {
         throw new Error(response.data.message || 'Failed to save API key')
       }
     } catch (error) {
+      // Clear timeout
+      clearTimeout(timeoutId);
+      
       console.error('Failed to save API key:', error)
       
       // Handle specific backend validation errors
@@ -235,8 +312,17 @@ export class AIService {
       throw new Error('No authentication token found')
     }
 
+    // Create AbortController for better timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
     try {
-      const response = await axios.get<AllProvidersResponse>(
+      // Create a new axios instance for each request to avoid connection pooling issues
+      const axiosInstance: AxiosInstance = axios.create({
+        signal: controller.signal
+      })
+      
+      const response = await axiosInstance.get<AllProvidersResponse>(
         `${BACKEND_URL}${API_ENDPOINTS.USER_API_KEYS}`,
         {
           params: {
@@ -246,12 +332,31 @@ export class AIService {
           headers: {
             'Authorization': `Bearer ${githubToken}`,
           },
+          timeout: 10000, // 10 second timeout
         }
       )
 
+      // Clear timeout since request completed
+      clearTimeout(timeoutId);
+
       return response.data.providers || []
     } catch (error) {
+      // Clear timeout
+      clearTimeout(timeoutId);
+      
       console.error('Failed to get provider statuses:', error)
+      
+      // Handle network timeout errors
+      if (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || error.name === 'AbortError')) {
+        console.warn('Provider statuses request timeout, returning empty array')
+        return []
+      }
+      
+      // Handle network errors
+      if (axios.isAxiosError(error) && (!error.response || error.message?.includes('Network Error'))) {
+        console.warn('Provider statuses network error, returning empty array')
+        return []
+      }
       
       // Return empty array instead of throwing to allow graceful degradation
       if (axios.isAxiosError(error) && error.response?.status === 500) {
@@ -259,7 +364,9 @@ export class AIService {
         return []
       }
       
-      throw new Error('Failed to get provider statuses')
+      // For other errors, still return empty array to prevent app crash
+      console.warn('Failed to get provider statuses, returning empty array')
+      return []
     }
   }
 
@@ -275,8 +382,17 @@ export class AIService {
       throw new Error('No authentication token found')
     }
 
+    // Create AbortController for better timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
     try {
-      const response = await axios.delete<MultiProviderApiKeyResponse>(
+      // Create a new axios instance for each request to avoid connection pooling issues
+      const axiosInstance: AxiosInstance = axios.create({
+        signal: controller.signal
+      })
+      
+      const response = await axiosInstance.delete<MultiProviderApiKeyResponse>(
         `${BACKEND_URL}${API_ENDPOINTS.USER_API_KEY_PROVIDER}/${provider}`,
         {
           data: {
@@ -287,14 +403,32 @@ export class AIService {
             'Authorization': `Bearer ${githubToken}`,
             'Content-Type': 'application/json',
           },
+          timeout: 10000, // 10 second timeout
         }
       )
+
+      // Clear timeout since request completed
+      clearTimeout(timeoutId);
 
       if (response.data.status !== 'success') {
         throw new Error(response.data.message || 'Failed to delete API key')
       }
     } catch (error) {
+      // Clear timeout
+      clearTimeout(timeoutId);
+      
       console.error('Failed to delete API key:', error)
+      
+      // Handle network timeout errors
+      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+        throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
+      }
+      
+      // Handle network errors
+      if (axios.isAxiosError(error) && !error.response) {
+        throw new Error('Network error. Please check your internet connection and try again.')
+      }
+      
       throw new Error('Failed to delete API key')
     }
   }
@@ -303,11 +437,39 @@ export class AIService {
    * Get routing statistics
    */
   async getRoutingStats(): Promise<any> {
+    // Create AbortController for better timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
     try {
-      const response = await axios.get(`${BACKEND_URL}${API_ENDPOINTS.STATS_ROUTING}`)
+      // Create a new axios instance for each request to avoid connection pooling issues
+      const axiosInstance: AxiosInstance = axios.create({
+        signal: controller.signal
+      })
+      
+      const response = await axiosInstance.get(`${BACKEND_URL}${API_ENDPOINTS.STATS_ROUTING}`, {
+        timeout: 10000, // 10 second timeout
+      })
+
+      // Clear timeout since request completed
+      clearTimeout(timeoutId);
       return response.data
     } catch (error) {
+      // Clear timeout
+      clearTimeout(timeoutId);
+      
       console.error('Failed to get routing stats:', error)
+      
+      // Handle network timeout errors
+      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+        throw new Error('Request timeout. The server is taking too long to respond. Please try again later.')
+      }
+      
+      // Handle network errors
+      if (axios.isAxiosError(error) && !error.response) {
+        throw new Error('Network error. Please check your internet connection and try again.')
+      }
+      
       throw new Error('Failed to get routing statistics')
     }
   }
@@ -321,13 +483,29 @@ export class AIService {
    * Test if the backend is reachable
    */
   async healthCheck(): Promise<boolean> {
+    // Create AbortController for better timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
     try {
-      const response = await axios.get(`${BACKEND_URL}/health`, {
+      // Create a new axios instance for each request to avoid connection pooling issues
+      const axiosInstance: AxiosInstance = axios.create({
+        signal: controller.signal
+      })
+      
+      const response = await axiosInstance.get(`${BACKEND_URL}/health`, {
         timeout: 5000,
       })
+
+      // Clear timeout since request completed
+      clearTimeout(timeoutId);
       return response.status === 200
     } catch (error) {
+      // Clear timeout
+      clearTimeout(timeoutId);
+      
       console.error('Health check failed:', error)
+      // Still return false for any error to indicate health check failure
       return false
     }
   }

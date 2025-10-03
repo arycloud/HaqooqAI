@@ -35,15 +35,15 @@ export const useConversations = () => {
     queryFn: () => conversationService.getConversations(),
     enabled: !!user,
     initialData: () => useConversationStore.getState().conversations || [],
-    staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: Infinity, // Cache conversations indefinitely
+    gcTime: 24 * 60 * 60 * 1000, // Keep in cache for 24 hours
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     placeholderData: (prev) => prev,
     retry: 2,
     retryDelay: 1000,
-    networkMode: 'online',
+    networkMode: 'offlineFirst', // Prefer cached data over network requests
   })
 
   // Keep Zustand store synced

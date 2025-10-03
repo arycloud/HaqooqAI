@@ -31,7 +31,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 h-20 lg:h-24 bg-[var(--background-color)] border-b border-[var(--border-color)] flex items-center justify-between px-8 lg:px-12 z-20">
+    <header className="sticky top-0 h-16 lg:h-16 bg-[var(--background-color)] border-b border-[var(--border-color)] flex items-center justify-between px-8 lg:px-12 z-20">
       {/* Subtle gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent pointer-events-none" />
 
@@ -48,7 +48,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps) {
 
         <div className="flex items-center space-x-4">
           <Link to="/" className="text-xl font-bold hidden md:block">
-            <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-2xl bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] flex items-center justify-center shadow-lg">
+            <div className="w-12 h-10 lg:w-10 lg:h-10 rounded-2xl bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] flex items-center justify-center shadow-lg">
               <span className="text-white font-bold text-lg lg:text-xl">H</span>
             </div>
           </Link>
@@ -78,10 +78,10 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps) {
                 <img
                   src={user.avatar_url}
                   alt={user.username}
-                  className="w-11 h-11 lg:w-12 lg:h-12 rounded-full ring-2 ring-[var(--border-color)] group-hover:ring-[var(--primary-color)] transition-all duration-200"
+                  className="w-11 h-11 lg:w-10 lg:h-10 rounded-full ring-2 ring-[var(--border-color)] group-hover:ring-[var(--primary-color)] transition-all duration-200"
                 />
               ) : (
-                <div className="w-11 h-11 lg:w-12 lg:h-12 rounded-full bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] flex items-center justify-center ring-2 ring-[var(--border-color)] group-hover:ring-[var(--primary-color)] transition-all duration-200">
+                <div className="w-11 h-11 lg:w-10 lg:h-10 rounded-full bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] flex items-center justify-center ring-2 ring-[var(--border-color)] group-hover:ring-[var(--primary-color)] transition-all duration-200">
                   <User className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
                 </div>
               )}

@@ -94,21 +94,36 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
         targetConversationId = conversation.id
         setCurrentConversationId(conversation.id)
         setIsNewConversation(true)
-        // navigate to new chat route
+        // Navigate to new chat route immediately without waiting
         navigate(`/chat/${conversation.id}`, { replace: true })
+        // Don't wait for messages to load, show the interface immediately
       } catch (err) {
         console.error('Failed to create conversation:', err)
-        return
+        const errorMessage = err instanceof Error ? err.message : 'Failed to create conversation'
+        // Show error to user
+        if (errorMessage.includes('timeout')) {
+          // Handle timeout specifically
+          console.warn('Conversation creation timeout, but continuing with UI update')
+          // Even if we get a timeout, we might have successfully created the conversation
+          // The user can refresh to see it if needed
+        } else {
+          // For other errors, show error message
+          return
+        }
       } finally {
-        // keep showing setup loader while messages are loaded by useMessages hook;
-        // but remove the local creation flag here to allow loaderType to rely on setupLoading
+        // Remove the local creation flag immediately to allow user interaction
         setIsCreatingConversation(false)
       }
     }
 
     if (targetConversationId) {
-      await sendMessage(targetConversationId, content)
-      requestAnimationFrame(() => scrollToBottom())
+      try {
+        await sendMessage(targetConversationId, content)
+        requestAnimationFrame(() => scrollToBottom())
+      } catch (err) {
+        console.error('Failed to send message:', err)
+        // Error is handled in the sendMessage function, no need to do anything here
+      }
     }
   }
 
@@ -120,11 +135,21 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
   // Show centered loader only when there are NO messages and we're loading (initial open)
   const showCenteredLoader =
     conversationMessages.length === 0 &&
-    (fetchingLoading || setupLoading || isCreatingConversation)
+    (fetchingLoading || setupLoading || isCreatingConversation) &&
+    !currentConversationId
 
   // Show analyzing overlay when there are messages and AI is processing a submitted query
   // We want to show an analyzing loader (non-bubble) below messages (not full-screen)
   const showAnalyzingOverlay = analyzingLoading && !showCenteredLoader
+
+  // Show prompt cards when there are no messages and we're not loading
+  const showPromptCards = 
+    conversationMessages.length === 0 &&
+    !fetchingLoading &&
+    !setupLoading &&
+    !analyzingLoading &&
+    !isCreatingConversation &&
+    currentConversationId
 
   // Small presentational logo + spinner element (matches design)
   const LogoCircle = ({ size = 96 }: { size?: number }) => {
@@ -202,70 +227,66 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
             paddingBottom: '140px',
           }}
         >
-          <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full">
+          <div className="flex flex-col gap-6 max-w-6xl mx-auto w-full">
             {error && <ErrorDisplay error={error} onRetry={handleRetryMessage} />}
 
             {/* CENTERED LOADER for initial conversation load (no message bubbles) */}
             {showCenteredLoader && <CyclingLoader type={loaderType} />}
 
             {/* When no messages (and not loading) show the empty prompt cards */}
-            {conversationMessages.length === 0 &&
-              !fetchingLoading &&
-              !setupLoading &&
-              !analyzingLoading &&
-              !isCreatingConversation && (
-                <div className="pt-8">
-                  <div className="text-center mb-6">
-                    <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
-                      Try asking about:
-                    </h3>
-                    <p className="text-sm text-[var(--text-secondary)]">
-                      Click on any question to get started
-                    </p>
+            {showPromptCards && (
+              <div className="pt-8 w-full">
+                <div className="text-center mb-6">
+                  <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+                    Try asking about:
+                  </h3>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    Click on any question to get started with
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 max-w-6xl mx-auto">
+                  <div
+                    className="p-4 bg-gradient-to-r from-purple-500/15 to-indigo-500/15 rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
+                    onClick={() => handleSendMessage("What are the legal requirements for property purchase in Pakistan?")}
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="material-symbols-outlined text-purple-400 mt-0.5">home</span>
+                      <div className="text-left">
+                        <h4 className="font-semibold text-[var(--text-primary)] text-sm">Property Purchase</h4>
+                        <p className="text-xs text-[var(--text-secondary)] mt-1">Legal documents and procedures for buying property</p>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                    <div
-                      className="p-4 bg-gradient-to-r from-purple-500/15 to-indigo-500/15 rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
-                      onClick={() => handleSendMessage("What are the legal requirements for property purchase in Pakistan?")}
-                    >
-                      <div className="flex items-start gap-2">
-                        <span className="material-symbols-outlined text-purple-400 mt-0.5">home</span>
-                        <div className="text-left">
-                          <h4 className="font-semibold text-[var(--text-primary)] text-sm">Property Purchase</h4>
-                          <p className="text-xs text-[var(--text-secondary)] mt-1">Legal documents and procedures for buying property</p>
-                        </div>
+                  <div
+                    className="p-4 bg-gradient-to-r from-pink-500/15 to-purple-500/15 rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
+                    onClick={() => handleSendMessage("How do I register a marriage in Pakistan?")}
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="material-symbols-outlined text-pink-400 mt-0.5">favorite</span>
+                      <div className="text-left">
+                        <h4 className="font-semibold text-[var(--text-primary)] text-sm">Marriage Registration</h4>
+                        <p className="text-xs text-[var(--text-secondary)] mt-1">Required documents and process for marriage</p>
                       </div>
                     </div>
+                  </div>
 
-                    <div
-                      className="p-4 bg-gradient-to-r from-pink-500/15 to-purple-500/15 rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
-                      onClick={() => handleSendMessage("How do I register a marriage in Pakistan?")}
-                    >
-                      <div className="flex items-start gap-2">
-                        <span className="material-symbols-outlined text-pink-400 mt-0.5">favorite</span>
-                        <div className="text-left">
-                          <h4 className="font-semibold text-[var(--text-primary)] text-sm">Marriage Registration</h4>
-                          <p className="text-xs text-[var(--text-secondary)] mt-1">Required documents and process for marriage</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div
-                      className="p-4 bg-gradient-to-r from-indigo-500/15 to-blue-500/15 rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
-                      onClick={() => handleSendMessage("What documents are needed to start a business in Pakistan?")}
-                    >
-                      <div className="flex items-start gap-2">
-                        <span className="material-symbols-outlined text-blue-400 mt-0.5">business</span>
-                        <div className="text-left">
-                          <h4 className="font-semibold text-[var(--text-primary)] text-sm">Business Registration</h4>
-                          <p className="text-xs text-[var(--text-secondary)] mt-1">Steps and documents required to register a business</p>
-                        </div>
+                  <div
+                    className="p-4 bg-gradient-to-r from-indigo-500/15 to-blue-500/15 rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/50 transition cursor-pointer shadow-sm hover:shadow-md"
+                    onClick={() => handleSendMessage("What documents are needed to start a business in Pakistan?")}
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="material-symbols-outlined text-blue-400 mt-0.5">business</span>
+                      <div className="text-left">
+                        <h4 className="font-semibold text-[var(--text-primary)] text-sm">Business Registration</h4>
+                        <p className="text-xs text-[var(--text-secondary)] mt-1">Steps and documents required to register a business</p>
                       </div>
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
             {/* Render existing messages as message bubbles (when any) */}
             {conversationMessages.length > 0 && conversationMessages.map((message) => (
@@ -285,7 +306,7 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
 
         {/* Sticky input at bottom (always visible) */}
         <div className="sticky bottom-0 z-40 bg-[var(--background-color)] border-t border-[var(--border-color)] p-3 backdrop-blur-sm">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <MessageInputNew
               onSendMessage={handleSendMessage}
               disabled={fetchingLoading || isCreatingConversation || setupLoading || analyzingLoading}
@@ -297,5 +318,3 @@ export function ChatInterface({ conversationId, initialPrompt }: ChatInterfacePr
     </div>
   )
 }
-
-// export default ChatInterface

@@ -13,6 +13,7 @@ export class MessageService {
         role: messageData.role,
         content: messageData.content,
         sources: messageData.sources || null,
+        show_disclaimer: messageData.show_disclaimer || false,  // Use show_disclaimer flag
         created_at: new Date().toISOString(),
       })
       .select()
