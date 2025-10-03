@@ -1,40 +1,73 @@
 """
 HaqooqAI Backend - FastAPI Application
-Simplified AI service for Pakistani legal information
+Simplified AI service for Pakistani legal information with support for both web and mobile frontends
 """
+
+# Standard library imports
 import logging
 import uuid
-from datetime import datetime
-from typing import Optional
-from dotenv import load_dotenv
-import httpx
-from fastapi import Header
+from datetime import datetime, timedelta
+from typing import Optional, Dict
 
-from .database.supabase_client import supabase_client
-# import os
+# Third-party imports
+import httpx
+import uvicorn
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Depends, status, Request, Header
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.encoders import jsonable_encoder
+import json
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
 
-from fastapi import FastAPI, HTTPException, Depends, status, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse
-from fastapi.encoders import jsonable_encoder
-import uvicorn
+# Local imports
 
 from .config import (
     API_TITLE, API_VERSION, API_DESCRIPTION, ALLOWED_ORIGINS,
-    LOG_LEVEL, LOG_FORMAT, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_REDIRECT_URI
+    LOG_LEVEL, LOG_FORMAT, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_REDIRECT_URI,
+    CORS_ALLOW_CREDENTIALS, CORS_ALLOW_METHODS, CORS_ALLOW_HEADERS,
+    ROUTING_MESSAGE_THRESHOLD, ROUTING_TOKEN_THRESHOLD, MAX_QUERY_TOKENS, MAX_CONVERSATION_MESSAGES
 )
-from .models.requests import AuthRequest, DeleteApiKeyRequest, QueryRequest, ApiKeyRequest, ConversationCreateRequest, MessageCreateRequest
+from .models.requests import (
+    AuthRequest, DeleteApiKeyRequest, QueryRequest, ApiKeyRequest,
+    ConversationCreateRequest, MessageCreateRequest, TokenExchangeRequest
+)
 from .models.responses import (
     AuthResponse, AIResponse, ApiKeyResponse, QuotaResponse,
     HealthResponse, ErrorResponse, UserProfile, QuotaInfo,
-    ConversationResponse, MessageResponse, ConversationListResponse, ConversationWithMessagesResponse
+    ConversationResponse, MessageResponse, ConversationListResponse,
+    ConversationWithMessagesResponse, TokenExchangeResponse
 )
 from .auth.github_auth import GitHubAuthService
 from .quota.usage_tracker import UsageTracker
+from .quota.tiered_usage_tracker import TieredUsageTracker, LLMProvider
 from .ai.rag_engine import LegalRAGEngine
+from .services.conversation_manager import ConversationManager
+from .routes.api_key_management import router as api_key_router
+
+
+# ============================================================================
+# OAuth State Management (for mobile/web flow coordination)
+# ============================================================================
+
+# In-memory state management for OAuth flows
+state_map: Dict[str, str] = {}
+state_timestamps: Dict[str, datetime] = {}
+
+def cleanup_expired_states():
+    """Remove OAuth states older than 10 minutes"""
+    cutoff_time = datetime.now() - timedelta(minutes=10)
+    expired_states = [s for s, t in state_timestamps.items() if t < cutoff_time]
+    for state in expired_states:
+        state_map.pop(state, None)
+        state_timestamps.pop(state, None)
+
+# ============================================================================
+# FastAPI Application Setup
+# ============================================================================
 
 # Configure logging
 logging.basicConfig(level=LOG_LEVEL, format=LOG_FORMAT)
@@ -49,32 +82,49 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Add CORS middleware
+# Add CORS middleware with mobile support
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["*"],
+    allow_credentials=CORS_ALLOW_CREDENTIALS,
+    allow_methods=CORS_ALLOW_METHODS,
+    allow_headers=CORS_ALLOW_HEADERS,
+    # Additional settings for mobile apps
+    allow_origin_regex=r"^https?://localhost(:\d+)?$|^capacitor://localhost$|^ionic://localhost$|^haqooqai://.*$",
 )
+
+# Include API routers
+app.include_router(api_key_router, prefix="/user", tags=["API Key Management"])
+
+# ============================================================================
+# Global Service Instances
+# ============================================================================
 
 # Global instances (initialized on startup)
 auth_service: Optional[GitHubAuthService] = None
 usage_tracker: Optional[UsageTracker] = None
+tiered_tracker: Optional[TieredUsageTracker] = None
 rag_engine: Optional[LegalRAGEngine] = None
+conversation_manager: Optional[ConversationManager] = None
+
+# Make supabase_client accessible globally (will be replaced with mock in testing mode)
+from .database.supabase_client import supabase_client
 
 
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup"""
-    global auth_service, usage_tracker, rag_engine
+    global auth_service, usage_tracker, rag_engine, conversation_manager, tiered_tracker
 
     try:
+        logger.info("🚀 Initializing services")
         auth_service = GitHubAuthService()
-        usage_tracker = UsageTracker()
+        usage_tracker = UsageTracker()  # Legacy tracker for compatibility
+        tiered_tracker = TieredUsageTracker()  # New tiered quota system
         rag_engine = LegalRAGEngine()
+        conversation_manager = ConversationManager()
 
-        logger.info("All services initialized successfully")
+        logger.info("✅ All services initialized successfully (including tiered quota system) and others")
 
         # Log health status
         if rag_engine:
@@ -86,29 +136,50 @@ async def startup_event():
 
 
 @app.exception_handler(HTTPException)
-async def http_exception_handler(request, exc):
-    """Custom HTTP exception handler"""
+async def http_exception_handler(request, exc: HTTPException):
+    """Custom HTTP exception handler with safe frontend output"""
+    logger.warning(f"HTTP error {exc.status_code}: {exc.detail}")
+    
+    # Add special handling for expired/invalid tokens
+    if exc.status_code == 401 and "token" in str(exc.detail).lower():
+        # Add a header to indicate token expiration
+        response = JSONResponse(
+            status_code=exc.status_code,
+            content=jsonable_encoder(ErrorResponse(
+                status="error",
+                error="INVALID_TOKEN",
+                message="GitHub token has expired. Please log in again to continue.",
+                details={"token_expired": True, "requires_logout": True}
+            ).dict())
+        )
+        response.headers["X-Auth-Token-Expired"] = "true"
+        return response
+    
+    error_response = ErrorResponse(
+        status="error",
+        error="HTTP_ERROR",
+        message=str(exc.detail),
+        details=None
+    )
     return JSONResponse(
         status_code=exc.status_code,
-        content=jsonable_encoder(
-            error="HTTP_ERROR",
-            message=exc.detail,
-            details={"status_code": exc.status_code}
-        )
+        content=jsonable_encoder(error_response.dict())
     )
 
 
 @app.exception_handler(Exception)
-async def general_exception_handler(request, exc):
-    """General exception handler"""
-    logger.error(f"Unhandled exception: {exc}")
+async def general_exception_handler(request, exc: Exception):
+    """General exception handler (catches everything else)"""
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    error_response = ErrorResponse(
+        status="error",
+        error="INTERNAL_ERROR",
+        message="An internal server error occurred",  # safe frontend message
+        details=None  # backend logs contain actual stacktrace
+    )
     return JSONResponse(
         status_code=500,
-        content=jsonable_encoder(
-            error="INTERNAL_ERROR",
-            message="An internal server error occurred",
-            details= str(exc)
-        ).dict()
+        content=jsonable_encoder(error_response.dict())
     )
 
 
@@ -143,26 +214,78 @@ async def get_rag_engine() -> LegalRAGEngine:
     return rag_engine
 
 
+async def get_conversation_manager() -> ConversationManager:
+    """Get conversation manager service"""
+    if not conversation_manager:
+        raise HTTPException(
+            status_code=503,
+            detail="Conversation management service not available"
+        )
+    return conversation_manager
+
+
+# ============================================================================
 # API Routes
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Root & Information Endpoints
+# ----------------------------------------------------------------------------
 
 @app.get("/", response_model=dict)
 async def root():
-    """Root endpoint with API information"""
+    """Root endpoint with API information and available endpoints"""
     return {
         "name": API_TITLE,
         "version": API_VERSION,
-        "description": API_DESCRIPTION,
+        "description": API_DESCRIPTION + " - Supports both web and mobile frontends",
         "status": "operational",
         "endpoints": {
-            "auth": "/auth/validate",
-            "query": "/ask/",
-            "api_key": "/user/groq-key",
-            "quota": "/user/quota/{user_id}",
-            "health": "/health",
-            "docs": "/docs"
-        }
+            "authentication": {
+                "validate_token": "POST /auth/validate",
+                "exchange_token": "POST /auth/exchange",
+                "github_login": "GET /login/github",
+                "github_login_mobile": "POST /login/github/start",
+                "oauth_callback": "GET /HaqooqAI/callback"
+            },
+            "ai_processing": {
+                "ask_question": "POST /ask/"
+            },
+            "user_management": {
+                "save_api_key": "POST /user/groq-key",
+                "delete_api_key": "DELETE /user/groq-key",
+                "get_quota": "GET /user/quota/{user_id}"
+            },
+            "conversations": {
+                "list_conversations": "GET /conversations",
+                "create_conversation": "POST /conversations",
+                "get_conversation": "GET /conversations/{conversation_id}",
+                "update_conversation": "PUT /conversations/{conversation_id}",
+                "delete_conversation": "DELETE /conversations/{conversation_id}",
+                "create_message": "POST /conversations/{conversation_id}/messages"
+            },
+            "monitoring": {
+                "health_check": "GET /health",
+                "system_stats": "GET /stats"
+            },
+            "documentation": {
+                "swagger_ui": "GET /docs",
+                "redoc": "GET /redoc"
+            }
+        },
+        "features": [
+            "GitHub OAuth authentication for web and mobile",
+            "AI-powered legal question answering",
+            "Conversation management with persistent storage",
+            "User quota management and API key support",
+            "Comprehensive health monitoring"
+        ]
     }
 
+
+# ----------------------------------------------------------------------------
+# Authentication Endpoints
+# ----------------------------------------------------------------------------
 
 @app.post("/auth/validate", response_model=AuthResponse)
 async def validate_auth(
@@ -197,34 +320,274 @@ async def validate_auth(
         )
 
 
+@app.post("/auth/exchange", response_model=TokenExchangeResponse)
+async def exchange_token(
+    request: TokenExchangeRequest,
+    auth_svc: GitHubAuthService = Depends(get_auth_service),
+    tracker: UsageTracker = Depends(get_usage_tracker)
+):
+    """Exchange authorization code for access token (for mobile apps)"""
+    try:
+        # Exchange code for access token
+        async with httpx.AsyncClient() as client:
+            token_response = await client.post(
+                "https://github.com/login/oauth/access_token",
+                data={
+                    "client_id": GITHUB_CLIENT_ID,
+                    "client_secret": GITHUB_CLIENT_SECRET,
+                    "code": request.code,
+                },
+                headers={"Accept": "application/json"}
+            )
+
+            if token_response.status_code != 200:
+                logger.error(f"GitHub token exchange failed: {token_response.status_code} - {token_response.text}")
+                raise HTTPException(
+                    status_code=400,
+                    detail="Failed to exchange authorization code for token"
+                )
+
+            token_data = token_response.json()
+
+            if "error" in token_data:
+                logger.error(f"GitHub OAuth error: {token_data}")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"GitHub OAuth error: {token_data.get('error_description', token_data.get('error'))}"
+                )
+
+            access_token = token_data.get("access_token")
+            if not access_token:
+                raise HTTPException(
+                    status_code=400,
+                    detail="No access token received from GitHub"
+                )
+
+        # Validate the token and get user info
+        user = await auth_svc.validate_token(access_token)
+
+        # Get quota information
+        quota = tracker.check_quota(user.github_id)
+
+        logger.info(f"Token exchange successful for user {user.username} (ID: {user.github_id})")
+
+        return TokenExchangeResponse(
+            status="success",
+            access_token=access_token,
+            user=user,
+            quota=quota,
+            message="Token exchange successful"
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Token exchange error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Token exchange service error"
+        )
+
+
+# ----------------------------------------------------------------------------
+# AI Processing Endpoints
+# ----------------------------------------------------------------------------
+
 @app.post("/ask/", response_model=AIResponse)
 async def process_query(
     request: QueryRequest,
     rag: LegalRAGEngine = Depends(get_rag_engine),
-    tracker: UsageTracker = Depends(get_usage_tracker)
+    tracker: UsageTracker = Depends(get_usage_tracker),
+    conv_manager: ConversationManager = Depends(get_conversation_manager)
 ):
-    """Process AI query and return response with sources"""
+    """Process AI query and return response with tiered quota system"""
     try:
-        # Check quota if no API key provided
-        if not request.groq_api_key:
+        # ============================================================================
+        # 1. GLOBAL LIMITS ENFORCEMENT (Applied to all users regardless of API keys)
+        # ============================================================================
+
+        # Check query token limit (MAX_QUERY_TOKENS=4000)
+        from .ai.llm_providers import LLMProviderManager
+        provider_manager = LLMProviderManager()
+
+        is_valid, token_count, error_msg = provider_manager.validate_query_length(request.query)
+        if not is_valid:
+            raise HTTPException(
+                status_code=429,
+                detail=error_msg
+            )
+
+        # Check conversation message limit (MAX_CONVERSATION_MESSAGES=50)
+        can_continue, limit_message = conv_manager.check_conversation_limit(
+            request.conversation_id, request.user_id
+        )
+        if not can_continue:
+            raise HTTPException(
+                status_code=429,
+                detail=limit_message
+            )
+
+        # ============================================================================
+        # 2. RETRIEVE STORED API KEYS AND MERGE WITH REQUEST KEYS
+        # ============================================================================
+
+        # Get stored API keys for the user
+        from .database.api_key_manager import api_key_manager
+        stored_keys = await api_key_manager.get_all_user_keys(request.user_id)
+
+        # Merge request keys with stored keys (request keys take priority)
+        effective_groq_key = request.groq_api_key or stored_keys.get("groq")
+        effective_gemini_key = request.gemini_api_key or stored_keys.get("gemini")
+        effective_openai_key = request.openai_api_key or stored_keys.get("openai")
+
+        logger.info(f"API keys for user {request.user_id}: "
+                   f"groq={'provided' if effective_groq_key else 'none'}, "
+                   f"gemini={'provided' if effective_gemini_key else 'none'}, "
+                   f"openai={'provided' if effective_openai_key else 'none'}")
+
+        # ============================================================================
+        # 3. PROVIDER SELECTION AND QUOTA CHECKING
+        # ============================================================================
+
+        # Determine which provider to use based on routing logic
+        conv_stats = conv_manager.get_conversation_stats(request.conversation_id, request.user_id)
+        routing_decision = provider_manager.determine_provider(
+            query=request.query,
+            message_count=conv_stats.message_count,
+            user_groq_key=effective_groq_key,
+            user_gemini_key=effective_gemini_key,
+            user_openai_key=effective_openai_key
+        )
+
+        # Check provider-specific quota using tiered tracker
+        global tiered_tracker
+        if tiered_tracker:
+            provider_enum = LLMProvider(routing_decision.provider.value)
+            can_proceed, quota_message = tiered_tracker.check_provider_quota(
+                user_id=request.user_id,
+                provider=provider_enum,
+                has_user_key=routing_decision.using_user_key
+            )
+
+            if not can_proceed:
+                raise HTTPException(
+                    status_code=429,
+                    detail=quota_message
+                )
+
+            # Increment provider-specific usage
+            tiered_tracker.increment_provider_usage(
+                user_id=request.user_id,
+                provider=provider_enum,
+                has_user_key=routing_decision.using_user_key
+            )
+        else:
+            # Fallback to legacy quota checking
             quota = tracker.check_quota(request.user_id)
-            if quota.remaining <= 0:
+            if not routing_decision.using_user_key and quota.remaining <= 0:
                 raise HTTPException(
                     status_code=429,
                     detail="Query quota exceeded. Please wait for reset or provide your own API key."
                 )
+            if not routing_decision.using_user_key:
+                tracker.increment_usage(request.user_id)
 
-            # Increment usage
-            tracker.increment_usage(request.user_id)
+        # ============================================================================
+        # 3. PROCESS QUERY WITH SELECTED PROVIDER
+        # ============================================================================
 
-        # Process query through RAG engine
-        result = await rag.process_query(request.query, request.groq_api_key)
+        # Log routing decision for monitoring
+        logger.info(f"Routing decision: {routing_decision.provider.value} - {routing_decision.reason}")
+        logger.info(f"Using user key: {routing_decision.using_user_key}")
+        logger.info(f"Conversation stats: {conv_stats.message_count} messages, tokens: {conv_stats.total_tokens}")
 
-        # Get updated quota
-        updated_quota = tracker.check_quota(request.user_id)
+        # Process query through RAG engine with effective API keys
+        result = await rag.process_query(
+            query=request.query,
+            groq_key=effective_groq_key,
+            gemini_key=effective_gemini_key,
+            openai_key=effective_openai_key,
+            conversation_id=request.conversation_id,
+            user_id=request.user_id
+        )
+
+        # Save assistant's response to the database
+        try:
+            # Get user's internal ID
+            user_internal_id = supabase_client.get_user_internal_id(request.user_id)
+            logger.info(f"User lookup result for GitHub ID {request.user_id}: {user_internal_id}")
+            
+            if user_internal_id and request.conversation_id:
+                # Log what we're trying to save
+                logger.info(f"Attempting to save assistant message for conversation {request.conversation_id}")
+                logger.info(f"Assistant message content length: {len(result.get('response', '') or '')}")
+                logger.debug(f"Assistant message sources: {result.get('sources')}")
+                
+                # Create message for assistant's response
+                assistant_message = supabase_client.create_message(
+                    conversation_id=request.conversation_id,
+                    role="assistant",
+                    content=result.get("response", "") or "",
+                    sources=result.get("sources") or None,
+                    show_disclaimer=result.get("show_disclaimer", False),
+                    llm_provider=routing_decision.provider.value if routing_decision else None,
+                    query_tokens=routing_decision.query_tokens if routing_decision else None,
+                    routing_reason=routing_decision.reason if routing_decision else None,
+                    using_user_key=routing_decision.using_user_key if routing_decision else None,
+                    processing_time_ms=int(result.get("processing_time", 0) * 1000) if result.get("processing_time") else None
+                )
+                logger.info(
+                    "Saved assistant message id=%s conversation=%s user_internal_id=%s",
+                    assistant_message.get("id"),
+                    request.conversation_id,
+                    user_internal_id
+                )
+            else:
+                logger.warning(f"Skipping assistant message persistence - user_internal_id: {user_internal_id}, conversation_id: {request.conversation_id}")
+        except Exception as e:
+            logger.error("Failed to persist assistant message: %s", e, exc_info=True)
+            # Log the error with full traceback but don't fail the entire request
+            # The assistant response will still be returned to the user
+            # but it won't be saved in the database
+
+        # ============================================================================
+        # 4. GENERATE RESPONSE WITH QUOTA AND ROUTING INFORMATION
+        # ============================================================================
+
+        # Get updated quota information
+        if tiered_tracker:
+            # Use tiered quota system
+            quota_summary = tiered_tracker.get_user_quota_summary(request.user_id)
+            provider_quota = tiered_tracker.get_provider_quota(
+                user_id=request.user_id,
+                provider=LLMProvider(routing_decision.provider.value),
+                has_user_key=routing_decision.using_user_key
+            )
+
+            from .models.responses import QuotaInfo
+            updated_quota = QuotaInfo(
+                remaining=provider_quota.remaining if not provider_quota.unlimited else 999999,
+                limit=provider_quota.daily_limit,
+                reset_at=provider_quota.reset_at,
+                has_api_key=provider_quota.has_user_key,
+                unlimited=provider_quota.unlimited
+            )
+        else:
+            updated_quota = tracker.get_usage(request.user_id)
 
         # Generate query ID for tracking
         query_id = str(uuid.uuid4())
+
+        # Create routing information for response
+        from .models.responses import RoutingInfo
+        routing_info = RoutingInfo(
+            provider=routing_decision.provider.value,
+            reason=routing_decision.reason,
+            message_count=routing_decision.message_count,
+            query_tokens=routing_decision.query_tokens,
+            using_user_key=routing_decision.using_user_key,
+            estimated_cost=routing_decision.estimated_cost
+        )
 
         logger.info(f"Processed query for user {request.user_id}, query_id: {query_id}")
 
@@ -232,9 +595,11 @@ async def process_query(
             status="success",
             response=result["response"],
             sources=result.get("sources", []),
+            show_disclaimer=result.get("show_disclaimer", False),
             usage=updated_quota,
             processing_time=result.get("processing_time"),
-            query_id=query_id
+            query_id=query_id,
+            routing_info=routing_info
         )
 
     except HTTPException:
@@ -246,6 +611,10 @@ async def process_query(
             detail="AI service error"
         )
 
+
+# ----------------------------------------------------------------------------
+# User Management Endpoints
+# ----------------------------------------------------------------------------
 
 @app.post("/user/groq-key", response_model=ApiKeyResponse)
 async def save_groq_key(
@@ -285,6 +654,8 @@ async def save_groq_key(
         return ApiKeyResponse(
             status="success",
             message="API key saved successfully",
+            provider="groq",  # Legacy endpoint specifically for Groq
+            configured=True,
             has_unlimited=True
         )
 
@@ -327,6 +698,8 @@ async def delete_groq_key(
         return ApiKeyResponse(
             status="success",
             message="API key deleted successfully",
+            provider="groq",  # Legacy endpoint specifically for Groq
+            configured=False,
             has_unlimited=False
         )
 
@@ -363,7 +736,9 @@ async def get_user_quota(
         )
 
 
-# GitHub OAuth Endpoints
+# ----------------------------------------------------------------------------
+# GitHub OAuth Endpoints (Web & Mobile Support)
+# ----------------------------------------------------------------------------
 
 @app.get("/login/github")
 async def github_login():
@@ -385,9 +760,48 @@ async def github_login():
     return RedirectResponse(url=github_auth_url)
 
 
+@app.post('/login/github/start')
+async def github_login_start(payload: dict):
+    """Start an OAuth flow and return an auth URL for mobile"""
+    target = payload.get('target')
+    
+    # Clean up expired states first
+    cleanup_expired_states()
+    
+    # Generate new state
+    import secrets
+    state_id = secrets.token_urlsafe(16)
+    
+    logger.info(f"Starting OAuth flow with state: {state_id}")
+    
+    # Store state data
+    if target:
+        from urllib.parse import quote
+        encoded_target = quote(target)
+        state_map[state_id] = encoded_target
+        logger.info(f"Stored mobile target for state {state_id}: {encoded_target}")
+    else:
+        state_map[state_id] = None
+        logger.info("Web flow - no target stored")
+
+    # Record timestamp for cleanup
+    state_timestamps[state_id] = datetime.now()
+
+    # Build the GitHub authorize URL
+    github_auth_url = (
+        f"https://github.com/login/oauth/authorize"
+        f"?client_id={GITHUB_CLIENT_ID}"
+        f"&scope=user:email"
+        f"&redirect_uri={GITHUB_REDIRECT_URI}"
+        f"&state={state_id}"
+    )
+
+    return {'auth_url': github_auth_url, 'state': state_id}
+
+
 @app.get("/HaqooqAI/callback")
-async def github_callback(code: str = None, error: str = None):
-    """Handle GitHub OAuth callback and return access token"""
+async def github_callback(code: str = None, error: str = None, state: Optional[str] = None):
+    """Handle GitHub OAuth callback - updated for proper mobile flow handling"""
     if error:
         raise HTTPException(
             status_code=400,
@@ -400,8 +814,35 @@ async def github_callback(code: str = None, error: str = None):
             detail="Authorization code is required"
         )
 
+    logger.info(f"Received callback with state: {state}")
+
     try:
-        # Exchange code for access token
+        # Clean up any expired states first
+        cleanup_expired_states()
+
+        # Look up the target from state_map for mobile flow
+        target = None
+        if state and state in state_map:
+            target = state_map[state]
+            logger.info(f"Found mobile target for state {state}: {target}")
+            # Clean up used state immediately
+            state_map.pop(state)
+            state_timestamps.pop(state, None)
+
+        if target:
+            try:
+                from urllib.parse import unquote
+                target = unquote(target)
+                logger.info(f"Redirecting to mobile target: {target}")
+            except Exception as e:
+                logger.error(f"Error unquoting target: {e}")
+                # Keep original target if unquote fails
+
+            # Redirect to mobile app with the code
+            return RedirectResponse(url=f"{target}?code={code}", status_code=302)
+
+        # Default web flow: exchange code for token
+        logger.info("Proceeding with web flow token exchange")
         async with httpx.AsyncClient() as client:
             token_response = await client.post(
                 "https://github.com/login/oauth/access_token",
@@ -413,33 +854,78 @@ async def github_callback(code: str = None, error: str = None):
                 headers={"Accept": "application/json"}
             )
 
-            token_data = token_response.json()
-            access_token = token_data.get("access_token")
-
-            if not access_token:
+            if token_response.status_code != 200:
+                logger.error(f"GitHub token exchange failed: {token_response.status_code} - {token_response.text}")
                 raise HTTPException(
                     status_code=400,
-                    detail="Failed to get access token from GitHub"
+                    detail="Failed to exchange authorization code for token"
                 )
 
-            # Redirect to frontend with the access token
-            FRONTEND_URL="https://haqooqai.com/"
+            token_data = token_response.json()
+
+            if "error" in token_data:
+                logger.error(f"GitHub OAuth error: {token_data}")
+                # Redirect to frontend login page with error
+                from .config import FRONTEND_PRUDCTION_URL
+                frontend_url = FRONTEND_PRUDCTION_URL or "https://haqooqai.com/"
+                login_url = "https://haqooqai.com/#/login"
+                return RedirectResponse(
+                    url=f"{login_url}?error={token_data.get('error', 'oauth_error')}&error_description={token_data.get('error_description', 'OAuth authentication failed')}",
+                    status_code=302
+                )
+
+            access_token = token_data.get("access_token")
+            if not access_token:
+                logger.error("No access token received from GitHub")
+                from .config import FRONTEND_PRUDCTION_URL
+                frontend_url = FRONTEND_PRUDCTION_URL or "https://haqooqai.com"
+                login_url = "https://haqooqai.com/#/login"
+                return RedirectResponse(
+                    url=f"{login_url}?error=no_token&error_description=No access token received",
+                    status_code=302
+                )
+
+            # FRONTEND_URL = "https://haqooqai.com/"
+            # return RedirectResponse(
+            #     url=f"{FRONTEND_URL}#/dashboard?access_token={access_token}",
+            #     status_code=302
+            # )
+
+
+            # Redirect to frontend dashboard with access token
+            from .config import FRONTEND_PRUDCTION_URL
+            frontend_url = FRONTEND_PRUDCTION_URL or "https://haqooqai.com/"
+            # Redirect to dashboard page instead of root to avoid AuthGuard issues
+            dashboard_url = f"{frontend_url}#/dashboard?access_token={access_token}"
+            logger.info(f"Redirecting to frontend dashboard with token for web flow: {dashboard_url}")
             return RedirectResponse(
-                url=f"{FRONTEND_URL}#/dashboard?access_token={access_token}",
+                url=f"{frontend_url}#/dashboard?access_token={access_token}",
                 status_code=302
             )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"OAuth callback error: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="OAuth callback processing failed"
-        )
+        logger.error(f"Error in callback handler: {e}")
+        # Redirect to frontend login page with error
+        try:
+            from .config import FRONTEND_PRUDCTION_URL
+            frontend_url = FRONTEND_PRUDCTION_URL or "https://haqooqai.com"
+            login_url = f"{frontend_url.rstrip('/')}/login"
+            return RedirectResponse(
+                url=f"{login_url}?error=callback_error&error_description=OAuth callback processing failed",
+                status_code=302
+            )
+        except:
+            raise HTTPException(
+                status_code=500,
+                detail=f"OAuth callback processing failed: {str(e)}"
+            )
 
 
+# ----------------------------------------------------------------------------
 # Conversation Management Endpoints
+# ----------------------------------------------------------------------------
 
 @app.get("/conversations", response_model=ConversationListResponse)
 async def get_conversations(
@@ -448,6 +934,12 @@ async def get_conversations(
 ):
     """Get all conversations for a user"""
     try:
+        # Validate GitHub token (for security)
+        # Note: This endpoint doesn't receive a token directly in the request,
+        # but we include the auth service dependency to ensure proper authentication
+        # is handled at the API gateway or middleware level.
+        # In a production environment, you might want to pass the token explicitly.
+        
         from .database.supabase_client import supabase_client
 
         if not supabase_client.is_connected():
@@ -595,8 +1087,22 @@ async def create_message(
         if not supabase_client.verify_conversation_ownership(conversation_id, user_internal_id):
             raise HTTPException(status_code=403, detail="Access denied")
 
+        # Handle sources - convert SourceInfo objects to dictionaries if needed
+        sources = request.sources
+        if sources:
+            # Convert any SourceInfo objects to dictionaries
+            serialized_sources = []
+            for source in sources:
+                if hasattr(source, 'dict'):  # Pydantic model
+                    serialized_sources.append(source.dict())
+                elif hasattr(source, '__dict__'):  # Regular object
+                    serialized_sources.append(source.__dict__)
+                else:  # Already a dict or other JSON-serializable type
+                    serialized_sources.append(source)
+            sources = serialized_sources
+
         message = supabase_client.create_message(
-            conversation_id, request.role, request.content, request.sources
+            conversation_id, request.role, request.content, sources, getattr(request, 'show_disclaimer', False)
         )
 
         return MessageResponse(
@@ -605,6 +1111,7 @@ async def create_message(
             role=message['role'],
             content=message['content'],
             sources=message.get('sources'),
+            show_disclaimer=message.get('show_disclaimer', False),
             created_at=message['created_at']
         )
 
@@ -692,6 +1199,10 @@ async def delete_conversation(
         raise HTTPException(status_code=500, detail="Failed to delete conversation")
 
 
+# ----------------------------------------------------------------------------
+# Health & Monitoring Endpoints
+# ----------------------------------------------------------------------------
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check(
     auth_svc: GitHubAuthService = Depends(get_auth_service),
@@ -764,6 +1275,111 @@ async def get_stats(
             status_code=500,
             detail="Failed to get statistics"
         )
+
+
+@app.get("/stats/routing", response_model=dict)
+async def get_routing_stats():
+    """Get LLM routing statistics and provider information"""
+    try:
+        # Import here to avoid circular imports
+        from .ai.llm_providers import LLMProviderManager
+
+        provider_manager = LLMProviderManager()
+
+        return {
+            "providers": provider_manager.get_all_providers_info(),
+            "routing_config": {
+                "message_threshold": ROUTING_MESSAGE_THRESHOLD,
+                "token_threshold": ROUTING_TOKEN_THRESHOLD,
+                "max_query_tokens": MAX_QUERY_TOKENS,
+                "max_conversation_messages": MAX_CONVERSATION_MESSAGES
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Routing stats error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to get routing statistics"
+        )
+
+
+@app.get("/stats/conversations", response_model=dict)
+async def get_conversation_stats(
+    conv_manager: ConversationManager = Depends(get_conversation_manager)
+):
+    """Get conversation statistics for monitoring"""
+    try:
+        # This would need to be implemented to get system-wide conversation stats
+        # For now, return basic configuration info
+        return {
+            "max_messages_per_conversation": conv_manager.max_messages,
+            "conversation_health_thresholds": {
+                "warning_percentage": 80,
+                "critical_percentage": 100
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Conversation stats error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to get conversation statistics"
+        )
+
+
+@app.get("/health/detailed", response_model=dict)
+async def get_detailed_health(
+    rag: LegalRAGEngine = Depends(get_rag_engine),
+    tracker: UsageTracker = Depends(get_usage_tracker),
+    conv_manager: ConversationManager = Depends(get_conversation_manager)
+):
+    """Get detailed health information including new components"""
+    try:
+        from .ai.llm_providers import LLMProviderManager
+
+        provider_manager = LLMProviderManager()
+
+        # Check provider availability
+        provider_health = {}
+        for provider in LLMProvider:
+            config = provider_manager.providers[provider]
+            provider_health[provider.value] = {
+                "has_default_key": bool(config.default_key),
+                "model": config.model,
+                "daily_limit": config.daily_limit
+            }
+
+        return {
+            "status": "healthy",
+            "components": {
+                "rag_engine": "healthy" if rag else "unavailable",
+                "usage_tracker": "healthy" if tracker else "unavailable",
+                "conversation_manager": "healthy" if conv_manager else "unavailable",
+                "llm_providers": provider_health
+            },
+            "routing_system": {
+                "enabled": True,
+                "providers_available": len(provider_health),
+                "fallback_configured": bool(provider_manager.providers[LLMProvider.GROQ].default_key)
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Detailed health check error: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
+
+# ============================================================================
+# Production Application - All testing endpoints removed
+# ============================================================================
 
 
 if __name__ == "__main__":

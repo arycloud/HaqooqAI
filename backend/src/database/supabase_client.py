@@ -244,16 +244,18 @@ class SupabaseClient:
                 )
 
             # In production, you should encrypt/hash the API key
+            # For backward compatibility, we'll use the new column name
             api_key_data = {
                 "github_id": github_id,
-                "api_key_hash": api_key,  # In production: hash this
+                "encrypted_key": api_key,  # Use new column name
+                "provider": "groq",  # Default to groq for backward compatibility
                 "created_at": datetime.now().isoformat(),
                 "updated_at": datetime.now().isoformat()
             }
 
             result = self.service_client.table(API_KEYS_TABLE).upsert(
                 api_key_data,
-                on_conflict="github_id"
+                on_conflict="github_id,provider"  # Use composite key for upsert
             ).execute()
 
             logger.info(f"API key saved for user {github_id}")
@@ -269,10 +271,12 @@ class SupabaseClient:
             raise Exception("Supabase service client not initialized")
 
         try:
-            result = self.service_client.table(API_KEYS_TABLE).select("api_key_hash").eq("github_id", github_id).execute()
+            # Try to get the key with the new structure (default to groq for backward compatibility)
+            result = self.service_client.table(API_KEYS_TABLE).select("encrypted_key").eq("github_id", github_id).eq("provider", "groq").execute()
 
             if result.data:
-                return result.data[0]["api_key_hash"]
+                return result.data[0]["encrypted_key"]
+            
             return None
 
         except Exception as e:
@@ -285,6 +289,7 @@ class SupabaseClient:
             raise Exception("Supabase service client not initialized")
 
         try:
+            # Delete all keys for the user (new structure)
             result = self.service_client.table(API_KEYS_TABLE).delete().eq("github_id", github_id).execute()
             logger.info(f"API key deleted for user {github_id}")
             return True
@@ -307,10 +312,13 @@ class SupabaseClient:
             raise Exception("Supabase service client not initialized")
 
         try:
+            logger.info(f"Looking up user internal ID for GitHub ID: {github_id}")
             result = self.service_client.table(USERS_TABLE).select("id").eq("github_id", github_id).single().execute()
-            return result.data["id"] if result.data else None
+            user_id = result.data["id"] if result.data else None
+            logger.info(f"Found user internal ID {user_id} for GitHub ID {github_id}")
+            return user_id
         except Exception as e:
-            logger.error(f"Error getting user internal ID: {e}")
+            logger.error(f"Error getting user internal ID for GitHub ID {github_id}: {e}")
             return None
 
     def get_user_conversations(self, user_id: int, limit: int = 20, offset: int = 0) -> List[Dict[str, Any]]:
@@ -403,7 +411,7 @@ class SupabaseClient:
             logger.error(f"Error verifying conversation ownership: {e}")
             return False
 
-    def create_message(self, conversation_id: str, role: str, content: str, sources: Optional[List] = None) -> Dict[str, Any]:
+    def create_message(self, conversation_id: str, role: str, content: str, sources: Optional[List] = None, show_disclaimer: bool = False, llm_provider: Optional[str] = None, query_tokens: Optional[int] = None, routing_reason: Optional[str] = None, using_user_key: Optional[bool] = None, processing_time_ms: Optional[int] = None) -> Dict[str, Any]:
         """Create a new message in a conversation"""
         if not self.service_client:
             raise Exception("Supabase service client not initialized")
@@ -412,20 +420,57 @@ class SupabaseClient:
             message_data = {
                 "conversation_id": conversation_id,
                 "role": role,
-                "content": content
+                "content": content,
+                "show_disclaimer": show_disclaimer
             }
 
+            # Handle sources - convert SourceInfo objects to dictionaries if needed
             if sources:
-                message_data["sources"] = sources
+                # Convert any SourceInfo objects to dictionaries
+                serialized_sources = []
+                for source in sources:
+                    if hasattr(source, 'dict'):  # Pydantic model
+                        serialized_sources.append(source.dict())
+                    elif hasattr(source, '__dict__'):  # Regular object
+                        serialized_sources.append(source.__dict__)
+                    else:  # Already a dict or other JSON-serializable type
+                        serialized_sources.append(source)
+                message_data["sources"] = serialized_sources
+
+            if llm_provider:
+                message_data["llm_provider"] = llm_provider
+
+            if query_tokens is not None:
+                message_data["query_tokens"] = query_tokens
+
+            if routing_reason:
+                message_data["routing_reason"] = routing_reason
+
+            if using_user_key is not None:
+                message_data["using_user_key"] = using_user_key
+
+            if processing_time_ms is not None:
+                message_data["processing_time_ms"] = processing_time_ms
+
+            # Log the data we're trying to insert
+            import json
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Attempting to insert message for conversation {conversation_id}")
+            logger.debug(f"Inserting message data: {json.dumps(message_data, default=str, indent=2)}")
 
             result = self.service_client.table("messages").insert(message_data).execute()
 
             if result.data:
+                logger.info(f"Successfully inserted message with ID: {result.data[0].get('id')}")
                 return result.data[0]
             else:
-                raise Exception("Failed to create message")
+                logger.error("Failed to create message - no data returned from Supabase")
+                raise Exception("Failed to create message - no data returned from Supabase")
         except Exception as e:
-            logger.error(f"Error creating message: {e}")
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error creating message for conversation {conversation_id}: {e}", exc_info=True)
             raise e
 
     def update_conversation(self, conversation_id: str, user_internal_id: int, title: str) -> Optional[Dict[str, Any]]:

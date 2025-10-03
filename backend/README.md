@@ -1,5 +1,5 @@
 ---
-title: HaqooqAI Backend
+title: HaqooqAI Backend - Stagging
 emoji: ⚖️
 colorFrom: indigo
 colorTo: blue
@@ -21,7 +21,7 @@ HaqooqAI Backend is a focused AI service that provides Pakistan legal informatio
 - **Language**: Python 3.9+
 - **LLM Integration**: Groq API
 - **Authentication**: GitHub OAuth validation only
-- **Search Engine**: SearxNG instances
+- **Search Engine**: Exa.ai with SerpAPI fallback
 - **Vector Database**: ChromaDB (local)
 - **Database**: Supabase (PostgreSQL)
 - **Data Storage**: User profiles, usage quotas, API keys
@@ -42,7 +42,7 @@ backend/
 │   │   ├── agent.py               # LegalAssistantAgent
 │   │   ├── rag_engine.py          # RAG processing
 │   │   ├── tools.py               # Search tools
-│   │   └── searxng_client.py      # SearxNG client
+│   │   └── web_search_clients.py  # Web search clients (Exa.ai, SerpAPI)
 │   ├── quota/
 │   │   ├── __init__.py
 │   │   └── usage_tracker.py       # Supabase-based quota management
@@ -119,6 +119,10 @@ SUPABASE_SERVICE_KEY=your_supabase_service_key
 # Optional: Default Groq API key
 DEFAULT_GROQ_KEY=your_groq_api_key
 
+# Optional: Web Search API keys
+EXA_API_KEY=your_exa_api_key
+SERPAPI_API_KEY=your_serpapi_key
+
 # Optional: Usage limits
 USAGE_LIMIT_DEFAULT=5
 MAX_QUERY_LENGTH=1000
@@ -177,6 +181,8 @@ The API will be available at:
 | `SUPABASE_KEY` | Supabase anon key | Required |
 | `SUPABASE_SERVICE_KEY` | Supabase service key | Required |
 | `DEFAULT_GROQ_KEY` | Default Groq API key | Optional |
+| `EXA_API_KEY` | Exa.ai API key | Optional |
+| `SERPAPI_API_KEY` | SerpAPI key | Optional |
 | `USAGE_LIMIT_DEFAULT` | Default query limit per user | 5 |
 | `MAX_QUERY_LENGTH` | Maximum query length | 1000 |
 | `LOG_LEVEL` | Logging level | INFO |
@@ -203,7 +209,7 @@ The API is configured to accept requests from:
 
 ### Health Monitoring
 - **Comprehensive Health Checks**: Monitors all system components
-- **Service Status**: Real-time status of GitHub API, ChromaDB, and SearxNG
+- **Service Status**: Real-time status of GitHub API, ChromaDB, and web search providers (Exa.ai, SerpAPI)
 - **Performance Metrics**: Response times and system resource usage
 
 ## 🧪 Testing
@@ -288,9 +294,10 @@ CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
    - Verify GitHub token is valid
    - Check rate limit status
 
-3. **SearxNG Unavailable**:
+3. **Web Search Unavailable**:
    - Check internet connectivity
-   - Verify SearxNG instances are accessible
+   - Verify API keys are valid
+   - Check Exa.ai and SerpAPI service status
 
 ### Debug Mode
 

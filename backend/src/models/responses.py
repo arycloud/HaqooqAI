@@ -22,6 +22,30 @@ class QuotaInfo(BaseModel):
     unlimited: bool = Field(False, description="Whether user has unlimited access")
 
 
+class ProviderStatus(BaseModel):
+    """Status information for a specific LLM provider"""
+    provider: str = Field(..., description="Provider name (groq, gemini, openai)")
+    configured: bool = Field(..., description="Whether user has configured an API key")
+    valid: bool = Field(..., description="Whether the configured key is valid")
+    last_validated: Optional[datetime] = Field(None, description="When the key was last validated")
+
+
+class ApiKeyResponse(BaseModel):
+    """Response for API key operations (unified model for all providers)"""
+    status: str = Field(..., description="Operation status (success, error)")
+    message: str = Field(..., description="Human-readable message")
+    provider: Optional[str] = Field(default=None, description="Provider name (groq, gemini, openai)")
+    configured: Optional[bool] = Field(default=None, description="Whether the key is now configured")
+    has_unlimited: Optional[bool] = Field(default=None, description="Whether user now has unlimited access")
+
+
+class ApiKeyListResponse(BaseModel):
+    """Response for listing user's API key providers"""
+    status: str = Field(..., description="Operation status")
+    providers: List[ProviderStatus] = Field(..., description="List of provider statuses")
+    total_configured: int = Field(..., description="Total number of configured providers")
+
+
 class SourceInfo(BaseModel):
     """Information about a source used in the response"""
     type: str = Field(..., description="Type of source: 'legal_doc' or 'web_search'")
@@ -40,21 +64,35 @@ class AuthResponse(BaseModel):
     message: Optional[str] = Field(None, description="Additional message")
 
 
+class TokenExchangeResponse(BaseModel):
+    """Response for token exchange"""
+    status: str = Field(..., description="Response status")
+    access_token: str = Field(..., description="GitHub access token")
+    user: UserProfile = Field(..., description="User profile information")
+    quota: QuotaInfo = Field(..., description="User quota information")
+    message: Optional[str] = Field(None, description="Additional message")
+
+
+class RoutingInfo(BaseModel):
+    """Information about LLM provider routing decision"""
+    provider: str = Field(..., description="Selected LLM provider")
+    reason: str = Field(..., description="Reason for provider selection")
+    message_count: int = Field(..., description="Number of messages in conversation")
+    query_tokens: int = Field(..., description="Number of tokens in query")
+    using_user_key: bool = Field(..., description="Whether user's API key was used")
+    estimated_cost: str = Field(..., description="Estimated cost information")
+
+
 class AIResponse(BaseModel):
     """Response for AI query processing"""
     status: str = Field(..., description="Response status")
     response: str = Field(..., description="AI-generated response")
     sources: List[SourceInfo] = Field(default_factory=list, description="Sources used in the response")
+    show_disclaimer: bool = Field(False, description="Whether to show the disclaimer")
     usage: QuotaInfo = Field(..., description="Updated quota information")
     processing_time: Optional[float] = Field(None, description="Processing time in seconds")
     query_id: Optional[str] = Field(None, description="Unique query identifier")
-
-
-class ApiKeyResponse(BaseModel):
-    """Response for API key management"""
-    status: str = Field(..., description="Response status")
-    message: str = Field(..., description="Response message")
-    has_unlimited: bool = Field(..., description="Whether user now has unlimited access")
+    routing_info: Optional[RoutingInfo] = Field(None, description="LLM routing information")
 
 
 class QuotaResponse(BaseModel):
@@ -90,6 +128,7 @@ class MessageResponse(BaseModel):
     role: str = Field(..., description="Message role")
     content: str = Field(..., description="Message content")
     sources: Optional[List[SourceInfo]] = Field(None, description="Message sources")
+    show_disclaimer: bool = Field(False, description="Whether to show the disclaimer")
     created_at: datetime = Field(..., description="Creation timestamp")
 
 
